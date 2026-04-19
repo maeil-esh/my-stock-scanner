@@ -50,9 +50,46 @@ def get_start_date(base_str, days_ago):
     return (base - datetime.timedelta(days=int(days_ago * 1.5))).strftime("%Y%m%d")
 
 
-def get_financial_data(ticker):
-    """더미 — 실제 운영 시 OpenDART API로 교체"""
-    return {"OPM": 5.0, "DebtRatio": 120.0}
+def safe_get_market_ticker_list(date_str, market):
+    """pykrx 실패 시 fdr로 종목 목록 백업 조회"""
+    try:
+        tickers = stock.get_market_ticker_list(date_str, market=market)
+        if tickers and len(tickers) > 0:
+            return list(tickers)
+    except Exception as e:
+        print(f"  ⚠️  pykrx {market} 목록 조회 실패: {e} → fdr 백업 시도")
+
+    try:
+        if market == "KOSPI":
+            df = fdr.StockListing('KOSPI')
+        else:
+            df = fdr.StockListing('KOSDAQ')
+        return list(df['Code'].dropna().astype(str).str.zfill(6))
+    except Exception as e:
+        print(f"  ❌ fdr {market} 백업도 실패: {e}")
+        return []
+
+
+def safe_get_market_cap(ticker, date_str):
+    """pykrx 시가총액 조회 — 실패 시 None 반환"""
+    try:
+        df = stock.get_market_cap(date_str, date_str, ticker)
+        if df is not None and not df.empty:
+            return int(df['시가총액'].iloc[-1] / 1e8)
+    except Exception:
+        pass
+    return None
+
+
+def safe_get_ohlcv(ticker, date_str):
+    """pykrx 일봉 조회 — 실패 시 None 반환"""
+    try:
+        df = stock.get_market_ohlcv(date_str, date_str, ticker)
+        if df is not None and not df.empty:
+            return df
+    except Exception:
+        pass
+    return None
 
 
 def get_company_summary(ticker, name):
@@ -225,12 +262,13 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
     c    = int(min(max((op20 - pc20) * 2, 0), 40)) if op20 > 0 else 0
     bd['OBV다이버전스'] = c
 
-    # ── [D] RSI 최적 구간 (최대 30점) ────────────────────────
+    # ── [D] RSI 골디락스 구간 (최대 30점) ───────────────────────
+    # 45~60: 과열 전 단계 최적 진입 구간
     d = 0
     if not np.isnan(rsi):
-        if   40 <= rsi <= 55: d = int(max(30 - abs(rsi-47)*2, 15))
-        elif 35 <= rsi <  40: d = 15
-        elif 55 <  rsi <= 62: d = 10
+        if   45 <= rsi <= 60: d = int(max(30 - abs(rsi - 52) * 2, 15))
+        elif 40 <= rsi <  45: d = 12
+        elif 60 <  rsi <= 65: d = 10
     bd['RSI위치']  = d
     meta['rsi']    = round(rsi,1) if not np.isnan(rsi) else 0
 
@@ -282,8 +320,8 @@ def analyze_with_manual_picks():
     print(f"📅 기준일: {today_str}")
     print(f"🎯 목표: 7일 +10% / 승률 68~73% 최적화 엔진 v3\n")
 
-    kospi_tickers  = stock.get_market_ticker_list(today_str, market="KOSPI")
-    kosdaq_tickers = stock.get_market_ticker_list(today_str, market="KOSDAQ")
+    kospi_tickers  = safe_get_market_ticker_list(today_str, "KOSPI")
+    kosdaq_tickers = safe_get_market_ticker_list(today_str, "KOSDAQ")
     all_tickers    = kospi_tickers + kosdaq_tickers
     print(f"📋 전체 종목: {len(all_tickers)}개\n")
 
@@ -328,7 +366,7 @@ def analyze_with_manual_picks():
 
             # ── [필터 3] 시총 500억~3조 ───────────────────────
             # 너무 작으면 세력 조작, 너무 크면 단기 10% 불가
-            mktcap = get_market_cap(ticker, today_str)
+            mktcap = safe_get_market_cap(ticker, today_str)
             if mktcap is None or not (500 <= mktcap <= 30000):
                 continue
             log['mktcap'] += 1
@@ -475,8 +513,8 @@ def analyze_with_manual_picks():
             except: my_picks = []
         for p in my_picks:
             try:
-                cdf = stock.get_market_ohlcv(today_str, today_str, p['code'])
-                if not cdf.empty:
+                cdf = safe_get_ohlcv(p['code'], today_str)
+                if cdf is not None and not cdf.empty:
                     cp     = int(cdf['종가'].iloc[-1])
                     profit = round(((cp / p['buy_price']) - 1) * 100, 2)
                     my_manual_report.append({
@@ -603,18 +641,19 @@ def analyze_us_market():
             rsi    = round((100 - 100 / (1 + rs)).iloc[-1], 1)
 
             # ── 숏스퀴즈 핵심 조건 ───────────────────────────
-            if float_m >= 50 or short_pct_p < 15:
+            # Float ≤ 150M (품절주), 공매도 ≥ 10%, 거래량 ≥ 2배
+            if float_m > 150 or short_pct_p < 10 or vol_spike < 2.0:
                 continue
 
             # ── 점수 산출 (100점 만점) ────────────────────────
-            # 1. 공매도 강도 (최대 40점): 15%=10점, 40%+=40점
-            short_score = min((short_pct_p - 15) / 25 * 30 + 10, 40)
+            # 1. 공매도 강도 (최대 40점): 10%=10점, 40%+=40점
+            short_score = min((short_pct_p - 10) / 30 * 30 + 10, 40)
 
-            # 2. 거래량 스파이크 (최대 30점): 1배=0점, 5배+=30점
-            vol_score   = min((vol_spike - 1) / 4 * 30, 30)
+            # 2. 거래량 스파이크 (최대 30점): 2배=5점, 8배+=30점
+            vol_score   = min((vol_spike - 2) / 6 * 25 + 5, 30)
 
-            # 3. 유통주 희소성 (최대 20점): 1M=20점, 50M=0점
-            float_score = max(20 - (float_m / 50 * 20), 0)
+            # 3. 유통주 희소성 (최대 20점): 1M=20점, 150M=0점
+            float_score = max(20 - (float_m / 150 * 20), 0)
 
             # 4. 숏커버링 소요일 보너스 (최대 10점)
             ratio_score = min((short_ratio or 0) * 2, 10) if short_ratio else 0

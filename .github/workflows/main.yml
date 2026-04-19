@@ -1,0 +1,33 @@
+name: Stock-Auto-Update
+on:
+  schedule:
+    - cron: '0 12 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install libraries
+        run: |
+          pip install pykrx pandas FinanceDataReader
+
+      - name: Run Analysis Engine
+        run: python engine.py
+
+      - name: Update Data and History
+        run: |
+          git config --global user.name 'GitHub Action'
+          git config --global user.email 'action@github.com'
+          git add stock_data.json history.json
+          git commit -m "NXT 마감 데이터 분석 및 히스토리 업데이트" || echo "No changes to commit"
+          git push

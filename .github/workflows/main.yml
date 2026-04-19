@@ -3,24 +3,25 @@ on:
   schedule:
     # 한국 시간 밤 9시 (UTC 12:00) / 월~금 실행
     - cron: '0 12 * * 1-5'
-  workflow_dispatch: # 언제든 수동으로 실행하고 싶을 때 사용하는 버튼
+  workflow_dispatch: # 수동 실행 버튼
 
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: write   # git push 권한 명시 (GitHub 기본 정책 변경 대응)
+      contents: write
     steps:
       - uses: actions/checkout@v3
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.9'
+          python-version: '3.11' # 3.11로 수정
 
       - name: Install libraries
         run: |
-          pip install pykrx pandas finance-datareader numpy requests beautifulsoup4
+          # yfinance 추가 설치
+          pip install pykrx pandas finance-datareader numpy requests beautifulsoup4 yfinance
 
       - name: Run Analysis Engine
         run: python engine.py
@@ -29,6 +30,7 @@ jobs:
         run: |
           git config --global user.name 'GitHub Action'
           git config --global user.email 'action@github.com'
-          git add stock_data.json history.json
-          git commit -m "NXT 마감 데이터 분석 및 히스토리 업데이트" || echo "No changes to commit"
+          # stock_data_us.json 파일도 추적하도록 추가
+          git add stock_data.json stock_data_us.json history.json
+          git commit -m "KR/US 마감 데이터 분석 및 업데이트" || echo "No changes to commit"
           git push

@@ -104,7 +104,8 @@
     </div>
 
     <!-- 전략 요약 -->
-    <div class="bg-[#111827]/60 rounded-2xl border border-dashed border-gray-800 p-6">
+   <div id="strategy-card" class="bg-[#111827]/60 rounded-2xl border border-dashed border-gray-800 p-6">
+        </div>
         <h4 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-5">
             7단계 필터 × 6팩터 채점 (250점)
         </h4>
@@ -180,6 +181,7 @@ function initLoad() {
             renderKPI(data);
             renderPicks(data);
             renderMyPicks(data);
+            renderStrategyDetail();
         })
         .catch(err => {
             document.getElementById('top5').innerHTML = `
@@ -202,6 +204,44 @@ function renderHeader(data) {
     document.getElementById('strategy-desc').textContent = currentMarket === 'kr'
         ? '기관 3일 연속 × 52주 돌파 임박 × VCP — 한국 시장 승률 극대화 전략'
         : 'Micro-Float × High Short Interest — 미국 시장 숏스퀴즈 탐지';
+// 하단 전략 요약 상세 렌더링
+function renderStrategyDetail() {
+    const card = document.getElementById('strategy-card');
+    if (currentMarket === 'kr') {
+        card.innerHTML = `
+        <h4 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-5">7단계 필터 × 6팩터 채점 (250점)</h4>
+        <div class="grid grid-cols-2 gap-6 text-xs text-gray-500">
+            <div class="space-y-2">
+                <div class="font-bold text-gray-400 mb-2">진입 필터 (AND 조건)</div>
+                <p>• 1,000원↑ + MA50>MA200 정배열</p>
+                <p>• 시총 500억~3조 (스윙 최적 구간)</p>
+                <p class="text-purple-300">• 기관 3일 연속 순매수 (핵심)</p>
+            </div>
+            <div class="space-y-1">
+                <div class="font-bold text-gray-400 mb-2">채점 팩터 (250점)</div>
+                <div class="flex justify-between"><span>세력 흔적 / 수급 강도</span><span class="text-blue-400">110점</span></div>
+                <div class="flex justify-between"><span>BB수축 / OBV다이버</span><span class="text-indigo-400">80점</span></div>
+                <div class="flex justify-between"><span>52주 고가 / RSI</span><span class="text-yellow-400">60점</span></div>
+            </div>
+        </div>`;
+    } else {
+        card.innerHTML = `
+        <h4 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-5">🇺🇸 미국 숏스퀴즈 메가러너 전략</h4>
+        <div class="grid grid-cols-2 gap-6 text-xs text-gray-500">
+            <div class="space-y-2">
+                <div class="font-bold text-gray-400 mb-2">포착 조건 (Squeeze Mode)</div>
+                <p>• Micro-Float: 유통주식수 50M 이하</p>
+                <p>• High Short Interest: 공매도 15% 이상</p>
+                <p class="text-red-400">• Squeeze Score: 숏스퀴즈 임박 점수화</p>
+            </div>
+            <div class="space-y-2">
+                <div class="font-bold text-gray-400 mb-2">운용 팁</div>
+                <p>• Volume Spike: 거래량 평소 대비 2.5배↑</p>
+                <p>• 개장 전(Pre-market) 강한 거래량 확인 필수</p>
+                <p>• 변동성이 매우 크므로 분할 매도 권장</p>
+            </div>
+        </div>`;
+    }
 }
 
 // ── KPI 렌더링 ─────────────────────────────────────────────────
@@ -231,14 +271,17 @@ function renderPicks(data) {
     const container = document.getElementById('top5');
     container.innerHTML = '';
 
-    if (picks.length === 0) {
+if (picks.length === 0) {
+        const msg = currentMarket === 'kr' 
+            ? "기관 3일 연속 + 외인 동시 + 52주 돌파 임박을<br>모두 만족하는 종목이 오늘은 없습니다."
+            : "Micro-Float + High Short Interest 조건을<br>모두 만족하는 폭등 후보 종목이 오늘은 없습니다.";
+
         container.innerHTML = `
         <div class="bg-[#111827] border border-gray-800 rounded-2xl p-10 text-center">
             <div class="text-4xl mb-4">🔍</div>
             <div class="text-lg font-bold text-gray-300 mb-2">오늘은 조건 충족 종목 없음</div>
             <div class="text-sm text-gray-500 leading-relaxed">
-                기관 3일 연속 + 외인 동시 + 52주 돌파 임박을<br>
-                모두 만족하는 종목이 오늘은 없습니다.<br>
+                ${msg}<br>
                 <span class="text-yellow-400 font-bold mt-2 block">신호 없는 날 쉬는 것이 전략의 일부입니다.</span>
             </div>
         </div>`;

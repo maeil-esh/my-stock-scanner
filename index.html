@@ -30,7 +30,6 @@
 <body class="text-gray-100 font-sans min-h-screen">
 
 <header class="px-6 pt-8 pb-4 max-w-4xl mx-auto">
-    <!-- 시장 탭 -->
     <div class="flex bg-[#111827] p-1 rounded-xl border border-gray-800 mb-6 w-fit">
         <button onclick="switchMarket('kr')" id="btn-kr"
             class="market-btn-active px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 border">
@@ -61,7 +60,6 @@
 
 <main class="max-w-4xl mx-auto px-6 pb-16">
 
-    <!-- KPI -->
     <div class="grid grid-cols-4 gap-3 mb-8 mt-4">
         <div class="bg-[#111827] rounded-xl p-4 border border-gray-800 text-center">
             <p class="text-gray-500 text-[11px] mb-1">승률 (7일 +10%↑)</p>
@@ -79,18 +77,16 @@
             <p id="screened-total" class="text-[10px] text-gray-600 mt-0.5">전체 스크리닝</p>
         </div>
         <div class="bg-[#111827] rounded-xl p-4 border border-gray-800 text-center">
-            <p class="text-gray-500 text-[11px] mb-1">기관연속 통과</p>
+            <p id="kpi-label-4" class="text-gray-500 text-[11px] mb-1">기관연속 통과</p>
             <p id="inst3-count" class="text-2xl font-black text-purple-400">--</p>
-            <p class="text-[10px] text-gray-600 mt-0.5">3일 연속 매수</p>
+            <p id="kpi-sub-4" class="text-[10px] text-gray-600 mt-0.5">3일 연속 매수</p>
         </div>
     </div>
 
-    <!-- TOP 5 -->
     <div id="top5" class="space-y-4 mb-10">
         <div class="text-center text-gray-600 py-20">데이터 로딩 중...</div>
     </div>
 
-    <!-- 수동 픽 성적표 -->
     <div id="my-picks-section" class="hidden bg-[#111827] rounded-2xl border border-yellow-900/30 overflow-hidden mb-8">
         <div class="px-6 py-4 border-b border-gray-800">
             <h3 class="text-sm font-bold text-yellow-400">
@@ -111,12 +107,11 @@
         </table>
     </div>
 
-    <!-- 전략 요약 -->
     <div id="strategy-card" class="bg-[#111827]/60 rounded-2xl border border-dashed border-gray-800 p-6"></div>
 </main>
 
 <script>
-// ── 상수 ───────────────────────────────────────────────────────
+// 1. 공통 상수 및 설정
 const RANKS = [
     { label:'#1', cardCls:'card-gold',   color:'#FFD700' },
     { label:'#2', cardCls:'card-silver', color:'#C0C0C0' },
@@ -134,30 +129,25 @@ const FACTOR_STYLE = {
     '돌파임박':      'bg-yellow-900/40 text-yellow-300',
 };
 
-// ── 상태 ───────────────────────────────────────────────────────
 let currentMarket = 'kr';
 
-// ── 시장 전환 ──────────────────────────────────────────────────
+// 2. 시장 전환 로직
 function switchMarket(market) {
     currentMarket = market;
-
     document.getElementById('btn-kr').className =
         `px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 border ml-0 ${
             market === 'kr' ? 'market-btn-active' : 'market-btn-idle'
         }`;
-
     document.getElementById('btn-us').className =
         `px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 border ml-1 ${
             market === 'us' ? 'market-btn-active' : 'market-btn-idle'
         }`;
-
     initLoad();
 }
 
-// ── 데이터 로드 ────────────────────────────────────────────────
+// 3. 데이터 로드 및 렌더링 지휘
 function initLoad() {
     const fileName = currentMarket === 'kr' ? 'stock_data.json' : 'stock_data_us.json';
-
     document.getElementById('top5').innerHTML =
         '<div class="text-center text-gray-600 py-20">데이터 로딩 중...</div>';
 
@@ -177,122 +167,91 @@ function initLoad() {
             document.getElementById('top5').innerHTML = `
                 <div class="text-center text-red-400 py-16 text-sm">
                     ⚠️ ${err.message}<br>
-                    <span class="text-gray-600 text-xs mt-2 block">
-                        GitHub Actions가 먼저 성공해야 데이터가 생성됩니다.
-                    </span>
+                    <span class="text-gray-600 text-xs mt-2 block">GitHub Actions가 먼저 성공해야 데이터가 생성됩니다.</span>
                 </div>`;
-
+            // 에러 시 지표 초기화
             document.getElementById('win-rate').textContent = '--%';
             document.getElementById('avg-return').textContent = '--%';
-            document.getElementById('total-cases').textContent = '누적 중';
             document.getElementById('candidate-count').textContent = '--';
-            document.getElementById('screened-total').textContent = '';
             document.getElementById('inst3-count').textContent = '--';
-
-            document.getElementById('my-picks-section').classList.add('hidden');
-            document.getElementById('my-picks-table').innerHTML = '';
-
             renderStrategyDetail();
         });
 }
 
-// ── 헤더 렌더링 ────────────────────────────────────────────────
+// 4. 헤더 렌더링
 function renderHeader(data) {
     const now = new Date();
-
     document.getElementById('update-time').textContent =
-        `업데이트: ${now.toLocaleDateString('ko-KR')} ${now.toLocaleTimeString('ko-KR', {
-            hour: '2-digit',
-            minute: '2-digit'
-        })}`;
-
-    document.getElementById('base-date').textContent =
-        `기준일: ${data.base_date || '-'}`;
-
-    document.getElementById('strategy-desc').textContent =
-        currentMarket === 'kr'
-            ? '기관 3일 연속 × 52주 돌파 임박 × VCP — 한국 시장 승률 극대화 전략'
-            : 'Micro-Float × High Short Interest — 미국 시장 숏스퀴즈 탐지';
+        `업데이트: ${now.toLocaleDateString('ko-KR')} ${now.toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit'})}`;
+    document.getElementById('base-date').textContent = `기준일: ${data.base_date || '-'}`;
+    document.getElementById('strategy-desc').textContent = currentMarket === 'kr'
+        ? '기관 3일 연속 × 52주 돌파 임박 × VCP — 한국 시장 승률 극대화 전략'
+        : 'Micro-Float × High Short Interest — 미국 시장 숏스퀴즈 탐지';
 }
 
-// ── 전략 요약 상세 렌더링 ─────────────────────────────────────
+// 5. 전략 상세 요약 렌더링
 function renderStrategyDetail() {
     const card = document.getElementById('strategy-card');
-
     if (currentMarket === 'kr') {
         card.innerHTML = `
-            <h4 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-5">
-                7단계 필터 × 6팩터 채점 (250점)
-            </h4>
+            <h4 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-5">🇰🇷 한국 세력주 전략 (250점 채점)</h4>
             <div class="grid grid-cols-2 gap-6 text-xs text-gray-500">
                 <div class="space-y-2">
-                    <div class="font-bold text-gray-400 mb-2">진입 필터 (AND 조건)</div>
-                    <div class="flex gap-2"><span class="text-blue-400 font-bold w-4">①</span> 1,000원↑ + MA50&gt;MA200 정배열</div>
-                    <div class="flex gap-2"><span class="text-blue-400 font-bold w-4">②</span> 시총 500억~3조 (스윙 최적 구간)</div>
-                    <div class="flex gap-2"><span class="text-blue-400 font-bold w-4">③</span> 매집봉 + VCP 진폭 15%↓ + 거래량 가뭄</div>
-                    <div class="flex gap-2"><span class="text-blue-400 font-bold w-4">④</span> 52주 고가 10% 이내 (돌파 임박)</div>
-                    <div class="flex gap-2"><span class="text-purple-400 font-bold w-4">⑤</span><span class="text-purple-300">기관 3일 연속 순매수 (핵심)</span></div>
-                    <div class="flex gap-2"><span class="text-green-400 font-bold w-4">⑥</span> 외인+기관 동시 매수 1일↑</div>
+                    <p class="font-bold text-gray-400 mb-2">진입 필터 (AND 조건)</p>
+                    <p>• 1,000원↑ + MA50 > MA200 정배열</p>
+                    <p>• 시총 500억~3조 (스윙 최적 구간)</p>
+                    <p class="text-purple-300">• 기관 3일 연속 순매수 (핵심)</p>
                 </div>
-                <div class="space-y-2">
-                    <div class="font-bold text-gray-400 mb-2">채점 팩터 (250점)</div>
-                    <div class="flex justify-between"><span>세력 흔적 (스파이크·침묵·저가)</span><span class="text-blue-400">70점</span></div>
-                    <div class="flex justify-between"><span>수급 강도 (기관연속 가중)</span><span class="text-purple-400">40점</span></div>
-                    <div class="flex justify-between"><span>BB 밴드 수축도</span><span class="text-indigo-400">40점</span></div>
-                    <div class="flex justify-between"><span>OBV 다이버전스</span><span class="text-cyan-400">40점</span></div>
-                    <div class="flex justify-between"><span>52주 고가 근접도</span><span class="text-yellow-400">30점</span></div>
-                    <div class="flex justify-between"><span>RSI 최적 구간 (40~55)</span><span class="text-orange-400">30점</span></div>
+                <div class="space-y-1">
+                    <p class="font-bold text-gray-400 mb-2">채점 팩터 (250점)</p>
+                    <p>세력 흔적 / 수급 강도 / BB 수축도</p>
+                    <p>OBV 다이버전스 / 52주 고가 근접 / RSI</p>
                 </div>
             </div>`;
     } else {
         card.innerHTML = `
-            <h4 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-5">
-                🇺🇸 미국 숏스퀴즈 메가러너 전략
-            </h4>
+            <h4 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-5">🇺🇸 미국 숏스퀴즈 메가러너 전략</h4>
             <div class="grid grid-cols-2 gap-6 text-xs text-gray-500">
                 <div class="space-y-2">
-                    <div class="font-bold text-gray-400 mb-2">포착 조건 (Squeeze Mode)</div>
+                    <p class="font-bold text-gray-400 mb-2">포착 조건 (Squeeze Mode)</p>
                     <p>• Micro-Float: 유통주식수 50M 이하</p>
                     <p>• High Short Interest: 공매도 15% 이상</p>
                     <p class="text-red-400">• Squeeze Score: 숏스퀴즈 임박 점수화</p>
                 </div>
                 <div class="space-y-2">
-                    <div class="font-bold text-gray-400 mb-2">운용 팁</div>
+                    <p class="font-bold text-gray-400 mb-2">운용 팁</p>
                     <p>• Volume Spike: 거래량 평소 대비 2.5배↑</p>
                     <p>• 개장 전(Pre-market) 강한 거래량 확인 필수</p>
-                    <p>• 변동성이 매우 크므로 분할 매도 권장</p>
                 </div>
             </div>`;
     }
 }
 
-// ── KPI 렌더링 ─────────────────────────────────────────────────
+// 6. KPI 지표 렌더링
 function renderKPI(data) {
     const perf = data.performance || {};
     const fl = data.filter_log || {};
 
-    document.getElementById('win-rate').textContent =
-        perf.win_rate != null ? `${perf.win_rate}%` : '--%';
+    document.getElementById('win-rate').textContent = perf.win_rate != null ? perf.win_rate + '%' : '--%';
+    document.getElementById('avg-return').textContent = perf.avg_return != null ? (perf.avg_return >= 0 ? '+' : '') + perf.avg_return + '%' : '--%';
+    document.getElementById('total-cases').textContent = perf.total_cases ? `${perf.total_cases}건 기준` : '누적 중';
+    document.getElementById('candidate-count').textContent = (data.total_candidates ?? '--') + '건';
+    document.getElementById('screened-total').textContent = data.total_screened ? `${Number(data.total_screened).toLocaleString()}종목 채점` : '';
 
-    document.getElementById('avg-return').textContent =
-        perf.avg_return != null
-            ? `${perf.avg_return >= 0 ? '+' : ''}${perf.avg_return}%`
-            : '--%';
-
-    document.getElementById('total-cases').textContent =
-        perf.total_cases ? `${perf.total_cases}건 기준` : '누적 중';
-
-    document.getElementById('candidate-count').textContent =
-        data.total_candidates != null ? `${data.total_candidates}건` : '--';
-
-    document.getElementById('screened-total').textContent =
-        data.total_screened ? `${Number(data.total_screened).toLocaleString()}종목 채점` : '';
-
-    document.getElementById('inst3-count').textContent =
-        fl.inst3 != null ? `${fl.inst3}건` : '--';
+    const kpiLabel4 = document.getElementById('kpi-label-4');
+    const kpiSub4 = document.getElementById('kpi-sub-4');
+    if (currentMarket === 'kr') {
+        kpiLabel4.textContent = '기관연속 통과';
+        document.getElementById('inst3-count').textContent = (fl.inst3 ?? '--') + '건';
+        kpiSub4.textContent = '3일 연속 매수';
+    } else {
+        kpiLabel4.textContent = '미국 시장 상태';
+        document.getElementById('inst3-count').textContent = 'ACTIVE';
+        kpiSub4.textContent = '실시간 분석 중';
+    }
 }
 
-// ── 종목 카드 렌더링 ───────────────────────────────────────────
+// 7. 종목 카드 리스트 렌더링
 function renderPicks(data) {
     const picks = data.today_picks || [];
     const container = document.getElementById('top5');
@@ -300,17 +259,14 @@ function renderPicks(data) {
 
     if (picks.length === 0) {
         const msg = currentMarket === 'kr'
-            ? '기관 3일 연속 + 외인 동시 + 52주 돌파 임박을<br>모두 만족하는 종목이 오늘은 없습니다.'
-            : 'Micro-Float + High Short Interest 조건을<br>모두 만족하는 폭등 후보 종목이 오늘은 없습니다.';
+            ? "기관 3일 연속 + 외인 동시 + 52주 돌파 임박을<br>모두 만족하는 종목이 오늘은 없습니다."
+            : "Micro-Float + High Short Interest 조건을<br>모두 만족하는 폭등 후보 종목이 오늘은 없습니다.";
 
         container.innerHTML = `
             <div class="bg-[#111827] border border-gray-800 rounded-2xl p-10 text-center">
                 <div class="text-4xl mb-4">🔍</div>
                 <div class="text-lg font-bold text-gray-300 mb-2">오늘은 조건 충족 종목 없음</div>
-                <div class="text-sm text-gray-500 leading-relaxed">
-                    ${msg}<br>
-                    <span class="text-yellow-400 font-bold mt-2 block">신호 없는 날 쉬는 것이 전략의 일부입니다.</span>
-                </div>
+                <div class="text-sm text-gray-500 leading-relaxed">${msg}</div>
             </div>`;
         return;
     }
@@ -321,157 +277,94 @@ function renderPicks(data) {
         const rm = RANKS[i] || RANKS[4];
         const detail = item.score_detail || {};
         const meta = item.meta || {};
-
         const scoreMatch = String(item.score || '').match(/\((\d+)점/);
         const scoreNum = parseInt(scoreMatch?.[1] || 0, 10);
         const scorePct = Math.min(Math.round((scoreNum / 250) * 100), 100);
-        const instBar = Math.min(((meta.inst_streak || 0) / 5) * 100, 100);
-        const highBar = Math.max(100 - ((meta.gap_to_high || 10) * 10), 0);
+        const instBar = Math.min((meta.inst_streak || 0) / 5 * 100, 100);
+        const highBar = Math.max(100 - (meta.gap_to_high || 10) * 10, 0);
 
-        const expectedReturn = item.expected_return != null
-            ? `${Number(item.expected_return) >= 0 ? '+' : ''}${item.expected_return}`
-            : '-';
-
-        const badges = Object.entries(detail)
-            .sort((a, b) => b[1] - a[1])
-            .map(([k, v]) => {
-                const s = FACTOR_STYLE[k] || 'bg-gray-800 text-gray-400';
-                return `<span class="badge ${s}">${k} ${v}</span>`;
-            })
-            .join('');
+        const badges = Object.entries(detail).sort((a, b) => b[1] - a[1]).map(([k, v]) => {
+            const s = FACTOR_STYLE[k] || 'bg-gray-800 text-gray-400';
+            return `<span class="badge ${s}">${k} ${v}</span>`;
+        }).join('');
 
         container.innerHTML += `
-            <div class="rounded-2xl border overflow-hidden ${rm.cardCls}">
-                <div class="flex">
-                    <div class="flex-shrink-0 w-14 flex items-center justify-center border-r"
-                         style="border-color:${rm.color}33; background:${rm.color}11;">
-                        <span class="text-xl font-black" style="color:${rm.color}">${rm.label}</span>
+        <div class="rounded-2xl border overflow-hidden ${rm.cardCls} mb-4">
+            <div class="flex">
+                <div class="flex-shrink-0 w-14 flex items-center justify-center border-r"
+                     style="border-color:${rm.color}33; background:${rm.color}11;">
+                    <span class="text-xl font-black" style="color:${rm.color}">${rm.label}</span>
+                </div>
+                <div class="flex-1 p-4">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <div class="text-lg font-black text-white">${item.name}</div>
+                            <div class="text-[11px] text-gray-500">${item.code} · ${item.cur_price ? Number(item.cur_price).toLocaleString() + currency : '-'} ${meta.mktcap ? '· 시총 ' + Number(meta.mktcap).toLocaleString() + '억' : ''}</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-yellow-400 font-black">${item.score || '-'}</div>
+                            <div class="text-[10px] text-gray-400 mt-0.5">${item.supply || '-'}</div>
+                        </div>
                     </div>
-
-                    <div class="flex-1 p-4">
-                        <!-- 헤더 -->
-                        <div class="flex justify-between items-start mb-2">
-                            <div>
-                                <div class="text-lg font-black text-white">${item.name}</div>
-                                <div class="text-[11px] text-gray-500">
-                                    ${item.code}
-                                    · ${item.cur_price ? Number(item.cur_price).toLocaleString() + currency : '-'}
-                                    ${meta.mktcap ? '· 시총 ' + Number(meta.mktcap).toLocaleString() + '억' : ''}
-                                </div>
-                            </div>
-                            <div class="text-right">
-                                <div class="text-yellow-400 font-black">${item.score || '-'}</div>
-                                <div class="text-[10px] text-gray-400 mt-0.5">${item.supply || '-'}</div>
-                            </div>
-                        </div>
-
-                        <!-- 기업 개요 -->
-                        ${item.company_summary ? `
-                            <div class="text-[11px] text-gray-400 bg-black/20 rounded-lg px-3 py-2 mb-3 leading-relaxed border-l-2 border-gray-700">
-                                <i class="fa-solid fa-building text-gray-600 mr-1" style="font-size:10px;"></i>${item.company_summary}
-                            </div>
-                        ` : ''}
-
-                        <!-- 핵심 지표 바 -->
-                        <div class="grid grid-cols-2 gap-3 mb-3">
-                            <div>
-                                <div class="flex justify-between text-[10px] text-gray-500 mb-1">
-                                    <span>기관 연속 매수</span>
-                                    <span class="text-purple-400 font-bold">${meta.inst_streak || 0}일 연속</span>
-                                </div>
-                                <div class="w-full bg-gray-800 rounded-full h-1.5">
-                                    <div class="h-1.5 rounded-full bar-fill bg-purple-500"
-                                         style="width:0%" data-target="${instBar}"></div>
-                                </div>
-                            </div>
-                            <div>
-                                <div class="flex justify-between text-[10px] text-gray-500 mb-1">
-                                    <span>52주 고가 근접</span>
-                                    <span class="text-yellow-400 font-bold">${meta.gap_to_high || 0}% 남음</span>
-                                </div>
-                                <div class="w-full bg-gray-800 rounded-full h-1.5">
-                                    <div class="h-1.5 rounded-full bar-fill bg-yellow-500"
-                                         style="width:0%" data-target="${highBar}"></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 종합 점수 바 -->
-                        <div class="mb-3">
+                    ${item.company_summary ? `<div class="text-[11px] text-gray-400 bg-black/20 rounded-lg px-3 py-2 mb-3 leading-relaxed border-l-2 border-gray-700">${item.company_summary}</div>` : ''}
+                    <div class="grid grid-cols-2 gap-3 mb-3">
+                        <div>
                             <div class="flex justify-between text-[10px] text-gray-500 mb-1">
-                                <span>종합 점수</span>
-                                <span>${scorePct}% (${scoreNum}점 / 250)</span>
+                                <span>핵심 강도</span>
+                                <span class="text-purple-400 font-bold">${currentMarket === 'kr' ? (meta.inst_streak || 0) + '일 연속' : 'Squeeze Score'}</span>
                             </div>
                             <div class="w-full bg-gray-800 rounded-full h-1.5">
-                                <div class="h-1.5 rounded-full bar-fill"
-                                     style="width:0%; background:${rm.color}" data-target="${scorePct}"></div>
+                                <div class="h-1.5 rounded-full bar-fill bg-purple-500" style="width:0%" data-target="${currentMarket === 'kr' ? instBar : scorePct}"></div>
                             </div>
                         </div>
-
-                        <!-- 팩터 뱃지 -->
-                        <div class="flex flex-wrap gap-1 mb-2">${badges}</div>
-
-                        <!-- 상세 지표 -->
-                        <div class="flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-gray-500 mb-2">
-                            <span>RSI <span class="text-gray-300 font-mono">${meta.rsi || '-'}</span></span>
-                            <span>BB수축 <span class="text-gray-300 font-mono">${meta.bb_compress || 0}%</span></span>
-                            <span>10일진폭 <span class="text-gray-300 font-mono">${meta.price_range || 0}%</span></span>
-                            <span>거래량비율 <span class="text-gray-300 font-mono">${Math.round((meta.vol_ratio || 0) * 100)}%</span></span>
-                            ${meta.spike_days_ago ? `<span>스파이크 <span class="text-gray-300 font-mono">${meta.spike_days_ago}일전</span></span>` : ''}
-                            <span>외인연속 <span class="text-gray-300 font-mono">${meta.for_streak || 0}일</span></span>
-                        </div>
-
-                        <!-- 기대 수익 -->
-                        <div class="text-right">
-                            <span class="text-green-400 font-black text-sm">기대수익 ${expectedReturn}%</span>
-                            <span class="text-gray-600 text-[10px] ml-1">(7일 목표)</span>
+                        <div>
+                            <div class="flex justify-between text-[10px] text-gray-500 mb-1">
+                                <span>상승 여력</span>
+                                <span class="text-yellow-400 font-bold">${item.expected_return || '-'}</span>
+                            </div>
+                            <div class="w-full bg-gray-800 rounded-full h-1.5">
+                                <div class="h-1.5 rounded-full bar-fill bg-yellow-500" style="width:0%" data-target="${highBar}"></div>
+                            </div>
                         </div>
                     </div>
+                    <div class="flex flex-wrap gap-1 mb-2">${badges}</div>
+                    <div class="text-right text-green-400 font-black text-sm">기대수익 ${item.expected_return || '-'}</div>
                 </div>
-            </div>`;
+            </div>
+        </div>`;
     });
 
-    // 점수 바 애니메이션
     setTimeout(() => {
         document.querySelectorAll('.bar-fill').forEach(el => {
-            el.style.width = `${el.dataset.target}%`;
+            el.style.width = el.dataset.target + '%';
         });
     }, 150);
 }
 
-// ── 수동 픽 렌더링 ─────────────────────────────────────────────
+// 8. 수동 픽 성적표 렌더링
 function renderMyPicks(data) {
     const section = document.getElementById('my-picks-section');
     const table = document.getElementById('my-picks-table');
     const mp = data.my_manual_report || [];
-    const currency = currentMarket === 'kr' ? '원' : '$';
-
     if (mp.length === 0) {
         section.classList.add('hidden');
-        table.innerHTML = '';
         return;
     }
-
     section.classList.remove('hidden');
-
     table.innerHTML = mp.map(p => {
         const c = p.profit >= 0 ? 'text-green-400' : 'text-red-400';
-        const s = p.profit >= 0 ? '+' : '';
-
-        return `
-            <tr class="hover:bg-white/5">
-                <td class="px-6 py-3 text-gray-500 text-xs">${p.date}</td>
-                <td class="px-6 py-3 font-bold">${p.name}</td>
-                <td class="px-6 py-3 font-mono text-gray-300">${Number(p.buy_price).toLocaleString()}${currency}</td>
-                <td class="px-6 py-3 font-mono text-gray-300">${Number(p.curr_price).toLocaleString()}${currency}</td>
-                <td class="px-6 py-3 text-right font-black ${c}">${s}${p.profit}%</td>
-            </tr>`;
+        return `<tr class="hover:bg-white/5">
+            <td class="px-6 py-3 text-gray-500 text-xs">${p.date}</td>
+            <td class="px-6 py-3 font-bold">${p.name}</td>
+            <td class="px-6 py-3 font-mono text-gray-300">${Number(p.buy_price).toLocaleString()}원</td>
+            <td class="px-6 py-3 font-mono text-gray-300">${Number(p.curr_price).toLocaleString()}원</td>
+            <td class="px-6 py-3 text-right font-black ${c}">${p.profit >= 0 ? '+' : ''}${p.profit}%</td>
+        </tr>`;
     }).join('');
 }
 
-// ── 초기 실행 ──────────────────────────────────────────────────
+// 9. 엔진 가동
 initLoad();
 </script>
-
 </body>
 </html>

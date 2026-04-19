@@ -1,14 +1,15 @@
 name: Stock-Auto-Update
 on:
   schedule:
+    # 한국 시간 밤 9시 (UTC 12:00) / 월~금 실행
     - cron: '0 12 * * 1-5'
-  workflow_dispatch:
+  workflow_dispatch: # 언제든 수동으로 실행하고 싶을 때 사용하는 버튼
 
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: write   # git push 권한 명시 (GitHub 기본 정책 변경 대응)
     steps:
       - uses: actions/checkout@v3
 
@@ -16,10 +17,10 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '3.9'
-          
+
       - name: Install libraries
         run: |
-          pip install pykrx pandas finance-datareader
+          pip install pykrx pandas finance-datareader numpy requests beautifulsoup4
 
       - name: Run Analysis Engine
         run: python engine.py

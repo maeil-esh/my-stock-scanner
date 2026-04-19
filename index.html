@@ -1,218 +1,293 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ALPHASCAN v1.0 - 세력 흔적 탐지기</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-</head>
-<body class="bg-[#0f172a] text-gray-100 font-sans">
+import os
+import json
+import datetime
+import pandas as pd
+from pykrx import stock
+import FinanceDataReader as fdr
 
-    <header class="p-6 flex justify-between items-center max-w-7xl mx-auto">
-        <div class="flex items-center space-x-2">
-            <span class="text-blue-500 text-2xl font-bold"><i class="fa-solid fa-chart-line"></i> ALPHASCAN</span>
-            <span class="text-gray-500 text-xs mt-1">v1.0 (5Y Verified)</span>
-        </div>
-        <div class="flex items-center space-x-4">
-            <span class="bg-blue-900/40 text-blue-400 px-4 py-1.5 rounded-full text-sm font-medium border border-blue-800/50">7일 스윙 패턴 모드</span>
-            <span id="update-time" class="text-gray-500 text-xs">데이터 로딩 중...</span>
-        </div>
-    </header>
+DATA_FILE     = 'stock_data.json'
+HISTORY_FILE  = 'history.json'
+MY_PICKS_FILE = 'my_picks.json'
 
-    <main class="max-w-7xl mx-auto px-6 pb-12">
+# ──────────────────────────────────────────────────────────────
+# 컨셉: 저평가 우량주 + 간헐적 거래량 신호 기반 상승 예상
+#
+# [기존] 세력 매집봉(300%↑) → 거래량 가뭄 → 급등 대기
+# [변경] 저평가 종목에서 거래량 신호(150%↑)가 간헐적으로 발생 →
+#        수급 뒷받침 → 완만하고 안정적인 상승 기대
+# ──────────────────────────────────────────────────────────────
 
-        <!-- ── 상단 KPI 카드 ── -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div class="bg-[#1e293b] p-6 rounded-xl border border-gray-800 shadow-xl">
-                <p class="text-gray-400 text-sm mb-2">5개년 패턴 평균 승률 (7일 내 +10% ↑)</p>
-                <h2 id="win-rate" class="text-4xl font-bold text-green-500">--%</h2>
-                <p id="total-cases" class="text-gray-600 text-[10px] mt-2">백테스트 데이터 누적 중</p>
-            </div>
-            <div class="bg-[#1e293b] p-6 rounded-xl border border-gray-800 shadow-xl">
-                <p class="text-gray-400 text-sm mb-2">평균 수익률 (7일 홀딩)</p>
-                <h2 id="avg-return" class="text-4xl font-bold text-blue-500">--%</h2>
-                <p class="text-gray-600 text-[10px] mt-2">대량 거래 후 3일 조정 구간의 하방 경직성</p>
-            </div>
-            <div class="bg-[#1e293b] p-6 rounded-xl border border-gray-800 shadow-xl">
-                <p class="text-gray-400 text-sm mb-2">현재 포착된 유효 종목</p>
-                <h2 id="total-count" class="text-4xl font-bold text-yellow-500">0건</h2>
-                <p class="text-gray-600 text-[10px] mt-2">매집 흔적 및 이평선 수렴 조건 충족</p>
-            </div>
-        </div>
 
-        <!-- ── 포착 종목 테이블 ── -->
-        <div class="bg-[#1e293b] rounded-xl border border-gray-800 shadow-2xl overflow-hidden mb-10">
-            <div class="p-6 border-b border-gray-800 flex justify-between items-center">
-                <h3 class="text-lg font-bold italic text-gray-200 underline decoration-blue-500 decoration-2 underline-offset-8">포착 종목 및 검증 리스트</h3>
-                <button onclick="downloadData()" class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-lg text-sm font-bold transition-all shadow-lg shadow-blue-900/20">전체 데이터 다운로드</button>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left">
-                    <thead class="bg-[#0f172a]/50 text-gray-500 text-[11px] uppercase tracking-widest">
-                        <tr>
-                            <th class="px-8 py-4">종목명/코드</th>
-                            <th class="px-8 py-4">수급/상태</th>
-                            <th class="px-8 py-4">거래량 변화</th>
-                            <th class="px-8 py-4">전문가 점수</th>
-                            <th class="px-8 py-4">분석 태그</th>
-                            <th class="px-8 py-4 text-right">기대 수익(7D)</th>
-                        </tr>
-                    </thead>
-                    <tbody id="stock-table" class="divide-y divide-gray-800">
-                        <tr><td colspan="6" class="text-center text-gray-500 py-12">데이터 로딩 중...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
+def get_financial_data(ticker):
+    """
+    현재: 테스트용 더미 (PER 10, PBR 0.8, OPM 5%, 부채비율 120%)
+    실제 운영 시 OpenDART API로 교체:
+    https://opendart.fss.or.kr/api/fnlttSinglAcntAll.json
+    """
+    return {"PER": 10.0, "PBR": 0.8, "OPM": 5.0, "DebtRatio": 120.0}
 
-        <!-- ── 선생님 수동 픽 성적표 ── -->
-        <div id="my-picks-section" class="bg-[#1e293b] rounded-xl border border-yellow-900/40 shadow-2xl overflow-hidden mb-10 hidden">
-            <div class="p-6 border-b border-gray-800">
-                <h3 class="text-lg font-bold italic text-yellow-400 underline decoration-yellow-500 decoration-2 underline-offset-8">
-                    <i class="fa-solid fa-bookmark mr-2"></i>내 수동 픽 성적표 (My Picks)
-                </h3>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left">
-                    <thead class="bg-[#0f172a]/50 text-gray-500 text-[11px] uppercase tracking-widest">
-                        <tr>
-                            <th class="px-8 py-4">매수일</th>
-                            <th class="px-8 py-4">종목명</th>
-                            <th class="px-8 py-4">매수가</th>
-                            <th class="px-8 py-4">현재가</th>
-                            <th class="px-8 py-4 text-right">수익률</th>
-                        </tr>
-                    </thead>
-                    <tbody id="my-picks-table" class="divide-y divide-gray-800"></tbody>
-                </table>
-            </div>
-        </div>
 
-        <!-- ── 알고리즘 설명 ── -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div class="bg-[#1e293b]/40 p-8 rounded-2xl border border-dashed border-gray-800">
-                <h4 class="text-blue-500 font-black italic mb-6 tracking-tighter uppercase">7일 N자형 패턴 알고리즘</h4>
-                <ul class="space-y-4 text-sm text-gray-400">
-                    <li class="flex items-start"><span class="text-blue-500 mr-3 font-bold">1.</span> <strong>기준봉 발생:</strong> 3개월 내 매집봉(피뢰침) 및 20일선 돌파 포착.</li>
-                    <li class="flex items-start"><span class="text-blue-500 mr-3 font-bold">2.</span> <strong>거래량 가뭄:</strong> 급등 전 에너지 응축을 위한 거래량 40% 이하 감소.</li>
-                    <li class="flex items-start"><span class="text-blue-500 mr-3 font-bold">3.</span> <strong>수급 확인:</strong> 가격은 버티는데 외인/기관 순매수 유지 시 진입.</li>
-                </ul>
-            </div>
-            <div class="bg-[#1e293b]/40 p-8 rounded-2xl border border-dashed border-gray-800">
-                <h4 class="text-green-500 font-black italic mb-6 tracking-tighter uppercase">실적 및 리스크 관리</h4>
-                <div class="space-y-4 text-sm">
-                    <div class="flex justify-between border-b border-gray-800 pb-2">
-                        <span class="text-gray-500">최소 영업이익률 (OPM)</span>
-                        <span class="text-gray-200 font-mono">&gt; 10.0%</span>
-                    </div>
-                    <div class="flex justify-between border-b border-gray-800 pb-2">
-                        <span class="text-gray-500">부채 비율 가이드라인</span>
-                        <span class="text-gray-200 font-mono">&lt; 150%</span>
-                    </div>
-                    <div class="flex justify-between pt-2">
-                        <span class="text-red-500 font-bold">손절 라인 (Stop Loss)</span>
-                        <span class="text-red-500 font-mono">-3.5% (기준봉 저가)</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </main>
+def get_start_date(days_ago):
+    return (datetime.datetime.now() - datetime.timedelta(days=int(days_ago * 1.5))).strftime("%Y%m%d")
 
-    <script>
-        let globalData = null;
 
-        fetch('stock_data.json')
-            .then(res => {
-                if (!res.ok) throw new Error('stock_data.json 로드 실패');
-                return res.json();
+def get_investor_df(ticker, start, end):
+    """pykrx 버전별 컬럼명 자동 대응"""
+    df = stock.get_market_trading_value_by_date(start, end, ticker)
+    if df is None or df.empty:
+        return None, None
+
+    foreign_col, inst_col = None, None
+    for col in df.columns:
+        if '외국인' in col: foreign_col = col
+        if '기관'   in col: inst_col    = col
+
+    if not foreign_col or not inst_col:
+        return None, None
+
+    return df[[foreign_col, inst_col]].tail(5), (foreign_col, inst_col)
+
+
+def analyze_with_manual_picks():
+    now       = datetime.datetime.now()
+    today_str = now.strftime("%Y%m%d")
+
+    start_90d = get_start_date(90)
+    start_7d  = get_start_date(7)
+
+    print(f"📅 분석 기준일: {today_str}")
+
+    kospi_tickers  = stock.get_market_ticker_list(today_str, market="KOSPI")
+    kosdaq_tickers = stock.get_market_ticker_list(today_str, market="KOSDAQ")
+    all_tickers    = kospi_tickers + kosdaq_tickers
+
+    print(f"📋 전체 종목 수: {len(all_tickers)}개 (KOSPI {len(kospi_tickers)} + KOSDAQ {len(kosdaq_tickers)})")
+
+    # all_tickers = all_tickers[:200]  # 빠른 테스트 시 주석 해제
+
+    final_picks = []
+    filter_log  = {
+        "total":    len(all_tickers),
+        "penny":    0,   # 동전주 컷 생존
+        "trend":    0,   # 상승추세 (현재가 > 20일선 > 60일선)
+        "vol_sig":  0,   # 거래량 신호 존재
+        "momentum": 0,   # 최근 모멘텀 양호
+        "supply":   0,   # 수급 충족
+        "fin":      0,   # 재무 통과 (최종 픽)
+    }
+
+    print("🚀 [1] 종목 스크리닝 시작...")
+    for ticker in all_tickers:
+        try:
+            df = fdr.DataReader(ticker, start_90d, today_str)
+            if len(df) < 60:
+                continue
+
+            # 이동평균 계산
+            df['MA20']     = df['Close'].rolling(window=20).mean()
+            df['MA60']     = df['Close'].rolling(window=60).mean()
+            df['Vol_MA20'] = df['Volume'].rolling(window=20).mean()
+
+            current_close = df['Close'].iloc[-1]
+            current_vol   = df['Volume'].iloc[-1]
+            ma20_now      = df['MA20'].iloc[-1]
+            ma60_now      = df['MA60'].iloc[-1]
+
+            # [방어막] 동전주 제외 (1,000원 미만)
+            if current_close < 1000:
+                continue
+            filter_log['penny'] += 1
+
+            # ── [필터 1] 이중 상승추세 ────────────────────────────────
+            # 현재가 > 20일선 > 60일선: 단기·중기 모두 우상향
+            if not (current_close > ma20_now > ma60_now):
+                continue
+            filter_log['trend'] += 1
+
+            # ── [필터 2] 간헐적 거래량 신호 ──────────────────────────
+            # 최근 60영업일 내 평균 거래량의 150% 이상인 날이 2회 이상
+            # → 급등(세력)이 아닌 "관심이 들어온 흔적" 탐지
+            recent = df.iloc[-60:].copy()
+            vol_signal_days = (recent['Volume'] >= recent['Vol_MA20'] * 1.5).sum()
+            if vol_signal_days < 2:
+                continue
+            filter_log['vol_sig'] += 1
+
+            # 거래량 신호 강도 (점수용): 평균 배율 계산
+            signal_rows    = recent[recent['Volume'] >= recent['Vol_MA20'] * 1.5]
+            avg_vol_ratio  = (signal_rows['Volume'] / signal_rows['Vol_MA20']).mean()
+
+            # ── [필터 3] 최근 모멘텀 ──────────────────────────────────
+            # 20일 수익률 > 0% (상승 중인 종목만)
+            price_20d_ago  = df['Close'].iloc[-20]
+            momentum_20d   = (current_close / price_20d_ago - 1) * 100
+            if momentum_20d <= 0:
+                continue
+            filter_log['momentum'] += 1
+
+            # ── [필터 4] 수급 ─────────────────────────────────────────
+            # 최근 5일 중 외인 or 기관 순매수 2일 이상
+            inv_df, cols = get_investor_df(ticker, start_7d, today_str)
+            if inv_df is None:
+                continue
+
+            foreign_col, inst_col = cols
+            foreign_buy_days = int((inv_df[foreign_col] > 0).sum())
+            inst_buy_days    = int((inv_df[inst_col]    > 0).sum())
+            valid_buy_days   = int(((inv_df[foreign_col] > 0) | (inv_df[inst_col] > 0)).sum())
+
+            if valid_buy_days < 2:
+                continue
+            filter_log['supply'] += 1
+
+            # ── [필터 5] 재무 ─────────────────────────────────────────
+            # PER < 20, PBR < 2.0, OPM > 0%, 부채비율 < 200%
+            # (더미 데이터 → 실제 DART 연동 시 실효 발동)
+            fin = get_financial_data(ticker)
+            if (fin['PER']      >= 20.0 or
+                fin['PBR']      >= 2.0  or
+                fin['OPM']      <  0.0  or
+                fin['DebtRatio'] >= 200.0):
+                continue
+            filter_log['fin'] += 1
+
+            # ── 점수 산출 (100점 만점) ────────────────────────────────
+            # 거래량 신호 강도 (최대 30점): 150%면 10점, 400% 이상이면 30점
+            vol_score      = min(((avg_vol_ratio - 1.5) / 2.5) * 20 + 10, 30)
+
+            # 최근 모멘텀 (최대 25점): 5% 상승이면 10점, 20% 이상이면 25점
+            momentum_score = min(((momentum_20d - 0) / 20) * 15 + 10, 25)
+
+            # 수급 강도 (최대 25점)
+            supply_score   = 12 if valid_buy_days == 2 else 20 if valid_buy_days >= 3 else 25
+
+            # 재무 점수 (최대 20점): PBR 낮을수록 저평가
+            pbr_score      = min((2.0 - fin['PBR']) / 2.0 * 20, 20)
+
+            total_score = int(vol_score + momentum_score + supply_score + pbr_score)
+            total_score = min(total_score, 100)  # 100점 상한
+
+            stars = "★" * (total_score // 20) + "☆" * (5 - total_score // 20)
+
+            # 수급 텍스트
+            if foreign_buy_days > 0 and inst_buy_days > 0:
+                supply_text = "외인+기관"
+            elif foreign_buy_days > 0:
+                supply_text = "외인매수"
+            else:
+                supply_text = "기관매수"
+
+            # 거래량 신호 횟수 태그
+            vol_tag = f"거래량신호 {vol_signal_days}회"
+
+            name         = stock.get_market_ticker_name(ticker)
+            expected_ret = round(3.0 + (total_score / 100) * 12.0, 1)  # 3~15% 범위
+
+            final_picks.append({
+                "name":            name,
+                "code":            ticker,
+                "supply":          supply_text,
+                "volume_growth":   f"+{int(avg_vol_ratio * 100)}% (평균)",
+                "score":           f"{stars} ({total_score}점)",
+                "tags":            f"저평가 / {vol_tag} / 모멘텀 {momentum_20d:.1f}%",
+                "expected_return": f"{expected_ret}%"
             })
-            .then(data => {
-                globalData = data;
 
-                // ── 업데이트 시각
-                const now = new Date();
-                document.getElementById('update-time').innerText =
-                    `데이터 업데이트: ${now.toLocaleDateString('ko-KR')} ${now.toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit'})}`;
+            print(f"  ✅ {name}({ticker}) | {stars} {total_score}점 | {supply_text} | 모멘텀 {momentum_20d:.1f}%")
 
-                // ── KPI 카드
-                const perf = data.performance || {};
-                document.getElementById('win-rate').innerText   = perf.win_rate   != null ? perf.win_rate + '%'   : '--%';
-                document.getElementById('avg-return').innerText = perf.avg_return  != null ? (perf.avg_return > 0 ? '+' : '') + perf.avg_return + '%' : '--%';
-                document.getElementById('total-cases').innerText =
-                    perf.total_cases ? `백테스트 ${perf.total_cases}건 기준` : '백테스트 데이터 누적 중';
+        except Exception:
+            continue
 
-                // ── 포착 종목 테이블
-                const picks = data.today_picks || [];
-                document.getElementById('total-count').innerText = picks.length + '건';
+    # 필터 단계별 결과
+    print("\n📊 [필터 단계별 생존 현황]")
+    print(f"  전체 검사:       {filter_log['total']:>5}건")
+    print(f"  동전주 컷:       {filter_log['penny']:>5}건 (생존)")
+    print(f"  이중 상승추세:   {filter_log['trend']:>5}건")
+    print(f"  거래량 신호 2회: {filter_log['vol_sig']:>5}건")
+    print(f"  모멘텀 양호:     {filter_log['momentum']:>5}건")
+    print(f"  수급 2일 이상:   {filter_log['supply']:>5}건")
+    print(f"  재무 통과:       {filter_log['fin']:>5}건  ← 최종 픽")
 
-                const tbody = document.getElementById('stock-table');
-                tbody.innerHTML = '';
+    # ── 수동 픽 검증 ──────────────────────────────────────────────
+    my_manual_report = []
+    if os.path.exists(MY_PICKS_FILE):
+        with open(MY_PICKS_FILE, 'r', encoding='utf-8') as f:
+            try:    my_picks = json.load(f)
+            except: my_picks = []
 
-                if (picks.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-gray-500 py-12">오늘 포착된 종목이 없습니다.</td></tr>';
-                } else {
-                    picks.forEach(item => {
-                        const scoreNum = parseInt((item.score.match(/\((\d+)점\)/) || [])[1] || 0);
-                        const scoreColor = scoreNum >= 80 ? 'text-green-400' : scoreNum >= 60 ? 'text-yellow-400' : 'text-gray-400';
-                        tbody.innerHTML += `
-                        <tr class="hover:bg-gray-800/50 transition-all border-l-4 border-transparent hover:border-blue-500">
-                            <td class="px-8 py-5">
-                                <div class="font-bold text-gray-100 text-base">${item.name}</div>
-                                <div class="text-[10px] text-gray-500">${item.code}</div>
-                            </td>
-                            <td class="px-8 py-5">
-                                <span class="text-blue-400 font-bold italic text-sm">${item.supply}</span>
-                            </td>
-                            <td class="px-8 py-5">
-                                <span class="text-red-500 font-black text-sm">${item.volume_growth}</span>
-                            </td>
-                            <td class="px-8 py-5 ${scoreColor} tracking-tighter text-lg">${item.score}</td>
-                            <td class="px-8 py-5">
-                                <div class="text-[10px] text-gray-400 leading-tight uppercase font-medium">${item.tags}</div>
-                            </td>
-                            <td class="px-8 py-5 text-right">
-                                <div class="text-green-500 font-black text-base">+${item.expected_return}</div>
-                            </td>
-                        </tr>`;
-                    });
-                }
+        for p in my_picks:
+            try:
+                curr_df = stock.get_market_ohlcv(today_str, today_str, p['code'])
+                if not curr_df.empty:
+                    curr_price = int(curr_df['종가'].iloc[-1])
+                    profit     = round(((curr_price / p['buy_price']) - 1) * 100, 2)
+                    my_manual_report.append({
+                        "date":       p['date'],
+                        "name":       p['name'],
+                        "buy_price":  p['buy_price'],
+                        "curr_price": curr_price,
+                        "profit":     profit
+                    })
+            except Exception:
+                continue
 
-                // ── 수동 픽 성적표
-                const myPicks = data.my_manual_report || [];
-                if (myPicks.length > 0) {
-                    document.getElementById('my-picks-section').classList.remove('hidden');
-                    const myTbody = document.getElementById('my-picks-table');
-                    myTbody.innerHTML = '';
-                    myPicks.forEach(p => {
-                        const profitColor = p.profit >= 0 ? 'text-green-400' : 'text-red-400';
-                        const profitSign  = p.profit >= 0 ? '+' : '';
-                        myTbody.innerHTML += `
-                        <tr class="hover:bg-gray-800/50 transition-all">
-                            <td class="px-8 py-4 text-gray-400 text-sm">${p.date}</td>
-                            <td class="px-8 py-4 font-bold text-gray-100">${p.name}</td>
-                            <td class="px-8 py-4 font-mono text-gray-300">${p.buy_price.toLocaleString()}원</td>
-                            <td class="px-8 py-4 font-mono text-gray-300">${p.curr_price.toLocaleString()}원</td>
-                            <td class="px-8 py-4 text-right font-black text-lg ${profitColor}">${profitSign}${p.profit}%</td>
-                        </tr>`;
-                    });
-                }
-            })
-            .catch(err => {
-                document.getElementById('stock-table').innerHTML =
-                    `<tr><td colspan="6" class="text-center text-red-400 py-12">⚠️ 데이터 로드 실패: ${err.message}<br><span class="text-gray-500 text-xs">GitHub Pages 배포 환경에서 실행하세요 (file:// 프로토콜 불가)</span></td></tr>`;
-            });
+    # ── 백테스트 ──────────────────────────────────────────────────
+    performance_results = {"win_rate": 0.0, "avg_return": 0.0, "total_cases": 0}
+    history_data = []
 
-        function downloadData() {
-            if (!globalData) return alert('데이터가 아직 로드되지 않았습니다.');
-            const blob = new Blob([JSON.stringify(globalData, null, 2)], {type: 'application/json'});
-            const url  = URL.createObjectURL(blob);
-            const a    = document.createElement('a');
-            a.href     = url;
-            a.download = `alphascan_${new Date().toISOString().slice(0,10)}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-        }
-    </script>
-</body>
-</html>
+    if os.path.exists(HISTORY_FILE):
+        with open(HISTORY_FILE, 'r', encoding='utf-8') as f:
+            try:    history_data = json.load(f)
+            except: history_data = []
+
+        total_cases = win_cases = 0
+        total_return = 0.0
+
+        for record in history_data:
+            past_date = datetime.datetime.strptime(record['date'], "%Y%m%d")
+            if (now - past_date).days >= 14:   # 2주 후 수익률 체크 (완만한 상승 컨셉)
+                for pick in record['picks']:
+                    try:
+                        df_p = fdr.DataReader(pick['code'], record['date'], today_str)
+                        if len(df_p) >= 2:
+                            entry = df_p['Close'].iloc[0]
+                            exit_ = df_p['Close'].iloc[min(10, len(df_p) - 1)]  # 10영업일(2주) 후
+                            ret   = ((exit_ / entry) - 1) * 100
+                            total_return += ret
+                            total_cases  += 1
+                            if ret >= 5.0:   # 목표: 2주 내 +5% (급등 컨셉의 +10%에서 완화)
+                                win_cases += 1
+                    except Exception:
+                        continue
+
+        if total_cases > 0:
+            performance_results = {
+                "win_rate":    round((win_cases / total_cases) * 100, 1),
+                "avg_return":  round(total_return / total_cases, 1),
+                "total_cases": total_cases
+            }
+
+    # ── history 누적 저장 ──────────────────────────────────────────
+    history_data.append({"date": today_str, "picks": final_picks})
+    with open(HISTORY_FILE, 'w', encoding='utf-8') as f:
+        json.dump(history_data, f, ensure_ascii=False, indent=4)
+
+    # ── stock_data.json 저장 ───────────────────────────────────────
+    final_output = {
+        "today_picks": sorted(
+            final_picks,
+            key=lambda x: int(x['score'].split('(')[1].replace('점)', '')),
+            reverse=True
+        ),
+        "performance":      performance_results,
+        "my_manual_report": my_manual_report
+    }
+    with open(DATA_FILE, 'w', encoding='utf-8') as f:
+        json.dump(final_output, f, ensure_ascii=False, indent=4)
+
+    print(f"\n✅ 분석 완료! 오늘의 픽: {len(final_picks)}건")
+    return final_output
+
+
+if __name__ == "__main__":
+    analyze_with_manual_picks()

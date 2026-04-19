@@ -5,5 +5,19 @@
         "avg_return": 0.0,
         "total_cases": 0
     },
-    "my_manual_report": []
+    "my_manual_report": [],
+    "total_candidates": 0,
+    "total_screened": 0,
+    "filter_log": {
+        "total": 0,
+        "penny": 0,
+        "trend": 0,
+        "mktcap": 0,
+        "spike": 0,
+        "high52": 0,
+        "inst3": 0,
+        "both_buy": 0,
+        "final": 0
+    },
+    "base_date": "20260417"
 }

@@ -4,6 +4,8 @@ import datetime
 import numpy as np
 import pandas as pd
 import requests
+import zipfile
+import io
 from bs4 import BeautifulSoup
 from pykrx import stock
 import FinanceDataReader as fdr
@@ -19,25 +21,30 @@ TOP_N         = 5
 #
 #  목표: 7일 내 +10% / 승률 68~73%
 #
-#  [설계 철학]
-#  필터 수를 늘리는 게 아니라 "한국 시장에서 실증된"
-#  고신뢰 신호만 엄선. 노이즈 제거 > 신호 추가.
+#  [7단계 진입 필터]
+#  ① 주가 1,000원↑ (동전주 제외)
+#  ② MA50>MA200 정배열 + 현재가>MA50
+#  ③ 시총 500억~3조 (스윙 최적 구간)
+#  ④ 매집봉 + VCP 진폭 15%↓ + 거래량 가뭄
+#  ⑤ 52주 고가 10% 이내 (돌파 임박)
+#  ⑥ 기관 3일 연속 순매수 (핵심)
+#  ⑦ 외인+기관 동시 매수 1일↑
 #
-#  [핵심 추가 필터 — 한국 시장 특화]
-#  ① 기관 3일 연속 순매수  → 단일 최강 신호 (+8%p)
-#  ② 외인+기관 동시 매수   → 스마트머니 확인 (+4%p)
-#  ③ 52주 고가 5% 이내     → 저항 없는 돌파 임박 (+5%p)
-#  ④ 시총 500억~3조        → 7일 +10% 최적 이동성 (+3%p)
-#
-#  [멀티팩터 채점 250점 만점]
-#  A. 세력흔적   70점   B. BB수축     40점
-#  C. OBV다이버  40점   D. RSI위치    30점
-#  E. 수급강도   40점   F. 돌파임박   30점
+#  [멀티팩터 채점 250점]
+#  A. 세력흔적 70점  B. BB수축 40점  C. OBV다이버전스 40점
+#  D. RSI골디락스 30점  E. 수급강도 40점  F. 돌파임박 30점
 # ══════════════════════════════════════════════════════════════
 
+DART_API_KEY = "83af79248938109aee2a83d34e77abb7260337c6"
+
+# DART 기업코드 캐시 (전체 ZIP을 한 번만 다운로드)
+_dart_corp_cache = {}
+
+
+# ── 유틸 함수 ──────────────────────────────────────────────────
 
 def get_market_date():
-    """주말이면 가장 최근 금요일 반환"""
+    """주말이면 가장 최근 금요일 반환 (pykrx 에러 방지)"""
     today = datetime.datetime.now()
     wd = today.weekday()
     if wd == 5: today -= datetime.timedelta(days=1)
@@ -50,6 +57,8 @@ def get_start_date(base_str, days_ago):
     return (base - datetime.timedelta(days=int(days_ago * 1.5))).strftime("%Y%m%d")
 
 
+# ── pykrx 백업 함수 ────────────────────────────────────────────
+
 def safe_get_market_ticker_list(date_str, market):
     """pykrx 실패 시 fdr로 종목 목록 백업 조회"""
     try:
@@ -58,12 +67,8 @@ def safe_get_market_ticker_list(date_str, market):
             return list(tickers)
     except Exception as e:
         print(f"  ⚠️  pykrx {market} 목록 조회 실패: {e} → fdr 백업 시도")
-
     try:
-        if market == "KOSPI":
-            df = fdr.StockListing('KOSPI')
-        else:
-            df = fdr.StockListing('KOSDAQ')
+        df = fdr.StockListing('KOSPI' if market == "KOSPI" else 'KOSDAQ')
         return list(df['Code'].dropna().astype(str).str.zfill(6))
     except Exception as e:
         print(f"  ❌ fdr {market} 백업도 실패: {e}")
@@ -71,7 +76,7 @@ def safe_get_market_ticker_list(date_str, market):
 
 
 def safe_get_market_cap(ticker, date_str):
-    """pykrx 시가총액 조회 — 실패 시 None 반환"""
+    """pykrx 시가총액 조회 실패 시 None 반환"""
     try:
         df = stock.get_market_cap(date_str, date_str, ticker)
         if df is not None and not df.empty:
@@ -82,7 +87,7 @@ def safe_get_market_cap(ticker, date_str):
 
 
 def safe_get_ohlcv(ticker, date_str):
-    """pykrx 일봉 조회 — 실패 시 None 반환"""
+    """pykrx 일봉 조회 실패 시 None 반환"""
     try:
         df = stock.get_market_ohlcv(date_str, date_str, ticker)
         if df is not None and not df.empty:
@@ -92,8 +97,90 @@ def safe_get_ohlcv(ticker, date_str):
     return None
 
 
+# ── DART 재무 데이터 ───────────────────────────────────────────
+
+def load_dart_corp_codes():
+    """DART 전체 기업코드 ZIP을 한 번만 다운로드하여 캐시"""
+    global _dart_corp_cache
+    if _dart_corp_cache:
+        return
+    try:
+        url = f"https://opendart.fss.or.kr/api/corpCode.xml?crtfc_key={DART_API_KEY}"
+        r   = requests.get(url, timeout=15)
+        zf  = zipfile.ZipFile(io.BytesIO(r.content))
+        xml = zf.read(zf.namelist()[0]).decode('utf-8')
+
+        import xml.etree.ElementTree as ET
+        root = ET.fromstring(xml)
+        for item in root.findall('list'):
+            code = (item.findtext('stock_code') or '').strip()
+            corp = (item.findtext('corp_code')  or '').strip()
+            if code:
+                _dart_corp_cache[code] = corp
+        print(f"  📋 DART 기업코드 {len(_dart_corp_cache)}건 로드 완료")
+    except Exception as e:
+        print(f"  ⚠️  DART 기업코드 로드 실패: {e}")
+
+
+def get_financial_data(ticker):
+    """
+    OpenDART API로 실제 재무 데이터 조회
+    - OPM: 영업이익률 (%)
+    - DebtRatio: 부채비율 (%)
+    실패 시 더미값 반환 (필터 통과 처리)
+    """
+    if not DART_API_KEY or not _dart_corp_cache:
+        return {"OPM": 5.0, "DebtRatio": 100.0}
+
+    corp_code = _dart_corp_cache.get(ticker)
+    if not corp_code:
+        return {"OPM": 5.0, "DebtRatio": 100.0}
+
+    try:
+        year     = str(datetime.datetime.now().year - 1)
+        base_url = "https://opendart.fss.or.kr/api/fnlttSinglAcntAll.json"
+
+        for reprt_code in ['11011', '11012']:   # 사업보고서 → 반기보고서 순
+            for fs_div in ['CFS', 'OFS']:       # 연결 → 개별 순
+                params = {
+                    'crtfc_key':  DART_API_KEY,
+                    'corp_code':  corp_code,
+                    'bsns_year':  year,
+                    'reprt_code': reprt_code,
+                    'fs_div':     fs_div,
+                }
+                r    = requests.get(base_url, params=params, timeout=8)
+                data = r.json()
+
+                if data.get('status') == '000' and data.get('list'):
+                    items = {i['account_nm']: i for i in data['list']}
+
+                    def parse_val(nm):
+                        item = items.get(nm)
+                        if not item: return None
+                        val = item.get('thstrm_amount', '0').replace(',', '')
+                        try: return float(val)
+                        except: return None
+
+                    revenue      = parse_val('매출액') or parse_val('수익(매출액)')
+                    op_income    = parse_val('영업이익') or parse_val('영업이익(손실)')
+                    total_debt   = parse_val('부채총계')
+                    total_equity = parse_val('자본총계')
+
+                    opm        = round(op_income / revenue * 100, 1) if revenue and op_income else 5.0
+                    debt_ratio = round(total_debt / total_equity * 100, 1) if total_debt and total_equity and total_equity > 0 else 100.0
+                    return {"OPM": opm, "DebtRatio": debt_ratio}
+
+    except Exception:
+        pass
+
+    return {"OPM": 5.0, "DebtRatio": 100.0}
+
+
+# ── 네이버 기업 개요 ───────────────────────────────────────────
+
 def get_company_summary(ticker, name):
-    """네이버 금융 기업 개요 (TOP 5만 호출)"""
+    """네이버 금융 기업 개요 (TOP 5 확정 후 5회만 호출)"""
     try:
         url = f"https://finance.naver.com/item/coinfo.naver?code={ticker}"
         headers = {
@@ -115,10 +202,8 @@ def get_company_summary(ticker, name):
         for row in rows:
             th = row.select_one('th')
             td = row.select_one('td')
-            if th and td:
-                k = th.text.strip()
-                if k in ['업종', '주요제품']:
-                    parts.append(f"{k}: {td.text.strip()}")
+            if th and td and th.text.strip() in ['업종', '주요제품']:
+                parts.append(f"{th.text.strip()}: {td.text.strip()}")
         if parts:
             return ' | '.join(parts)
     except Exception:
@@ -126,11 +211,10 @@ def get_company_summary(ticker, name):
     return f"{name} — 기업정보 조회 실패"
 
 
+# ── 수급 데이터 ────────────────────────────────────────────────
+
 def get_investor_detail(ticker, start, end):
-    """
-    수급 상세 분석
-    반환: (inv_df, cols, 기관연속매수일, 외인연속매수일)
-    """
+    """수급 상세: (inv_df, cols, 기관연속일, 외인연속일)"""
     try:
         df = stock.get_market_trading_value_by_date(start, end, ticker)
     except Exception:
@@ -147,13 +231,11 @@ def get_investor_detail(ticker, start, end):
 
     recent = df[[fc, ic]].tail(5)
 
-    # 기관 연속 순매수 일수 (최근부터 역산)
     inst_streak = 0
     for val in reversed(recent[ic].values):
         if val > 0: inst_streak += 1
         else: break
 
-    # 외인 연속 순매수 일수
     for_streak = 0
     for val in reversed(recent[fc].values):
         if val > 0: for_streak += 1
@@ -162,22 +244,10 @@ def get_investor_detail(ticker, start, end):
     return recent, (fc, ic), inst_streak, for_streak
 
 
-def get_market_cap(ticker, today_str):
-    """시가총액 조회 (억원)"""
-    try:
-        df = stock.get_market_cap(today_str, today_str, ticker)
-        if not df.empty:
-            return int(df['시가총액'].iloc[-1] / 1e8)
-    except Exception:
-        pass
-    return None
-
+# ── 기타 유틸 ──────────────────────────────────────────────────
 
 def get_52week_high(df):
-    """52주 고가"""
-    if len(df) >= 252:
-        return df['High'].iloc[-252:].max()
-    return df['High'].max()
+    return df['High'].iloc[-252:].max() if len(df) >= 252 else df['High'].max()
 
 
 def calc_rsi(series, period=14):
@@ -192,27 +262,24 @@ def calc_obv(df):
     return (np.sign(df['Close'].diff()).fillna(0) * df['Volume']).cumsum()
 
 
+# ── 멀티팩터 채점 (250점) ──────────────────────────────────────
+
 def score_stock(df, inv_df, cols, inst_streak, for_streak):
-    """
-    250점 만점 멀티팩터 채점
-    """
     df = df.copy()
     df['MA20']     = df['Close'].rolling(20).mean()
-    df['MA50']     = df['Close'].rolling(50).mean()
     df['Vol_MA20'] = df['Volume'].rolling(20).mean()
     df['RSI']      = calc_rsi(df['Close'])
     df['OBV']      = calc_obv(df)
     df['BB_mid']   = df['Close'].rolling(20).mean()
     df['BB_std']   = df['Close'].rolling(20).std()
-    df['BB_width'] = (2 * 2 * df['BB_std'] / df['BB_mid']).replace([np.inf,-np.inf], np.nan)
+    df['BB_width'] = (4 * df['BB_std'] / df['BB_mid']).replace([np.inf, -np.inf], np.nan)
 
-    cur   = df['Close'].iloc[-1]
-    rsi   = df['RSI'].iloc[-1]
-    bd    = {}
-    meta  = {}
+    cur = df['Close'].iloc[-1]
+    rsi = df['RSI'].iloc[-1]
+    bd  = {}
+    meta = {}
 
     # ── [A] 세력 흔적 (최대 70점) ─────────────────────────────
-    # 기존보다 기준 완화(250%): 필터는 통과했으므로 채점에서 정밀 분류
     recent_60 = df.iloc[-60:]
     vm20 = df['Vol_MA20']
     m20  = df['MA20']
@@ -221,29 +288,33 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
         (recent_60['Close']  >  recent_60['Open']) &
         (recent_60['Close']  >  m20.iloc[-60:])
     )
-    spike_days = recent_60[spike_mask]
     a = 0
-    if not spike_days.empty:
-        ls   = spike_days.iloc[-1]
+    spike_days_ago = 0
+    silence_ratio  = 1.0
+    if spike_mask.any():
+        ls   = recent_60[spike_mask].iloc[-1]
         svol = ls['Volume']
         slow = ls['Low']
         sr   = svol / (ls['Vol_MA20'] + 1)
         si   = df.index.get_loc(ls.name)
         af   = df.iloc[si + 1:]
         if len(af) >= 3 and cur > slow:
-            sil = af['Volume'].mean() / (svol + 1)
+            sil            = af['Volume'].mean() / (svol + 1)
+            spike_days_ago = len(af)
+            silence_ratio  = round(sil, 2)
             if sil <= 0.7:
-                a  = int(min((sr-2.5)/5*30+15, 35)       # 스파이크 강도
-                       + min((0.7-sil)/0.7*25, 25)        # 침묵 깊이
-                       + max(10-(cur/slow-1)*100/15*10,0)) # 저가 지지
-                meta['spike_days_ago']  = len(af)
-                meta['silence_ratio']   = round(sil, 2)
-    bd['세력흔적'] = min(a, 70)
+                a_spike   = min((sr - 2.5) / 5 * 30 + 15, 35)
+                a_silence = min((0.7 - sil) / 0.7 * 25, 25)
+                price_gap = (cur / slow - 1) * 100
+                a_hold    = max(10 - price_gap / 15 * 10, 0)
+                a         = int(a_spike + a_silence + a_hold)
+    bd['세력흔적']          = min(a, 70)
+    meta['spike_days_ago']  = spike_days_ago
+    meta['silence_ratio']   = silence_ratio
 
     # ── [B] BB 수축 (최대 40점) ───────────────────────────────
     bbs = df['BB_width'].iloc[-90:].dropna()
-    b   = 0
-    bbc = 0
+    b = 0; bbc = 0
     if len(bbs) > 10:
         bmin, bmax = bbs.min(), bbs.max()
         brng = bmax - bmin
@@ -262,7 +333,7 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
     c    = int(min(max((op20 - pc20) * 2, 0), 40)) if op20 > 0 else 0
     bd['OBV다이버전스'] = c
 
-    # ── [D] RSI 골디락스 구간 (최대 30점) ───────────────────────
+    # ── [D] RSI 골디락스 구간 (최대 30점) ────────────────────
     # 45~60: 과열 전 단계 최적 진입 구간
     d = 0
     if not np.isnan(rsi):
@@ -270,74 +341,65 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
         elif 40 <= rsi <  45: d = 12
         elif 60 <  rsi <= 65: d = 10
     bd['RSI위치']  = d
-    meta['rsi']    = round(rsi,1) if not np.isnan(rsi) else 0
+    meta['rsi']    = round(rsi, 1) if not np.isnan(rsi) else 0
 
     # ── [E] 수급 강도 (최대 40점) ────────────────────────────
-    # 기관 연속 매수 일수에 가중치 집중
     e = 0
     supply_text = "정보없음"
     if inv_df is not None and cols:
         fc, ic = cols
-        fd = int((inv_df[fc] > 0).sum())
-        id_ = int((inv_df[ic] > 0).sum())
-        bd_days = int(((inv_df[fc] > 0) & (inv_df[ic] > 0)).sum())
-
-        # 기관 연속성 보너스 (핵심 가중치)
-        inst_bonus = min(inst_streak * 6, 24)   # 1일=6점, 2일=12점, 3일+=18~24점
-        for_bonus  = min(for_streak  * 4, 12)   # 외인 연속성 보너스
-        both_bonus = bd_days * 4                 # 동시 매수 보너스
-
+        fd        = int((inv_df[fc] > 0).sum())
+        id_       = int((inv_df[ic] > 0).sum())
+        both_days = int(((inv_df[fc] > 0) & (inv_df[ic] > 0)).sum())
+        inst_bonus = min(inst_streak * 6, 24)
+        for_bonus  = min(for_streak  * 4, 12)
+        both_bonus = both_days * 4
         e = min(inst_bonus + for_bonus + both_bonus, 40)
-
         if fd > 0 and id_ > 0: supply_text = "외인+기관 양매수"
         elif id_ > 0:           supply_text = "기관매수"
         elif fd > 0:            supply_text = "외인매수"
-
-    bd['수급강도']       = e
-    meta['supply_text']  = supply_text
-    meta['inst_streak']  = inst_streak
-    meta['for_streak']   = for_streak
+    bd['수급강도']      = e
+    meta['supply_text'] = supply_text
+    meta['inst_streak'] = inst_streak
+    meta['for_streak']  = for_streak
 
     # ── [F] 52주 돌파 임박 (최대 30점) ───────────────────────
-    high52 = get_52week_high(df)
-    gap_pct = (high52 - cur) / high52 * 100  # 고가까지 남은 %
-    f = 0
-    if   gap_pct <= 2:  f = 30   # 2% 이내 = 돌파 직전
-    elif gap_pct <= 5:  f = 22   # 5% 이내 = 임박
-    elif gap_pct <= 10: f = 12   # 10% 이내 = 근접
-    bd['돌파임박']       = f
-    meta['gap_to_high']  = round(gap_pct, 1)
+    high52  = get_52week_high(df)
+    gap_pct = (high52 - cur) / high52 * 100
+    f = 30 if gap_pct <= 2 else 22 if gap_pct <= 5 else 12 if gap_pct <= 10 else 0
+    bd['돌파임박']      = f
+    meta['gap_to_high'] = round(gap_pct, 1)
 
     return sum(bd.values()), bd, meta
 
 
+# ══════════════════════════════════════════════════════════════
+#  한국 시장 메인 분석
+# ══════════════════════════════════════════════════════════════
+
 def analyze_with_manual_picks():
     now        = datetime.datetime.now()
     today_str  = get_market_date()
-    start_260d = get_start_date(today_str, 260)   # 52주 + MA200 계산용
-    start_10d  = get_start_date(today_str, 10)    # 수급 5영업일용
+    start_260d = get_start_date(today_str, 260)
+    start_10d  = get_start_date(today_str, 10)
 
-    print(f"📅 기준일: {today_str}")
+    print(f"📅 기준일: {today_str}  (원본: {now.strftime('%Y%m%d')})")
     print(f"🎯 목표: 7일 +10% / 승률 68~73% 최적화 엔진 v3\n")
+
+    # DART 기업코드 사전 로드 (1회)
+    load_dart_corp_codes()
 
     kospi_tickers  = safe_get_market_ticker_list(today_str, "KOSPI")
     kosdaq_tickers = safe_get_market_ticker_list(today_str, "KOSDAQ")
     all_tickers    = kospi_tickers + kosdaq_tickers
     print(f"📋 전체 종목: {len(all_tickers)}개\n")
 
-    # all_tickers = all_tickers[:300]  # 테스트용
+    # all_tickers = all_tickers[:300]  # 빠른 테스트 시 주석 해제
 
     candidates = []
     log = dict(
-        total    = len(all_tickers),
-        penny    = 0,   # 동전주 생존
-        trend    = 0,   # 정배열 (MA50>MA200)
-        mktcap   = 0,   # 시총 500억~3조
-        spike    = 0,   # 매집봉 + VCP
-        high52   = 0,   # 52주 고가 10% 이내
-        inst3    = 0,   # 기관 3일 연속 (핵심)
-        both_buy = 0,   # 외인+기관 동시
-        final    = 0,   # 최종 채점
+        total=len(all_tickers), penny=0, trend=0, mktcap=0,
+        spike=0, high52=0, inst3=0, both_buy=0, final=0
     )
 
     print("🔍 전 종목 스크리닝 시작...")
@@ -347,87 +409,81 @@ def analyze_with_manual_picks():
             if len(df) < 200:
                 continue
 
-            close  = df['Close']
-            vol    = df['Volume']
-            cur    = close.iloc[-1]
+            close = df['Close']
+            vol   = df['Volume']
+            cur   = close.iloc[-1]
 
-            # ── [필터 1] 동전주 제외 ──────────────────────────
+            # ① 동전주 제외
             if cur < 1000:
                 continue
             log['penny'] += 1
 
-            # ── [필터 2] 정배열 추세 (MA50 > MA200) ──────────
+            # ② 정배열 (MA50 > MA200, 현재가 > MA50)
             ma50  = close.rolling(50).mean().iloc[-1]
             ma200 = close.rolling(200).mean().iloc[-1]
-            ma20  = close.rolling(20).mean().iloc[-1]
             if not (ma50 > ma200 and cur > ma50):
                 continue
             log['trend'] += 1
 
-            # ── [필터 3] 시총 500억~3조 ───────────────────────
-            # 너무 작으면 세력 조작, 너무 크면 단기 10% 불가
+            # ③ 시총 500억~3조
             mktcap = safe_get_market_cap(ticker, today_str)
             if mktcap is None or not (500 <= mktcap <= 30000):
                 continue
             log['mktcap'] += 1
 
-            # ── [필터 4] 매집봉 + VCP ─────────────────────────
+            # ④ 매집봉 + VCP
             vol_ma20  = vol.rolling(20).mean()
+            ma20_s    = close.rolling(20).mean()
             recent_60 = df.iloc[-60:]
             spike_mask = (
                 (recent_60['Volume'] >= vol_ma20.iloc[-60:] * 2.5) &
                 (recent_60['Close']  >  recent_60['Open']) &
-                (recent_60['Close']  >  close.rolling(20).mean().iloc[-60:])
+                (recent_60['Close']  >  ma20_s.iloc[-60:])
             )
             if not spike_mask.any():
                 continue
-
             last_spike = recent_60[spike_mask].iloc[-1]
-            if cur <= last_spike['Low']:   # 세력 방어선 이탈
+            if cur <= last_spike['Low']:
                 continue
 
-            # VCP: 10일 진폭 15% 이내 + 거래량 가뭄
-            r10        = df.iloc[-10:]
-            price_rng  = (r10['High'].max() - r10['Low'].min()) / r10['Low'].min() * 100
-            cur_vol    = vol.iloc[-1]
-            cur_vm20   = vol_ma20.iloc[-1]
+            r10       = df.iloc[-10:]
+            price_rng = (r10['High'].max() - r10['Low'].min()) / r10['Low'].min() * 100
+            cur_vol   = vol.iloc[-1]
+            cur_vm20  = vol_ma20.iloc[-1]
             if price_rng > 15 or cur_vol > cur_vm20 * 0.5:
                 continue
             log['spike'] += 1
 
-            # ── [필터 5] 52주 고가 10% 이내 (돌파 임박) ──────
+            # ⑤ 52주 고가 10% 이내
             high52 = get_52week_high(df)
             if (high52 - cur) / high52 * 100 > 10:
                 continue
             log['high52'] += 1
 
-            # ── [필터 6] 기관 3일 연속 순매수 (핵심 필터) ────
+            # ⑥ 기관 3일 연속 순매수
             inv_df, cols, inst_streak, for_streak = get_investor_detail(
                 ticker, start_10d, today_str
             )
-            if inv_df is None:
-                continue
-            if inst_streak < 3:            # 기관 3일 연속 미달 → 탈락
+            if inv_df is None or inst_streak < 3:
                 continue
             log['inst3'] += 1
 
-            # ── [필터 7] 외인+기관 동시 매수 1일 이상 ─────────
-            fc, ic = cols
+            # ⑦ 외인+기관 동시 매수 1일↑
+            fc, ic    = cols
             both_days = int(((inv_df[fc] > 0) & (inv_df[ic] > 0)).sum())
             if both_days < 1:
                 continue
             log['both_buy'] += 1
 
-            # ── 멀티팩터 채점 ─────────────────────────────────
+            # 멀티팩터 채점
             total_score, breakdown, meta = score_stock(
                 df, inv_df, cols, inst_streak, for_streak
             )
-            meta['mktcap']     = mktcap
-            meta['price_rng']  = round(price_rng, 1)
-            meta['cur_close']  = int(cur)
-            meta['vol_ratio']  = round(cur_vol / (cur_vm20 + 1), 2)
+            meta['mktcap']    = mktcap
+            meta['price_rng'] = round(price_rng, 1)
+            meta['cur_close'] = int(cur)
+            meta['vol_ratio'] = round(cur_vol / (cur_vm20 + 1), 2)
 
-            # 최소 점수 기준: 130점 이상 (250점 만점의 52%)
             if total_score >= 130:
                 candidates.append((total_score, ticker, breakdown, meta))
                 log['final'] += 1
@@ -438,26 +494,22 @@ def analyze_with_manual_picks():
         if (i + 1) % 300 == 0:
             print(f"  진행 {i+1}/{len(all_tickers)} | 후보: {len(candidates)}건")
 
-    # ── 필터 생존 현황 ─────────────────────────────────────────
-    print(f"\n📊 [필터 단계별 생존 현황]")
+    print(f"\n📊 [필터 생존 현황]")
     print(f"  전체:              {log['total']:>5}건")
-    print(f"  동전주 컷:         {log['penny']:>5}건")
-    print(f"  정배열(MA50>MA200):{log['trend']:>5}건")
-    print(f"  시총 500억~3조:    {log['mktcap']:>5}건")
-    print(f"  매집봉+VCP:        {log['spike']:>5}건")
-    print(f"  52주 고가 10%이내: {log['high52']:>5}건")
-    print(f"  기관 3일 연속:     {log['inst3']:>5}건  ← 핵심 필터")
-    print(f"  외인+기관 동시:    {log['both_buy']:>5}건")
-    print(f"  최종 채점 통과:    {log['final']:>5}건  → TOP {TOP_N} 선정\n")
+    print(f"  ① 동전주 컷:      {log['penny']:>5}건")
+    print(f"  ② 정배열:         {log['trend']:>5}건")
+    print(f"  ③ 시총 500억~3조: {log['mktcap']:>5}건")
+    print(f"  ④ 매집봉+VCP:     {log['spike']:>5}건")
+    print(f"  ⑤ 52주 10%이내:  {log['high52']:>5}건")
+    print(f"  ⑥ 기관 3일연속:   {log['inst3']:>5}건  ← 핵심")
+    print(f"  ⑦ 외인+기관동시:  {log['both_buy']:>5}건")
+    print(f"  최종 채점 통과:   {log['final']:>5}건  → TOP {TOP_N} 선정\n")
 
-    # ── TOP N 추출 ─────────────────────────────────────────────
     candidates.sort(key=lambda x: x[0], reverse=True)
     top_raw = candidates[:TOP_N]
 
-    # 신호 없는 날 처리
     if not top_raw:
-        print("⚠️  오늘은 조건 충족 종목 없음. 억지로 뽑지 않음.")
-        print("   → 신호 없는 날 쉬는 것이 전략의 일부입니다.")
+        print("⚠️  오늘 조건 충족 종목 없음 — 현금 보유 권장")
 
     final_picks = []
     print(f"🏆 [TOP {TOP_N} 최종 선정]")
@@ -465,20 +517,15 @@ def analyze_with_manual_picks():
     for rank, (total_score, ticker, breakdown, meta) in enumerate(top_raw, 1):
         name    = stock.get_market_ticker_name(ticker)
         summary = get_company_summary(ticker, name)
-
-        stars = "★" * min(total_score // 50, 5) + "☆" * max(5 - total_score // 50, 0)
+        stars   = "★" * min(total_score // 50, 5) + "☆" * max(5 - total_score // 50, 0)
         supply_text  = meta.get('supply_text', '정보없음')
         expected_ret = round(5.0 + (total_score / 250) * 15.0, 1)
-
         top_f   = sorted(breakdown.items(), key=lambda x: x[1], reverse=True)
         tag_str = " / ".join([f"{k} {v}점" for k, v in top_f[:3]])
 
         print(f"  #{rank} {name}({ticker}) | {total_score}점 | {supply_text}")
-        print(f"       기관연속: {meta.get('inst_streak',0)}일 | "
-              f"52주고가까지: {meta.get('gap_to_high',0)}% | "
-              f"시총: {meta.get('mktcap',0):,}억")
-        print(f"       {tag_str}")
-        print(f"       📋 {summary[:70]}...")
+        print(f"       기관연속: {meta.get('inst_streak',0)}일 | 52주고가: {meta.get('gap_to_high',0)}% | 시총: {meta.get('mktcap',0):,}억")
+        print(f"       📋 {summary[:60]}...")
 
         final_picks.append({
             "rank":            rank,
@@ -543,9 +590,9 @@ def analyze_with_manual_picks():
                     try:
                         dfp = fdr.DataReader(pick['code'], record['date'], today_str)
                         if len(dfp) >= 2:
-                            entry  = dfp['Close'].iloc[0]
-                            exit_  = dfp['Close'].iloc[min(5, len(dfp)-1)]
-                            ret    = ((exit_ / entry) - 1) * 100
+                            entry = dfp['Close'].iloc[0]
+                            exit_ = dfp['Close'].iloc[min(5, len(dfp) - 1)]
+                            ret   = ((exit_ / entry) - 1) * 100
                             total_return += ret
                             total_cases  += 1
                             if ret >= 10.0:
@@ -582,17 +629,18 @@ def analyze_with_manual_picks():
     return final_output
 
 
+# ══════════════════════════════════════════════════════════════
+#  미국 시장 — 숏스퀴즈 탐지
+# ══════════════════════════════════════════════════════════════
+
 def analyze_us_market():
     """
     미국 시장 메가 러너 (Short Squeeze) 탐지 엔진
-    ──────────────────────────────────────────────
-    조건: 유통주식수 50M 이하 + 공매도 비율 15% 이상
-    점수: 공매도 강도 × 거래량 스파이크 × 유통주 희소성
+    조건: Float ≤ 150M + 공매도 ≥ 10% + 거래량 ≥ 2배
+    점수: 공매도강도(40) + 거래량급증(30) + 유통주희소(20) + 커버소요일(10)
     """
     print("\n🇺🇸 미국 시장 숏스퀴즈 스캐닝 시작...")
 
-    # ── 후보 티커 풀 ──────────────────────────────────────────
-    # 유통주 적고 공매도 많기로 알려진 종목들 + 최근 주목 종목
     WATCHLIST = [
         'GME','AMC','CVNA','UPST','SOFI','PLTR','AI','HIMS',
         'BBBY','SPCE','CLOV','WISH','WKHS','RIDE','NKLA',
@@ -600,67 +648,53 @@ def analyze_us_market():
         'OCGN','NVAX','VVOS','FFIE','MULN','PPBT','CENN'
     ]
 
-    us_picks    = []
-    skipped     = 0
-    today_str   = datetime.datetime.now().strftime("%Y%m%d")
+    us_picks  = []
+    skipped   = 0
+    today_str = datetime.datetime.now().strftime("%Y%m%d")
 
     for symbol in WATCHLIST:
         try:
             t    = yf.Ticker(symbol)
             info = t.info
 
-            # ── 기본 데이터 수집 ──────────────────────────────
             float_shares = info.get('floatShares', None)
             short_pct    = info.get('shortPercentOfFloat', None)
-            short_ratio  = info.get('shortRatio', None)      # 숏커버링 소요일
-            market_cap   = info.get('marketCap', None)
+            short_ratio  = info.get('shortRatio', None)
 
             if float_shares is None or short_pct is None:
                 skipped += 1
                 continue
 
-            float_m     = float_shares / 1e6                 # 단위: 백만주
-            short_pct_p = short_pct * 100                    # 단위: %
+            float_m     = float_shares / 1e6
+            short_pct_p = short_pct * 100
 
-            # ── 주가/거래량 데이터 ────────────────────────────
             hist = t.history(period="3mo")
             if len(hist) < 20:
                 skipped += 1
                 continue
 
-            cur_price    = round(hist['Close'].iloc[-1], 2)
-            avg_vol_20   = hist['Volume'].iloc[-21:-1].mean()
-            cur_vol      = hist['Volume'].iloc[-1]
-            vol_spike    = cur_vol / (avg_vol_20 + 1)
+            cur_price  = round(hist['Close'].iloc[-1], 2)
+            avg_vol_20 = hist['Volume'].iloc[-21:-1].mean()
+            cur_vol    = hist['Volume'].iloc[-1]
+            vol_spike  = cur_vol / (avg_vol_20 + 1)
 
-            # ── RSI 계산 ──────────────────────────────────────
-            delta  = hist['Close'].diff()
-            gain   = delta.where(delta > 0, 0).rolling(14).mean()
-            loss   = (-delta.where(delta < 0, 0)).rolling(14).mean()
-            rs     = gain / loss.replace(0, np.nan)
-            rsi    = round((100 - 100 / (1 + rs)).iloc[-1], 1)
+            delta = hist['Close'].diff()
+            gain  = delta.where(delta > 0, 0).rolling(14).mean()
+            loss  = (-delta.where(delta < 0, 0)).rolling(14).mean()
+            rs    = gain / loss.replace(0, np.nan)
+            rsi   = round((100 - 100 / (1 + rs)).iloc[-1], 1)
 
-            # ── 숏스퀴즈 핵심 조건 ───────────────────────────
-            # Float ≤ 150M (품절주), 공매도 ≥ 10%, 거래량 ≥ 2배
+            # 핵심 조건: Float ≤ 150M, 공매도 ≥ 10%, 거래량 ≥ 2배
             if float_m > 150 or short_pct_p < 10 or vol_spike < 2.0:
                 continue
 
-            # ── 점수 산출 (100점 만점) ────────────────────────
-            # 1. 공매도 강도 (최대 40점): 10%=10점, 40%+=40점
+            # 점수 산출
             short_score = min((short_pct_p - 10) / 30 * 30 + 10, 40)
-
-            # 2. 거래량 스파이크 (최대 30점): 2배=5점, 8배+=30점
             vol_score   = min((vol_spike - 2) / 6 * 25 + 5, 30)
-
-            # 3. 유통주 희소성 (최대 20점): 1M=20점, 150M=0점
             float_score = max(20 - (float_m / 150 * 20), 0)
-
-            # 4. 숏커버링 소요일 보너스 (최대 10점)
             ratio_score = min((short_ratio or 0) * 2, 10) if short_ratio else 0
-
             total_score = int(short_score + vol_score + float_score + ratio_score)
 
-            # ── 수급 텍스트 ───────────────────────────────────
             squeeze_level = (
                 "🔥 EXTREME" if total_score >= 80 else
                 "⚡ HIGH"    if total_score >= 60 else
@@ -671,9 +705,9 @@ def analyze_us_market():
                 "rank":            len(us_picks) + 1,
                 "name":            info.get('shortName', symbol),
                 "code":            symbol,
-                "company_summary": info.get('longBusinessSummary', '')[:180] + '...'
+                "company_summary": (info.get('longBusinessSummary', '')[:180] + '...')
                                    if info.get('longBusinessSummary') else f"{symbol} — 정보 없음",
-                "supply":          f"공매도 {round(short_pct_p, 1)}% | {squeeze_level}",
+                "supply":          f"공매도 {round(short_pct_p,1)}% | {squeeze_level}",
                 "cur_price":       cur_price,
                 "score":           f"SQUEEZE {total_score}점/100",
                 "score_detail": {
@@ -682,30 +716,27 @@ def analyze_us_market():
                     "유통주희소": int(float_score),
                     "커버소요일": int(ratio_score),
                 },
-                "tags":            f"유통주 {round(float_m, 1)}M · 숏비율 {round(short_pct_p,1)}% · RSI {rsi}",
+                "tags":            f"유통주 {round(float_m,1)}M · 숏비율 {round(short_pct_p,1)}% · RSI {rsi}",
                 "expected_return": "EXPLOSIVE",
                 "meta": {
                     "float_m":    round(float_m, 1),
                     "short_pct":  round(short_pct_p, 1),
                     "vol_spike":  round(vol_spike, 1),
                     "rsi":        rsi,
-                    "short_ratio": round(short_ratio, 1) if short_ratio else 0,
+                    "short_ratio":round(short_ratio, 1) if short_ratio else 0,
                 }
             })
-
             print(f"  ✅ {symbol} | {total_score}점 | 공매도 {round(short_pct_p,1)}% | 유통주 {round(float_m,1)}M")
 
-        except Exception as e:
+        except Exception:
             skipped += 1
             continue
 
-    # ── 점수 정렬 → 상위 5개 ──────────────────────────────────
-    us_picks.sort(key=lambda x: int(x['score'].split()[1].replace('점/100','')), reverse=True)
+    us_picks.sort(key=lambda x: int(x['score'].split()[1].replace('점/100', '')), reverse=True)
     top5 = us_picks[:5]
     for i, p in enumerate(top5):
         p['rank'] = i + 1
 
-    # ── stock_data_us.json 저장 ───────────────────────────────
     us_output = {
         "today_picks":      top5,
         "performance":      {"win_rate": 0.0, "avg_return": 0.0, "total_cases": 0},
@@ -721,6 +752,10 @@ def analyze_us_market():
     print(f"🏁 미국 분석 완료! 후보 {len(us_picks)}건 → TOP {len(top5)} 저장\n")
     return us_output
 
+
+# ══════════════════════════════════════════════════════════════
+#  실행
+# ══════════════════════════════════════════════════════════════
 
 if __name__ == "__main__":
     analyze_with_manual_picks()   # 한국 시장

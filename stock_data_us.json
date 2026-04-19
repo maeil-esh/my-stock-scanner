@@ -1,22 +1,15 @@
 {
-    "today_picks": [
-        {
-            "name": "UPST",
-            "code": "UPST",
-            "cur_price": 34.57,
-            "score": "🚀 (72점/100)",
-            "supply": "공매도 33.3%",
-            "company_summary": "유통 80.2M / 거래폭발 1.4배",
-            "expected_return": "25.0",
-            "score_detail": {
-                "공매도비율": 33,
-                "거래폭발": 14
-            },
-            "meta": {
-                "inst_streak": 1.4,
-                "gap_to_high": 33.3
-            }
-        }
-    ],
-    "base_date": "20260417"
+    "today_picks": [],
+    "performance": {
+        "win_rate": 0.0,
+        "avg_return": 0.0,
+        "total_cases": 0
+    },
+    "my_manual_report": [],
+    "total_candidates": 0,
+    "total_screened": 21,
+    "filter_log": {
+        "inst3": 0
+    },
+    "base_date": "20260419"
 }

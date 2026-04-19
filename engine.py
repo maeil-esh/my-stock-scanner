@@ -76,13 +76,32 @@ def safe_get_market_ticker_list(date_str, market):
 
 
 def safe_get_market_cap(ticker, date_str):
-    """pykrx 시가총액 조회 실패 시 None 반환"""
+    """
+    시가총액 조회 (억원)
+    pykrx 실패 시 fdr StockListing으로 백업
+    """
+    # 1차: pykrx
     try:
         df = stock.get_market_cap(date_str, date_str, ticker)
         if df is not None and not df.empty:
-            return int(df['시가총액'].iloc[-1] / 1e8)
+            val = df['시가총액'].iloc[-1]
+            if val > 0:
+                return int(val / 1e8)
     except Exception:
         pass
+
+    # 2차: fdr StockListing (시총 컬럼 포함)
+    try:
+        market = "KOSPI" if len(ticker) == 6 else "KOSDAQ"
+        df = fdr.StockListing(market)
+        row = df[df['Code'] == ticker]
+        if not row.empty:
+            cap = row.iloc[0].get('Marcap', 0) or row.iloc[0].get('MarCap', 0)
+            if cap and cap > 0:
+                return int(cap / 1e8)
+    except Exception:
+        pass
+
     return None
 
 
@@ -754,9 +773,126 @@ def analyze_us_market():
 
 
 # ══════════════════════════════════════════════════════════════
+#  텔레그램 알림
+# ══════════════════════════════════════════════════════════════
+
+TELEGRAM_TOKEN   = os.environ.get("TELEGRAM_TOKEN", "")
+TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "7497968326")
+
+
+def send_telegram(message: str):
+    """텔레그램 메시지 전송"""
+    if not TELEGRAM_TOKEN:
+        print("⚠️  TELEGRAM_TOKEN 없음 — 전송 스킵")
+        return
+    try:
+        url  = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+        resp = requests.post(url, json={
+            "chat_id":    TELEGRAM_CHAT_ID,
+            "text":       message,
+            "parse_mode": "HTML"
+        }, timeout=10)
+        if resp.status_code == 200:
+            print("✅ 텔레그램 전송 완료")
+        else:
+            print(f"⚠️  텔레그램 전송 실패: {resp.text}")
+    except Exception as e:
+        print(f"⚠️  텔레그램 오류: {e}")
+
+
+def build_kr_message(kr_data: dict) -> str:
+    """한국 시장 결과 메시지 생성"""
+    picks    = kr_data.get("today_picks", [])
+    perf     = kr_data.get("performance", {})
+    log      = kr_data.get("filter_log", {})
+    base_date = kr_data.get("base_date", "")
+
+    # 날짜 포맷
+    try:
+        d = datetime.datetime.strptime(base_date, "%Y%m%d")
+        date_str = d.strftime("%Y.%m.%d (%a)").replace(
+            "Mon","월").replace("Tue","화").replace("Wed","수").replace(
+            "Thu","목").replace("Fri","금").replace("Sat","토").replace("Sun","일")
+    except Exception:
+        date_str = base_date
+
+    lines = [
+        f"🏆 <b>ULTIMATE ALPHA v3 — {date_str}</b>",
+        f"📊 스크리닝: {log.get('total', 0):,}종목 → 최종 후보 {log.get('final', 0)}건",
+    ]
+
+    if perf.get("total_cases", 0) > 0:
+        wr  = perf['win_rate']
+        avg = perf['avg_return']
+        sign = "+" if avg >= 0 else ""
+        lines.append(f"📈 백테스트 승률: {wr}% | 평균수익: {sign}{avg}% ({perf['total_cases']}건)")
+
+    lines.append("━" * 22)
+
+    if not picks:
+        lines.append("⚠️ 오늘 조건 충족 종목 없음")
+        lines.append("💡 신호 없는 날 쉬는 것이 전략의 일부입니다.")
+    else:
+        for p in picks:
+            meta  = p.get("meta", {})
+            score = p.get("score", "")
+            ret   = p.get("expected_return", "")
+            price = p.get("cur_price", 0)
+
+            lines += [
+                f"<b>#{p['rank']} {p['name']} ({p['code']})</b>",
+                f"점수: {score}",
+                f"현재가: {price:,}원 | 시총: {meta.get('mktcap',0):,}억",
+                f"수급: {p.get('supply','')}",
+                f"기관연속: {meta.get('inst_streak',0)}일 | 52주고가: {meta.get('gap_to_high',0)}% 남음",
+                f"RSI: {meta.get('rsi',0)} | BB수축: {meta.get('bb_compress',0)}%",
+                f"기대수익: +{ret} (7일 목표)",
+                "━" * 22,
+            ]
+
+    return "\n".join(lines)
+
+
+def build_us_message(us_data: dict) -> str:
+    """미국 시장 결과 메시지 생성"""
+    picks     = us_data.get("today_picks", [])
+    screened  = us_data.get("total_screened", 0)
+    today_str = us_data.get("base_date", "")
+
+    lines = [
+        f"🇺🇸 <b>ULTIMATE ALPHA v3 — 미국 숏스퀴즈</b>",
+        f"📊 워치리스트 {screened}종목 스캔",
+        "━" * 22,
+    ]
+
+    if not picks:
+        lines.append("⚠️ 오늘 조건 충족 종목 없음")
+    else:
+        for p in picks:
+            meta  = p.get("meta", {})
+            score = p.get("score", "")
+            lines += [
+                f"<b>#{p['rank']} {p['name']} (${p['code']})</b>",
+                f"점수: {score}",
+                f"현재가: ${p.get('cur_price', 0)}",
+                f"공매도: {meta.get('short_pct',0)}% | 유통주: {meta.get('float_m',0)}M",
+                f"거래량스파이크: {meta.get('vol_spike',0)}배 | RSI: {meta.get('rsi',0)}",
+                f"숏커버소요: {meta.get('short_ratio',0)}일",
+                f"{p.get('supply','')}",
+                "━" * 22,
+            ]
+
+    return "\n".join(lines)
+
+
+# ══════════════════════════════════════════════════════════════
 #  실행
 # ══════════════════════════════════════════════════════════════
 
 if __name__ == "__main__":
-    analyze_with_manual_picks()   # 한국 시장
-    analyze_us_market()           # 미국 시장
+    kr_result = analyze_with_manual_picks()   # 한국 시장
+    us_result = analyze_us_market()           # 미국 시장
+
+    # 텔레그램 전송
+    send_telegram(build_kr_message(kr_result))
+    send_telegram(build_us_message(us_result))

@@ -1,8 +1,8 @@
 name: Stock-Auto-Update
 on:
   schedule:
-    # 한국 시간 밤 9시 (UTC 12:00) / 월~금 실행
-    - cron: '0 12 * * 1-5'
+    # 한국 시간 밤 9시 10분 (UTC 12:10) / 월~금 실행
+    - cron: '10 12 * * 1-5'
   workflow_dispatch: # 언제든 수동으로 실행하고 싶을 때 사용하는 버튼
 
 jobs:
@@ -16,13 +16,15 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.9'
+          python-version: '3.11'
 
       - name: Install libraries
         run: |
           pip install pykrx pandas finance-datareader numpy requests beautifulsoup4 yfinance
 
       - name: Run Analysis Engine
+        env:
+          DART_API_KEY: ${{ secrets.DART_API_KEY }}
         run: python engine.py
 
       - name: Update Data and History

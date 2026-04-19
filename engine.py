@@ -10,21 +10,23 @@ HISTORY_FILE  = 'history.json'
 MY_PICKS_FILE = 'my_picks.json'
 
 # ──────────────────────────────────────────────────────────────
-# 컨셉: 저평가 우량주 + 간헐적 거래량 신호 기반 상승 예상
+# 컨셉: 세력 흔적 탐지 (정밀형)
 #
-# [기존] 세력 매집봉(300%↑) → 거래량 가뭄 → 급등 대기
-# [변경] 저평가 종목에서 거래량 신호(150%↑)가 간헐적으로 발생 →
-#        수급 뒷받침 → 완만하고 안정적인 상승 기대
+# [핵심 로직]
+# 1. 최근 20일 내 거래량 스파이크(250%↑) 발생 → 세력 개입 봉 탐지
+# 2. 스파이크 이후 거래량 50% 이하로 안정 → 세력이 조용히 대기 중
+# 3. 현재가 스파이크 봉 저가 위에서 유지 → 세력이 물량 지키는 중
+# 4. 수급 외인/기관 최근 3일 중 1일 이상 → 매수 주체 확인
 # ──────────────────────────────────────────────────────────────
 
 
 def get_financial_data(ticker):
     """
-    현재: 테스트용 더미 (PER 10, PBR 0.8, OPM 5%, 부채비율 120%)
-    실제 운영 시 OpenDART API로 교체:
+    현재: 테스트용 더미
+    실제 운영 시 OpenDART API로 교체 필요
     https://opendart.fss.or.kr/api/fnlttSinglAcntAll.json
     """
-    return {"PER": 10.0, "PBR": 0.8, "OPM": 5.0, "DebtRatio": 120.0}
+    return {"OPM": 5.0, "DebtRatio": 120.0}
 
 
 def get_start_date(days_ago):
@@ -45,7 +47,7 @@ def get_investor_df(ticker, start, end):
     if not foreign_col or not inst_col:
         return None, None
 
-    return df[[foreign_col, inst_col]].tail(5), (foreign_col, inst_col)
+    return df[[foreign_col, inst_col]].tail(3), (foreign_col, inst_col)
 
 
 def analyze_with_manual_picks():
@@ -53,7 +55,7 @@ def analyze_with_manual_picks():
     today_str = now.strftime("%Y%m%d")
 
     start_90d = get_start_date(90)
-    start_7d  = get_start_date(7)
+    start_5d  = get_start_date(5)
 
     print(f"📅 분석 기준일: {today_str}")
 
@@ -67,67 +69,84 @@ def analyze_with_manual_picks():
 
     final_picks = []
     filter_log  = {
-        "total":    len(all_tickers),
-        "penny":    0,   # 동전주 컷 생존
-        "trend":    0,   # 상승추세 (현재가 > 20일선 > 60일선)
-        "vol_sig":  0,   # 거래량 신호 존재
-        "momentum": 0,   # 최근 모멘텀 양호
-        "supply":   0,   # 수급 충족
-        "fin":      0,   # 재무 통과 (최종 픽)
+        "total":   len(all_tickers),
+        "penny":   0,   # 동전주 컷 생존
+        "spike":   0,   # 스파이크 봉 발견 (20일 이내)
+        "silence": 0,   # 스파이크 후 거래량 침묵
+        "hold":    0,   # 스파이크 봉 저가 위에서 주가 유지
+        "supply":  0,   # 수급 확인
+        "fin":     0,   # 재무 통과 (최종 픽)
     }
 
-    print("🚀 [1] 종목 스크리닝 시작...")
+    print("🚀 [1] 세력 흔적 탐지 시작...")
     for ticker in all_tickers:
         try:
             df = fdr.DataReader(ticker, start_90d, today_str)
-            if len(df) < 60:
+            if len(df) < 25:
                 continue
 
-            # 이동평균 계산
             df['MA20']     = df['Close'].rolling(window=20).mean()
-            df['MA60']     = df['Close'].rolling(window=60).mean()
             df['Vol_MA20'] = df['Volume'].rolling(window=20).mean()
 
             current_close = df['Close'].iloc[-1]
             current_vol   = df['Volume'].iloc[-1]
-            ma20_now      = df['MA20'].iloc[-1]
-            ma60_now      = df['MA60'].iloc[-1]
 
             # [방어막] 동전주 제외 (1,000원 미만)
             if current_close < 1000:
                 continue
             filter_log['penny'] += 1
 
-            # ── [필터 1] 이중 상승추세 ────────────────────────────────
-            # 현재가 > 20일선 > 60일선: 단기·중기 모두 우상향
-            if not (current_close > ma20_now > ma60_now):
+            # ── [필터 1] 최근 20일 내 스파이크 봉 탐지 ──────────────
+            # 조건: 거래량 250%↑, 양봉, 20일선 위 마감
+            # "최근 20일 이내"로 제한 → 오래된 신호 제거
+            recent_20 = df.iloc[-20:].copy()
+            recent_20['Is_Spike'] = (
+                (recent_20['Volume'] >= recent_20['Vol_MA20'] * 2.5) &
+                (recent_20['Close']  >  recent_20['Open']) &
+                (recent_20['Close']  >  recent_20['MA20'])
+            )
+            spike_days = recent_20[recent_20['Is_Spike']]
+            if spike_days.empty:
                 continue
-            filter_log['trend'] += 1
+            filter_log['spike'] += 1
 
-            # ── [필터 2] 간헐적 거래량 신호 ──────────────────────────
-            # 최근 60영업일 내 평균 거래량의 150% 이상인 날이 2회 이상
-            # → 급등(세력)이 아닌 "관심이 들어온 흔적" 탐지
-            recent = df.iloc[-60:].copy()
-            vol_signal_days = (recent['Volume'] >= recent['Vol_MA20'] * 1.5).sum()
-            if vol_signal_days < 2:
+            # 가장 최근 스파이크 봉 기준
+            last_spike     = spike_days.iloc[-1]
+            spike_vol      = last_spike['Volume']
+            spike_low      = last_spike['Low']      # 스파이크 봉 저가 (세력 방어선)
+            spike_vol_ratio = spike_vol / last_spike['Vol_MA20']
+
+            # 스파이크 발생 이후 인덱스 추출
+            spike_idx    = df.index.get_loc(last_spike.name)
+            after_spike  = df.iloc[spike_idx + 1:]  # 스파이크 다음날부터 현재까지
+
+            if after_spike.empty:
+                # 스파이크가 오늘 발생한 경우 → 침묵 구간 없음, 패스
                 continue
-            filter_log['vol_sig'] += 1
 
-            # 거래량 신호 강도 (점수용): 평균 배율 계산
-            signal_rows    = recent[recent['Volume'] >= recent['Vol_MA20'] * 1.5]
-            avg_vol_ratio  = (signal_rows['Volume'] / signal_rows['Vol_MA20']).mean()
-
-            # ── [필터 3] 최근 모멘텀 ──────────────────────────────────
-            # 20일 수익률 > 0% (상승 중인 종목만)
-            price_20d_ago  = df['Close'].iloc[-20]
-            momentum_20d   = (current_close / price_20d_ago - 1) * 100
-            if momentum_20d <= 0:
+            # ── [필터 2] 스파이크 이후 거래량 침묵 확인 ─────────────
+            # 스파이크 이후 평균 거래량이 스파이크 봉의 50% 이하
+            # → "세력이 물량 쌓고 조용히 기다리는 중" 신호
+            avg_vol_after = after_spike['Volume'].mean()
+            if avg_vol_after > spike_vol * 0.5:
                 continue
-            filter_log['momentum'] += 1
+            filter_log['silence'] += 1
 
-            # ── [필터 4] 수급 ─────────────────────────────────────────
-            # 최근 5일 중 외인 or 기관 순매수 2일 이상
-            inv_df, cols = get_investor_df(ticker, start_7d, today_str)
+            silence_ratio = avg_vol_after / spike_vol  # 낮을수록 침묵 깊음
+
+            # ── [필터 3] 스파이크 봉 저가 위에서 주가 유지 ───────────
+            # 현재가 > 스파이크 봉 저가
+            # → "세력이 평균 단가 지키고 있다" = 아직 매집 완료 전
+            if current_close <= spike_low:
+                continue
+            filter_log['hold'] += 1
+
+            # 저가 대비 현재 위치 (높을수록 좋음)
+            price_vs_low = (current_close / spike_low - 1) * 100
+
+            # ── [필터 4] 수급 확인 ────────────────────────────────────
+            # 최근 3일 중 외인 or 기관 순매수 1일 이상
+            inv_df, cols = get_investor_df(ticker, start_5d, today_str)
             if inv_df is None:
                 continue
 
@@ -136,77 +155,73 @@ def analyze_with_manual_picks():
             inst_buy_days    = int((inv_df[inst_col]    > 0).sum())
             valid_buy_days   = int(((inv_df[foreign_col] > 0) | (inv_df[inst_col] > 0)).sum())
 
-            if valid_buy_days < 2:
+            if valid_buy_days < 1:
                 continue
             filter_log['supply'] += 1
 
             # ── [필터 5] 재무 ─────────────────────────────────────────
-            # PER < 20, PBR < 2.0, OPM > 0%, 부채비율 < 200%
-            # (더미 데이터 → 실제 DART 연동 시 실효 발동)
             fin = get_financial_data(ticker)
-            if (fin['PER']      >= 20.0 or
-                fin['PBR']      >= 2.0  or
-                fin['OPM']      <  0.0  or
-                fin['DebtRatio'] >= 200.0):
+            if fin['OPM'] < 0.0 or fin['DebtRatio'] >= 300.0:
                 continue
             filter_log['fin'] += 1
 
             # ── 점수 산출 (100점 만점) ────────────────────────────────
-            # 거래량 신호 강도 (최대 30점): 150%면 10점, 400% 이상이면 30점
-            vol_score      = min(((avg_vol_ratio - 1.5) / 2.5) * 20 + 10, 30)
 
-            # 최근 모멘텀 (최대 25점): 5% 상승이면 10점, 20% 이상이면 25점
-            momentum_score = min(((momentum_20d - 0) / 20) * 15 + 10, 25)
+            # 1. 스파이크 강도 (최대 35점): 250%면 15점, 700% 이상이면 35점
+            spike_score = min(((spike_vol_ratio - 2.5) / 4.5) * 20 + 15, 35)
 
-            # 수급 강도 (최대 25점)
-            supply_score   = 12 if valid_buy_days == 2 else 20 if valid_buy_days >= 3 else 25
+            # 2. 침묵 깊이 (최대 30점): 비율 낮을수록 고점 (0%면 30점, 50%면 0점)
+            silence_score = min((0.5 - silence_ratio) / 0.5 * 30, 30)
 
-            # 재무 점수 (최대 20점): PBR 낮을수록 저평가
-            pbr_score      = min((2.0 - fin['PBR']) / 2.0 * 20, 20)
+            # 3. 수급 강도 (최대 20점)
+            supply_score = 10 if valid_buy_days == 1 else 15 if valid_buy_days == 2 else 20
 
-            total_score = int(vol_score + momentum_score + supply_score + pbr_score)
-            total_score = min(total_score, 100)  # 100점 상한
+            # 4. 저가 지지 강도 (최대 15점): 저가 대비 많이 오를수록 감점
+            #    너무 많이 오르면 이미 늦은 것 → 5% 이하면 15점, 20% 이상이면 5점
+            hold_score = max(15 - (price_vs_low / 20) * 10, 5)
+
+            total_score = int(spike_score + silence_score + supply_score + hold_score)
+            total_score = min(total_score, 100)
 
             stars = "★" * (total_score // 20) + "☆" * (5 - total_score // 20)
 
-            # 수급 텍스트
             if foreign_buy_days > 0 and inst_buy_days > 0:
-                supply_text = "외인+기관"
+                supply_text = "외인+기관 양매수"
             elif foreign_buy_days > 0:
                 supply_text = "외인매수"
             else:
                 supply_text = "기관매수"
 
-            # 거래량 신호 횟수 태그
-            vol_tag = f"거래량신호 {vol_signal_days}회"
+            # 스파이크 이후 경과 일수
+            days_after_spike = len(after_spike)
 
             name         = stock.get_market_ticker_name(ticker)
-            expected_ret = round(3.0 + (total_score / 100) * 12.0, 1)  # 3~15% 범위
+            expected_ret = round(5.0 + (total_score / 100) * 12.0, 1)
 
             final_picks.append({
                 "name":            name,
                 "code":            ticker,
                 "supply":          supply_text,
-                "volume_growth":   f"+{int(avg_vol_ratio * 100)}% (평균)",
+                "volume_growth":   f"+{int(spike_vol_ratio * 100)}%",
                 "score":           f"{stars} ({total_score}점)",
-                "tags":            f"저평가 / {vol_tag} / 모멘텀 {momentum_20d:.1f}%",
+                "tags":            f"스파이크 {days_after_spike}일전 / 침묵중 / 저가지지",
                 "expected_return": f"{expected_ret}%"
             })
 
-            print(f"  ✅ {name}({ticker}) | {stars} {total_score}점 | {supply_text} | 모멘텀 {momentum_20d:.1f}%")
+            print(f"  ✅ {name}({ticker}) | {stars} {total_score}점 | {supply_text} | 스파이크 {days_after_spike}일전")
 
         except Exception:
             continue
 
     # 필터 단계별 결과
-    print("\n📊 [필터 단계별 생존 현황]")
-    print(f"  전체 검사:       {filter_log['total']:>5}건")
-    print(f"  동전주 컷:       {filter_log['penny']:>5}건 (생존)")
-    print(f"  이중 상승추세:   {filter_log['trend']:>5}건")
-    print(f"  거래량 신호 2회: {filter_log['vol_sig']:>5}건")
-    print(f"  모멘텀 양호:     {filter_log['momentum']:>5}건")
-    print(f"  수급 2일 이상:   {filter_log['supply']:>5}건")
-    print(f"  재무 통과:       {filter_log['fin']:>5}건  ← 최종 픽")
+    print("\n📊 [세력 흔적 탐지 필터 생존 현황]")
+    print(f"  전체 검사:         {filter_log['total']:>5}건")
+    print(f"  동전주 컷:         {filter_log['penny']:>5}건  (생존)")
+    print(f"  스파이크 발견:     {filter_log['spike']:>5}건  (20일 내 250%↑ 양봉)")
+    print(f"  거래량 침묵:       {filter_log['silence']:>5}건  (스파이크 대비 50%↓)")
+    print(f"  저가 위 유지:      {filter_log['hold']:>5}건  (세력 방어선 위)")
+    print(f"  수급 확인:         {filter_log['supply']:>5}건  (외인/기관 1일↑)")
+    print(f"  재무 통과:         {filter_log['fin']:>5}건  ← 최종 픽")
 
     # ── 수동 픽 검증 ──────────────────────────────────────────────
     my_manual_report = []
@@ -231,7 +246,7 @@ def analyze_with_manual_picks():
             except Exception:
                 continue
 
-    # ── 백테스트 ──────────────────────────────────────────────────
+    # ── 백테스트 (7일 후 수익률) ──────────────────────────────────
     performance_results = {"win_rate": 0.0, "avg_return": 0.0, "total_cases": 0}
     history_data = []
 
@@ -245,17 +260,17 @@ def analyze_with_manual_picks():
 
         for record in history_data:
             past_date = datetime.datetime.strptime(record['date'], "%Y%m%d")
-            if (now - past_date).days >= 14:   # 2주 후 수익률 체크 (완만한 상승 컨셉)
+            if (now - past_date).days >= 7:
                 for pick in record['picks']:
                     try:
                         df_p = fdr.DataReader(pick['code'], record['date'], today_str)
                         if len(df_p) >= 2:
                             entry = df_p['Close'].iloc[0]
-                            exit_ = df_p['Close'].iloc[min(10, len(df_p) - 1)]  # 10영업일(2주) 후
+                            exit_ = df_p['Close'].iloc[min(5, len(df_p) - 1)]
                             ret   = ((exit_ / entry) - 1) * 100
                             total_return += ret
                             total_cases  += 1
-                            if ret >= 5.0:   # 목표: 2주 내 +5% (급등 컨셉의 +10%에서 완화)
+                            if ret >= 7.0:
                                 win_cases += 1
                     except Exception:
                         continue

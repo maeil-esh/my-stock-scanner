@@ -152,30 +152,128 @@ function initLoad() {
     const container = document.getElementById('top5');
     container.innerHTML = '<div class="text-center text-gray-600 py-20 italic">데이터를 불러오는 중입니다...</div>';
 
+ let currentMarket = 'kr';
+
+const RANKS = [
+    { label:'#1', cardCls:'card-gold',   color:'#FFD700' },
+    { label:'#2', cardCls:'card-silver', color:'#C0C0C0' },
+    { label:'#3', cardCls:'card-bronze', color:'#CD7F32' },
+    { label:'#4', cardCls:'card-4',      color:'#60a5fa' },
+    { label:'#5', cardCls:'card-5',      color:'#34d399' },
+];
+
+const FACTOR_STYLE = {
+    '세력흔적':     'bg-blue-900/40 text-blue-300',
+    'BB수축':       'bg-indigo-900/40 text-indigo-300',
+    'OBV다이버전스':'bg-cyan-900/40 text-cyan-300',
+    'RSI위치':      'bg-orange-900/40 text-orange-300',
+    '수급강도':     'bg-purple-900/40 text-purple-300',
+    '돌파임박':     'bg-yellow-900/40 text-yellow-300',
+};
+
+// [시장 전환 함수]
+function switchMarket(market) {
+    currentMarket = market;
+    document.getElementById('btn-kr').className = `px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 ${market === 'kr' ? 'bg-[#1e40af] text-white border-[#3b82f6]' : 'text-gray-500 border-transparent'}`;
+    document.getElementById('btn-us').className = `px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 ${market === 'us' ? 'bg-[#1e40af] text-white border-[#3b82f6]' : 'text-gray-500 border-transparent'}`;
+    
+    initLoad();
+}
+
+// [데이터 로드 함수]
+function initLoad() {
+    const fileName = currentMarket === 'kr' ? 'stock_data.json' : 'stock_data_us.json';
+    const container = document.getElementById('top5');
+    container.innerHTML = '<div class="text-center text-gray-600 py-20 italic">데이터를 불러오는 중입니다...</div>';
+
     fetch(fileName)
-        .then(r => r.json())
+        .then(r => { if (!r.ok) throw new Error(fileName + ' 파일이 없습니다.'); return r.json(); })
         .then(data => {
-            // 기존 렌더링 로직 실행 (전략 요약 텍스트도 시장에 맞게 변경)
-            document.querySelector('p.text-gray-500').textContent = currentMarket === 'kr'
-                ? "기관 3일 연속 × 52주 돌파 임박 × VCP × 스마트머니 — 7일 내 +10% 목표"
-                : "Micro-Float × High Short Interest × Volume Spike — 미국 시장 숏스퀴즈 탐지";
-            
-            // 기존의 데이터 매핑 로직(document.getElementById... 등)을 여기에 연결
-            renderData(data); 
+            renderHeader(data);
+            renderKPI(data);
+            renderMainList(data);
         })
         .catch(err => {
-            container.innerHTML = `<div class="text-center text-red-400 py-16 text-sm">⚠️ ${currentMarket.toUpperCase()} 데이터를 찾을 수 없습니다.</div>`;
+            container.innerHTML = `<div class="text-center text-red-400 py-16 text-sm">⚠️ ${err.message}<br><span class="text-gray-600 text-[10px] mt-2 block">GitHub Actions가 먼저 성공해야 데이터가 생성됩니다.</span></div>`;
         });
+}
+
+// [1. 헤더/날짜 업데이트]
+function renderHeader(data) {
+    const now = new Date();
+    document.getElementById('update-time').textContent = `업데이트: ${now.toLocaleDateString('ko-KR')} ${now.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}`;
+    document.getElementById('base-date').textContent = `기준일: ${data.base_date || '-'}`;
+    document.querySelector('p.text-gray-500').textContent = currentMarket === 'kr'
+        ? "기관 3일 연속 × 52주 돌파 임박 × VCP — 한국 시장 승률 극대화 전략"
+        : "Micro-Float × High Short Interest — 미국 시장 숏스퀴즈 탐지";
+}
+
+// [2. 상단 KPI 업데이트]
+function renderKPI(data) {
+    const perf = data.performance || {};
+    document.getElementById('win-rate').textContent = perf.win_rate != null ? perf.win_rate + '%' : '--%';
+    document.getElementById('avg-return').textContent = perf.avg_return != null ? (perf.avg_return >= 0 ? '+' : '') + perf.avg_return + '%' : '--%';
+    document.getElementById('candidate-count').textContent = (data.today_picks?.length || 0) + '건';
+    
+    const fl = data.filter_log || {};
+    if (currentMarket === 'kr') {
+        document.getElementById('kpi-4-val').textContent = (fl.inst3 ?? '--') + '건';
+    } else {
+        document.getElementById('kpi-4-val').textContent = 'US Mode';
+    }
+}
+
+// [3. 메인 종목 리스트 생성]
+function renderMainList(data) {
+    const picks = data.today_picks || [];
+    const container = document.getElementById('top5');
+    container.innerHTML = '';
+
+    if (picks.length === 0) {
+        container.innerHTML = `<div class="bg-[#111827] border border-gray-800 rounded-2xl p-10 text-center text-gray-500">조건을 충족하는 종목이 없습니다.</div>`;
+        return;
+    }
+
+    picks.forEach((item, i) => {
+        const rm = RANKS[i] || RANKS[4];
+        const detail = item.score_detail || {};
+        const meta = item.meta || {};
+        const currency = currentMarket === 'kr' ? '원' : '$';
+
+        const badges = Object.entries(detail).sort((a,b) => b[1]-a[1]).map(([k,v]) => {
+            const s = FACTOR_STYLE[k] || 'bg-gray-800 text-gray-400';
+            return `<span class="badge ${s}">${k} ${v}</span>`;
+        }).join('');
+
+        container.innerHTML += `
+        <div class="rounded-2xl border overflow-hidden ${rm.cardCls} mb-4">
+            <div class="flex">
+                <div class="flex-shrink-0 w-14 flex items-center justify-center border-r" style="border-color:${rm.color}33; background:${rm.color}11;">
+                    <span class="text-xl font-black" style="color:${rm.color}">${rm.label}</span>
+                </div>
+                <div class="flex-1 p-4">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <div class="text-lg font-black text-white">${item.name}</div>
+                            <div class="text-[11px] text-gray-500">${item.code} · ${item.cur_price}${currency}</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-yellow-400 font-black">${item.score}</div>
+                            <div class="text-[10px] text-gray-400 mt-0.5">${item.supply}</div>
+                        </div>
+                    </div>
+                    <div class="text-[11px] text-gray-400 bg-black/20 rounded-lg px-3 py-2 mb-3 leading-relaxed border-l-2 border-gray-700">
+                        ${item.company_summary || item.tags}
+                    </div>
+                    <div class="flex flex-wrap gap-1 mb-2">${badges}</div>
+                    <div class="text-right">
+                        <span class="text-green-400 font-black text-sm">기대수익 ${item.expected_return}</span>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+    });
 }
 
 // 초기 로딩
 initLoad();
-        document.getElementById('top5').innerHTML = `
-        <div class="text-center text-red-400 py-16 text-sm">
-            ⚠️ ${err.message}<br>
-            <span class="text-gray-600 text-xs mt-2 block">GitHub Pages 환경에서 실행하세요</span>
-        </div>`;
-    });
-</script>
-</body>
-</html>

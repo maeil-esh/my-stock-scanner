@@ -19,7 +19,7 @@ jobs:
 
       - name: Install libraries
         run: |
-          pip install pykrx pandas FinanceDataReader
+          pip install pykrx pandas finance-datareader
 
       - name: Run Analysis Engine
         run: python engine.py

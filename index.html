@@ -3,40 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ULTIMATE ALPHA v3 — 7일 승률 극대화</title>
+    <title>ULTIMATE ALPHA v3 — KR × US</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         body { background: #080d1a; }
         .bar-fill { transition: width 1.2s cubic-bezier(.4,0,.2,1); }
-        .card-gold   { border-color: #FFD70055; background: #FFD70008; }
-        .card-silver { border-color: #C0C0C055; background: #C0C0C008; }
-        .card-bronze { border-color: #CD7F3255; background: #CD7F3208; }
-        .card-4      { border-color: #60a5fa55; background: #60a5fa08; }
-        .card-5      { border-color: #34d39955; background: #34d39908; }
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 3px;
-            padding: 2px 8px;
-            border-radius: 999px;
-            font-size: 10px;
-            font-weight: 600;
-        }
-        .market-btn-active { background:#1e40af; color:#fff; border-color:#3b82f6; }
-        .market-btn-idle   { color:#6b7280; border-color:transparent; }
+        .card-gold   { border-color:#FFD70055; background:#FFD70008; }
+        .card-silver { border-color:#C0C0C055; background:#C0C0C008; }
+        .card-bronze { border-color:#CD7F3255; background:#CD7F3208; }
+        .card-4      { border-color:#60a5fa55; background:#60a5fa08; }
+        .card-5      { border-color:#34d39955; background:#34d39908; }
+        .badge { display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:600; }
+        .mkt-active { background:#1e40af!important; color:#fff!important; border-color:#3b82f6!important; }
+        .mkt-idle   { color:#6b7280!important; border-color:transparent!important; background:transparent!important; }
     </style>
 </head>
 <body class="text-gray-100 font-sans min-h-screen">
 
 <header class="px-6 pt-8 pb-4 max-w-4xl mx-auto">
+
+    <!-- 시장 탭 -->
     <div class="flex bg-[#111827] p-1 rounded-xl border border-gray-800 mb-6 w-fit">
         <button onclick="switchMarket('kr')" id="btn-kr"
-            class="market-btn-active px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 border">
+            class="mkt-active px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 border transition-all">
             🇰🇷 한국 시장
         </button>
         <button onclick="switchMarket('us')" id="btn-us"
-            class="market-btn-idle px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 border ml-1">
+            class="mkt-idle px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 border ml-1 transition-all">
             🇺🇸 미국 시장
         </button>
     </div>
@@ -47,9 +41,7 @@
                 <i class="fa-solid fa-trophy text-yellow-400 mr-2"></i>ULTIMATE ALPHA
                 <span class="text-yellow-400 text-lg">v3</span>
             </h1>
-            <p id="strategy-desc" class="text-gray-500 text-xs mt-1">
-                기관 3일 연속 × 52주 돌파 임박 × VCP × 스마트머니 — 7일 내 +10% 목표
-            </p>
+            <p id="strategy-desc" class="text-gray-500 text-xs mt-1"></p>
         </div>
         <div class="text-right">
             <div id="update-time" class="text-gray-500 text-xs">로딩 중...</div>
@@ -60,33 +52,36 @@
 
 <main class="max-w-4xl mx-auto px-6 pb-16">
 
+    <!-- KPI (공통) -->
     <div class="grid grid-cols-4 gap-3 mb-8 mt-4">
         <div class="bg-[#111827] rounded-xl p-4 border border-gray-800 text-center">
-            <p class="text-gray-500 text-[11px] mb-1">승률 (7일 +10%↑)</p>
+            <p id="kpi1-label" class="text-gray-500 text-[11px] mb-1">승률</p>
             <p id="win-rate" class="text-2xl font-black text-green-400">--%</p>
             <p id="total-cases" class="text-[10px] text-gray-600 mt-0.5">누적 중</p>
         </div>
         <div class="bg-[#111827] rounded-xl p-4 border border-gray-800 text-center">
             <p class="text-gray-500 text-[11px] mb-1">평균 수익률</p>
             <p id="avg-return" class="text-2xl font-black text-blue-400">--%</p>
-            <p class="text-[10px] text-gray-600 mt-0.5">7일 홀딩 기준</p>
+            <p class="text-[10px] text-gray-600 mt-0.5">홀딩 기준</p>
         </div>
         <div class="bg-[#111827] rounded-xl p-4 border border-gray-800 text-center">
             <p class="text-gray-500 text-[11px] mb-1">오늘 최종 후보</p>
             <p id="candidate-count" class="text-2xl font-black text-yellow-400">--</p>
-            <p id="screened-total" class="text-[10px] text-gray-600 mt-0.5">전체 스크리닝</p>
+            <p id="screened-total" class="text-[10px] text-gray-600 mt-0.5"></p>
         </div>
         <div class="bg-[#111827] rounded-xl p-4 border border-gray-800 text-center">
-            <p id="kpi-label-4" class="text-gray-500 text-[11px] mb-1">기관연속 통과</p>
-            <p id="inst3-count" class="text-2xl font-black text-purple-400">--</p>
-            <p id="kpi-sub-4" class="text-[10px] text-gray-600 mt-0.5">3일 연속 매수</p>
+            <p id="kpi4-label" class="text-gray-500 text-[11px] mb-1">특수 필터</p>
+            <p id="kpi4-val" class="text-2xl font-black text-purple-400">--</p>
+            <p id="kpi4-sub" class="text-[10px] text-gray-600 mt-0.5"></p>
         </div>
     </div>
 
+    <!-- 종목 카드 -->
     <div id="top5" class="space-y-4 mb-10">
         <div class="text-center text-gray-600 py-20">데이터 로딩 중...</div>
     </div>
 
+    <!-- 수동 픽 -->
     <div id="my-picks-section" class="hidden bg-[#111827] rounded-2xl border border-yellow-900/30 overflow-hidden mb-8">
         <div class="px-6 py-4 border-b border-gray-800">
             <h3 class="text-sm font-bold text-yellow-400">
@@ -107,11 +102,15 @@
         </table>
     </div>
 
-    <div id="strategy-card" class="bg-[#111827]/60 rounded-2xl border border-dashed border-gray-800 p-6"></div>
+    <!-- 전략 설명 패널 -->
+    <div id="strategy-panel" class="bg-[#111827]/60 rounded-2xl border border-dashed border-gray-800 p-6"></div>
+
 </main>
 
 <script>
-// 1. 공통 상수 및 설정
+// ══════════════════════════════════════════════════════════════
+//  상수
+// ══════════════════════════════════════════════════════════════
 const RANKS = [
     { label:'#1', cardCls:'card-gold',   color:'#FFD700' },
     { label:'#2', cardCls:'card-silver', color:'#C0C0C0' },
@@ -120,7 +119,7 @@ const RANKS = [
     { label:'#5', cardCls:'card-5',      color:'#34d399' },
 ];
 
-const FACTOR_STYLE = {
+const KR_FACTOR_STYLE = {
     '세력흔적':      'bg-blue-900/40 text-blue-300',
     'BB수축':        'bg-indigo-900/40 text-indigo-300',
     'OBV다이버전스': 'bg-cyan-900/40 text-cyan-300',
@@ -129,241 +128,437 @@ const FACTOR_STYLE = {
     '돌파임박':      'bg-yellow-900/40 text-yellow-300',
 };
 
+const US_FACTOR_STYLE = {
+    '공매도강도': 'bg-red-900/40 text-red-300',
+    '거래량급증': 'bg-orange-900/40 text-orange-300',
+    '유통주희소': 'bg-purple-900/40 text-purple-300',
+    '커버소요일': 'bg-pink-900/40 text-pink-300',
+};
+
+// ══════════════════════════════════════════════════════════════
+//  상태
+// ══════════════════════════════════════════════════════════════
 let currentMarket = 'kr';
 
-// 2. 시장 전환 로직
+// ══════════════════════════════════════════════════════════════
+//  시장 전환
+// ══════════════════════════════════════════════════════════════
 function switchMarket(market) {
     currentMarket = market;
-    document.getElementById('btn-kr').className =
-        `px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 border ml-0 ${
-            market === 'kr' ? 'market-btn-active' : 'market-btn-idle'
-        }`;
-    document.getElementById('btn-us').className =
-        `px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 border ml-1 ${
-            market === 'us' ? 'market-btn-active' : 'market-btn-idle'
-        }`;
+    ['kr','us'].forEach(m => {
+        document.getElementById('btn-' + m).className =
+            `px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 border transition-all ml-${m==='us'?'1':'0'} ${
+                m === market ? 'mkt-active' : 'mkt-idle'}`;
+    });
     initLoad();
 }
 
-// 3. 데이터 로드 및 렌더링 지휘
+// ══════════════════════════════════════════════════════════════
+//  데이터 로드
+// ══════════════════════════════════════════════════════════════
 function initLoad() {
-    const fileName = currentMarket === 'kr' ? 'stock_data.json' : 'stock_data_us.json';
+    const file = currentMarket === 'kr' ? 'stock_data.json' : 'stock_data_us.json';
     document.getElementById('top5').innerHTML =
         '<div class="text-center text-gray-600 py-20">데이터 로딩 중...</div>';
+    document.getElementById('my-picks-section').classList.add('hidden');
 
-    fetch(fileName)
-        .then(r => {
-            if (!r.ok) throw new Error(`${fileName} 파일이 없습니다.`);
-            return r.json();
-        })
+    fetch(file)
+        .then(r => { if (!r.ok) throw new Error(`${file} 파일이 없습니다.`); return r.json(); })
         .then(data => {
             renderHeader(data);
             renderKPI(data);
-            renderPicks(data);
+            currentMarket === 'kr' ? renderKrPicks(data) : renderUsPicks(data);
             renderMyPicks(data);
-            renderStrategyDetail();
         })
         .catch(err => {
             document.getElementById('top5').innerHTML = `
-                <div class="text-center text-red-400 py-16 text-sm">
-                    ⚠️ ${err.message}<br>
-                    <span class="text-gray-600 text-xs mt-2 block">GitHub Actions가 먼저 성공해야 데이터가 생성됩니다.</span>
-                </div>`;
-            // 에러 시 지표 초기화
-            document.getElementById('win-rate').textContent = '--%';
-            document.getElementById('avg-return').textContent = '--%';
-            document.getElementById('candidate-count').textContent = '--';
-            document.getElementById('inst3-count').textContent = '--';
-            renderStrategyDetail();
+            <div class="bg-[#111827] border border-gray-800 rounded-2xl p-10 text-center">
+                <div class="text-3xl mb-3">⚠️</div>
+                <div class="text-gray-400 text-sm">${err.message}</div>
+                <div class="text-gray-600 text-xs mt-2">GitHub Actions가 먼저 성공해야 데이터가 생성됩니다.</div>
+            </div>`;
+        })
+        .finally(() => {
+            renderStrategyPanel();  // 성공/실패 무관하게 항상 표시
         });
 }
 
-// 4. 헤더 렌더링
+// ══════════════════════════════════════════════════════════════
+//  공통 렌더링
+// ══════════════════════════════════════════════════════════════
 function renderHeader(data) {
     const now = new Date();
     document.getElementById('update-time').textContent =
-        `업데이트: ${now.toLocaleDateString('ko-KR')} ${now.toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit'})}`;
+        `업데이트: ${now.toLocaleDateString('ko-KR')} ${now.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}`;
     document.getElementById('base-date').textContent = `기준일: ${data.base_date || '-'}`;
     document.getElementById('strategy-desc').textContent = currentMarket === 'kr'
-        ? '기관 3일 연속 × 52주 돌파 임박 × VCP — 한국 시장 승률 극대화 전략'
-        : 'Micro-Float × High Short Interest — 미국 시장 숏스퀴즈 탐지';
+        ? '기관 3일 연속 × 52주 돌파 임박 × VCP — 한국 시장 승률 극대화'
+        : 'Short Squeeze 탐지 × Micro-Float × 거래량 급등 — 미국 메가 러너 포착';
 }
 
-// 5. 전략 상세 요약 렌더링
-function renderStrategyDetail() {
-    const card = document.getElementById('strategy-card');
-    if (currentMarket === 'kr') {
-        card.innerHTML = `
-            <h4 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-5">🇰🇷 한국 세력주 전략 (250점 채점)</h4>
-            <div class="grid grid-cols-2 gap-6 text-xs text-gray-500">
-                <div class="space-y-2">
-                    <p class="font-bold text-gray-400 mb-2">진입 필터 (AND 조건)</p>
-                    <p>• 1,000원↑ + MA50 > MA200 정배열</p>
-                    <p>• 시총 500억~3조 (스윙 최적 구간)</p>
-                    <p class="text-purple-300">• 기관 3일 연속 순매수 (핵심)</p>
-                </div>
-                <div class="space-y-1">
-                    <p class="font-bold text-gray-400 mb-2">채점 팩터 (250점)</p>
-                    <p>세력 흔적 / 수급 강도 / BB 수축도</p>
-                    <p>OBV 다이버전스 / 52주 고가 근접 / RSI</p>
-                </div>
-            </div>`;
-    } else {
-        card.innerHTML = `
-            <h4 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-5">🇺🇸 미국 숏스퀴즈 메가러너 전략</h4>
-            <div class="grid grid-cols-2 gap-6 text-xs text-gray-500">
-                <div class="space-y-2">
-                    <p class="font-bold text-gray-400 mb-2">포착 조건 (Squeeze Mode)</p>
-                    <p>• Micro-Float: 유통주식수 50M 이하</p>
-                    <p>• High Short Interest: 공매도 15% 이상</p>
-                    <p class="text-red-400">• Squeeze Score: 숏스퀴즈 임박 점수화</p>
-                </div>
-                <div class="space-y-2">
-                    <p class="font-bold text-gray-400 mb-2">운용 팁</p>
-                    <p>• Volume Spike: 거래량 평소 대비 2.5배↑</p>
-                    <p>• 개장 전(Pre-market) 강한 거래량 확인 필수</p>
-                </div>
-            </div>`;
-    }
-}
-
-// 6. KPI 지표 렌더링
 function renderKPI(data) {
     const perf = data.performance || {};
-    const fl = data.filter_log || {};
+    const fl   = data.filter_log  || {};
 
-    document.getElementById('win-rate').textContent = perf.win_rate != null ? perf.win_rate + '%' : '--%';
-    document.getElementById('avg-return').textContent = perf.avg_return != null ? (perf.avg_return >= 0 ? '+' : '') + perf.avg_return + '%' : '--%';
-    document.getElementById('total-cases').textContent = perf.total_cases ? `${perf.total_cases}건 기준` : '누적 중';
-    document.getElementById('candidate-count').textContent = (data.total_candidates ?? '--') + '건';
-    document.getElementById('screened-total').textContent = data.total_screened ? `${Number(data.total_screened).toLocaleString()}종목 채점` : '';
+    document.getElementById('win-rate').textContent =
+        perf.win_rate != null ? perf.win_rate + '%' : '--%';
+    document.getElementById('avg-return').textContent =
+        perf.avg_return != null ? (perf.avg_return >= 0 ? '+' : '') + perf.avg_return + '%' : '--%';
+    document.getElementById('total-cases').textContent =
+        perf.total_cases ? `${perf.total_cases}건 기준` : '누적 중';
+    document.getElementById('candidate-count').textContent =
+        (data.total_candidates ?? '--') + '건';
+    document.getElementById('screened-total').textContent =
+        data.total_screened ? `${Number(data.total_screened).toLocaleString()}종목 채점` : '';
 
-    const kpiLabel4 = document.getElementById('kpi-label-4');
-    const kpiSub4 = document.getElementById('kpi-sub-4');
     if (currentMarket === 'kr') {
-        kpiLabel4.textContent = '기관연속 통과';
-        document.getElementById('inst3-count').textContent = (fl.inst3 ?? '--') + '건';
-        kpiSub4.textContent = '3일 연속 매수';
+        document.getElementById('kpi1-label').textContent  = '승률 (7일 +10%↑)';
+        document.getElementById('kpi4-label').textContent  = '기관연속 통과';
+        document.getElementById('kpi4-val').textContent    = (fl.inst3 ?? '--') + '건';
+        document.getElementById('kpi4-sub').textContent    = '3일 연속 매수';
+        document.getElementById('kpi4-val').className      = 'text-2xl font-black text-purple-400';
     } else {
-        kpiLabel4.textContent = '미국 시장 상태';
-        document.getElementById('inst3-count').textContent = 'ACTIVE';
-        kpiSub4.textContent = '실시간 분석 중';
+        document.getElementById('kpi1-label').textContent  = '승률 (숏스퀴즈 성공)';
+        document.getElementById('kpi4-label').textContent  = '스캔 종목수';
+        document.getElementById('kpi4-val').textContent    = (data.total_screened ?? '--') + '건';
+        document.getElementById('kpi4-sub').textContent    = '워치리스트 스캔';
+        document.getElementById('kpi4-val').className      = 'text-2xl font-black text-red-400';
     }
 }
 
-// 7. 종목 카드 리스트 렌더링
-function renderPicks(data) {
+function renderMyPicks(data) {
+    const mp = data.my_manual_report || [];
+    if (!mp.length) return;
+    document.getElementById('my-picks-section').classList.remove('hidden');
+    document.getElementById('my-picks-table').innerHTML = mp.map(p => {
+        const c = p.profit >= 0 ? 'text-green-400' : 'text-red-400';
+        const s = p.profit >= 0 ? '+' : '';
+        return `<tr class="hover:bg-white/5">
+            <td class="px-6 py-3 text-gray-500 text-xs">${p.date}</td>
+            <td class="px-6 py-3 font-bold">${p.name}</td>
+            <td class="px-6 py-3 font-mono text-gray-300">${Number(p.buy_price).toLocaleString()}원</td>
+            <td class="px-6 py-3 font-mono text-gray-300">${Number(p.curr_price).toLocaleString()}원</td>
+            <td class="px-6 py-3 text-right font-black ${c}">${s}${p.profit}%</td>
+        </tr>`;
+    }).join('');
+}
+
+// ══════════════════════════════════════════════════════════════
+//  한국 시장 카드
+// ══════════════════════════════════════════════════════════════
+function renderKrPicks(data) {
     const picks = data.today_picks || [];
-    const container = document.getElementById('top5');
-    container.innerHTML = '';
+    const el    = document.getElementById('top5');
+    el.innerHTML = '';
 
-    if (picks.length === 0) {
-        const msg = currentMarket === 'kr'
-            ? "기관 3일 연속 + 외인 동시 + 52주 돌파 임박을<br>모두 만족하는 종목이 오늘은 없습니다."
-            : "Micro-Float + High Short Interest 조건을<br>모두 만족하는 폭등 후보 종목이 오늘은 없습니다.";
-
-        container.innerHTML = `
-            <div class="bg-[#111827] border border-gray-800 rounded-2xl p-10 text-center">
-                <div class="text-4xl mb-4">🔍</div>
-                <div class="text-lg font-bold text-gray-300 mb-2">오늘은 조건 충족 종목 없음</div>
-                <div class="text-sm text-gray-500 leading-relaxed">${msg}</div>
-            </div>`;
+    if (!picks.length) {
+        el.innerHTML = noSignalHtml('기관 3일 연속 + 외인 동시 + 52주 돌파 임박을 모두 만족하는 종목이 없습니다.');
         return;
     }
 
-    const currency = currentMarket === 'kr' ? '원' : '$';
-
     picks.forEach((item, i) => {
-        const rm = RANKS[i] || RANKS[4];
-        const detail = item.score_detail || {};
-        const meta = item.meta || {};
-        const scoreMatch = String(item.score || '').match(/\((\d+)점/);
-        const scoreNum = parseInt(scoreMatch?.[1] || 0, 10);
-        const scorePct = Math.min(Math.round((scoreNum / 250) * 100), 100);
-        const instBar = Math.min((meta.inst_streak || 0) / 5 * 100, 100);
-        const highBar = Math.max(100 - (meta.gap_to_high || 10) * 10, 0);
+        const rm       = RANKS[i] || RANKS[4];
+        const detail   = item.score_detail || {};
+        const meta     = item.meta || {};
+        const scoreNum = parseInt((item.score.match(/\((\d+)점/) || [])[1] || 0);
+        const scorePct = Math.min(Math.round(scoreNum / 250 * 100), 100);
+        const instBar  = Math.min((meta.inst_streak || 0) / 5 * 100, 100);
+        const highBar  = Math.max(100 - (meta.gap_to_high || 10) * 10, 0);
 
-        const badges = Object.entries(detail).sort((a, b) => b[1] - a[1]).map(([k, v]) => {
-            const s = FACTOR_STYLE[k] || 'bg-gray-800 text-gray-400';
-            return `<span class="badge ${s}">${k} ${v}</span>`;
-        }).join('');
+        const badges = Object.entries(detail)
+            .sort((a,b) => b[1]-a[1])
+            .map(([k,v]) => `<span class="badge ${KR_FACTOR_STYLE[k]||'bg-gray-800 text-gray-400'}">${k} ${v}</span>`)
+            .join('');
 
-        container.innerHTML += `
-        <div class="rounded-2xl border overflow-hidden ${rm.cardCls} mb-4">
+        el.innerHTML += `
+        <div class="rounded-2xl border overflow-hidden ${rm.cardCls}">
             <div class="flex">
                 <div class="flex-shrink-0 w-14 flex items-center justify-center border-r"
-                     style="border-color:${rm.color}33; background:${rm.color}11;">
+                     style="border-color:${rm.color}33;background:${rm.color}11;">
                     <span class="text-xl font-black" style="color:${rm.color}">${rm.label}</span>
                 </div>
                 <div class="flex-1 p-4">
                     <div class="flex justify-between items-start mb-2">
                         <div>
                             <div class="text-lg font-black text-white">${item.name}</div>
-                            <div class="text-[11px] text-gray-500">${item.code} · ${item.cur_price ? Number(item.cur_price).toLocaleString() + currency : '-'} ${meta.mktcap ? '· 시총 ' + Number(meta.mktcap).toLocaleString() + '억' : ''}</div>
+                            <div class="text-[11px] text-gray-500">
+                                ${item.code}
+                                · ${item.cur_price ? Number(item.cur_price).toLocaleString() + '원' : '-'}
+                                ${meta.mktcap ? '· 시총 ' + Number(meta.mktcap).toLocaleString() + '억' : ''}
+                            </div>
                         </div>
                         <div class="text-right">
-                            <div class="text-yellow-400 font-black">${item.score || '-'}</div>
-                            <div class="text-[10px] text-gray-400 mt-0.5">${item.supply || '-'}</div>
+                            <div class="text-yellow-400 font-black text-sm">${item.score}</div>
+                            <div class="text-[10px] text-gray-400 mt-0.5">${item.supply}</div>
                         </div>
                     </div>
-                    ${item.company_summary ? `<div class="text-[11px] text-gray-400 bg-black/20 rounded-lg px-3 py-2 mb-3 leading-relaxed border-l-2 border-gray-700">${item.company_summary}</div>` : ''}
+                    ${item.company_summary ? `
+                    <div class="text-[11px] text-gray-400 bg-black/20 rounded-lg px-3 py-2 mb-3 leading-relaxed border-l-2 border-gray-700">
+                        <i class="fa-solid fa-building text-gray-600 mr-1" style="font-size:10px;"></i>${item.company_summary}
+                    </div>` : ''}
                     <div class="grid grid-cols-2 gap-3 mb-3">
                         <div>
                             <div class="flex justify-between text-[10px] text-gray-500 mb-1">
-                                <span>핵심 강도</span>
-                                <span class="text-purple-400 font-bold">${currentMarket === 'kr' ? (meta.inst_streak || 0) + '일 연속' : 'Squeeze Score'}</span>
+                                <span>기관 연속 매수</span>
+                                <span class="text-purple-400 font-bold">${meta.inst_streak||0}일 연속</span>
                             </div>
                             <div class="w-full bg-gray-800 rounded-full h-1.5">
-                                <div class="h-1.5 rounded-full bar-fill bg-purple-500" style="width:0%" data-target="${currentMarket === 'kr' ? instBar : scorePct}"></div>
+                                <div class="h-1.5 rounded-full bar-fill bg-purple-500" style="width:0%" data-target="${instBar}"></div>
                             </div>
                         </div>
                         <div>
                             <div class="flex justify-between text-[10px] text-gray-500 mb-1">
-                                <span>상승 여력</span>
-                                <span class="text-yellow-400 font-bold">${item.expected_return || '-'}</span>
+                                <span>52주 고가 근접</span>
+                                <span class="text-yellow-400 font-bold">${meta.gap_to_high||0}% 남음</span>
                             </div>
                             <div class="w-full bg-gray-800 rounded-full h-1.5">
                                 <div class="h-1.5 rounded-full bar-fill bg-yellow-500" style="width:0%" data-target="${highBar}"></div>
                             </div>
                         </div>
                     </div>
+                    <div class="mb-3">
+                        <div class="flex justify-between text-[10px] text-gray-500 mb-1">
+                            <span>종합 점수</span><span>${scorePct}% (${scoreNum}/250)</span>
+                        </div>
+                        <div class="w-full bg-gray-800 rounded-full h-1.5">
+                            <div class="h-1.5 rounded-full bar-fill" style="width:0%;background:${rm.color}" data-target="${scorePct}"></div>
+                        </div>
+                    </div>
                     <div class="flex flex-wrap gap-1 mb-2">${badges}</div>
-                    <div class="text-right text-green-400 font-black text-sm">기대수익 ${item.expected_return || '-'}</div>
+                    <div class="flex flex-wrap gap-x-3 text-[10px] text-gray-500 mb-2">
+                        <span>RSI <span class="text-gray-300 font-mono">${meta.rsi||'-'}</span></span>
+                        <span>BB수축 <span class="text-gray-300 font-mono">${meta.bb_compress||0}%</span></span>
+                        <span>10일진폭 <span class="text-gray-300 font-mono">${meta.price_range||0}%</span></span>
+                        <span>거래량비율 <span class="text-gray-300 font-mono">${Math.round((meta.vol_ratio||0)*100)}%</span></span>
+                        ${meta.spike_days_ago?`<span>스파이크 <span class="text-gray-300 font-mono">${meta.spike_days_ago}일전</span></span>`:''}
+                        <span>외인연속 <span class="text-gray-300 font-mono">${meta.for_streak||0}일</span></span>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-green-400 font-black text-sm">기대수익 +${item.expected_return}</span>
+                        <span class="text-gray-600 text-[10px] ml-1">(7일 목표)</span>
+                    </div>
                 </div>
             </div>
         </div>`;
     });
 
+    animateBars();
+}
+
+// ══════════════════════════════════════════════════════════════
+//  미국 시장 카드
+// ══════════════════════════════════════════════════════════════
+function renderUsPicks(data) {
+    const picks = data.today_picks || [];
+    const el    = document.getElementById('top5');
+    el.innerHTML = '';
+
+    if (!picks.length) {
+        el.innerHTML = noSignalHtml('오늘 워치리스트에서 숏스퀴즈 조건을 충족하는 종목이 없습니다.');
+        return;
+    }
+
+    picks.forEach((item, i) => {
+        const rm     = RANKS[i] || RANKS[4];
+        const detail = item.score_detail || {};
+        const meta   = item.meta || {};
+
+        const scoreNum = parseInt((item.score.match(/(\d+)점/) || [])[1] || 0);
+        const scorePct = Math.min(scoreNum, 100);
+
+        // 숏 비율 바
+        const shortBar  = Math.min((meta.short_pct || 0) / 60 * 100, 100);
+        // 거래량 스파이크 바
+        const volBar    = Math.min((meta.vol_spike || 0) / 10 * 100, 100);
+        // 유통주 희소성 바 (적을수록 높음)
+        const floatBar  = Math.max(100 - (meta.float_m || 50) / 50 * 100, 0);
+
+        // 스퀴즈 레벨 색상
+        const squeezeColor =
+            scoreNum >= 80 ? '#ef4444' :
+            scoreNum >= 60 ? '#f97316' : '#eab308';
+
+        const badges = Object.entries(detail)
+            .sort((a,b) => b[1]-a[1])
+            .map(([k,v]) => `<span class="badge ${US_FACTOR_STYLE[k]||'bg-gray-800 text-gray-400'}">${k} ${v}점</span>`)
+            .join('');
+
+        el.innerHTML += `
+        <div class="rounded-2xl border overflow-hidden ${rm.cardCls}">
+            <div class="flex">
+                <div class="flex-shrink-0 w-14 flex items-center justify-center border-r"
+                     style="border-color:${rm.color}33;background:${rm.color}11;">
+                    <span class="text-xl font-black" style="color:${rm.color}">${rm.label}</span>
+                </div>
+                <div class="flex-1 p-4">
+
+                    <!-- 헤더 -->
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-lg font-black text-white">${item.name}</span>
+                                <span class="px-2 py-0.5 rounded text-[10px] font-black"
+                                      style="background:${squeezeColor}22;color:${squeezeColor};border:1px solid ${squeezeColor}44;">
+                                    ${item.supply.includes('EXTREME') ? '🔥 EXTREME' :
+                                      item.supply.includes('HIGH')    ? '⚡ HIGH'    : '📈 MEDIUM'}
+                                </span>
+                            </div>
+                            <div class="text-[11px] text-gray-500 mt-0.5">
+                                $${item.code}
+                                · $${Number(item.cur_price).toFixed(2)}
+                                ${meta.float_m ? '· 유통주 ' + meta.float_m + 'M' : ''}
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-black text-sm" style="color:${squeezeColor}">${item.score}</div>
+                            <div class="text-[10px] text-gray-400 mt-0.5">공매도 ${meta.short_pct||0}%</div>
+                        </div>
+                    </div>
+
+                    <!-- 기업 개요 -->
+                    ${item.company_summary ? `
+                    <div class="text-[11px] text-gray-400 bg-black/20 rounded-lg px-3 py-2 mb-3 leading-relaxed border-l-2 border-red-900">
+                        <i class="fa-solid fa-flag-usa text-gray-600 mr-1" style="font-size:10px;"></i>${item.company_summary}
+                    </div>` : ''}
+
+                    <!-- 핵심 지표 바 3개 -->
+                    <div class="space-y-2 mb-3">
+                        <div>
+                            <div class="flex justify-between text-[10px] text-gray-500 mb-1">
+                                <span>공매도 비율</span>
+                                <span class="text-red-400 font-bold">${meta.short_pct||0}%</span>
+                            </div>
+                            <div class="w-full bg-gray-800 rounded-full h-1.5">
+                                <div class="h-1.5 rounded-full bar-fill bg-red-500" style="width:0%" data-target="${shortBar}"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-[10px] text-gray-500 mb-1">
+                                <span>거래량 스파이크</span>
+                                <span class="text-orange-400 font-bold">${meta.vol_spike||0}배</span>
+                            </div>
+                            <div class="w-full bg-gray-800 rounded-full h-1.5">
+                                <div class="h-1.5 rounded-full bar-fill bg-orange-500" style="width:0%" data-target="${volBar}"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-[10px] text-gray-500 mb-1">
+                                <span>유통주 희소성</span>
+                                <span class="text-purple-400 font-bold">${meta.float_m||0}M 주</span>
+                            </div>
+                            <div class="w-full bg-gray-800 rounded-full h-1.5">
+                                <div class="h-1.5 rounded-full bar-fill bg-purple-500" style="width:0%" data-target="${floatBar}"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 팩터 뱃지 -->
+                    <div class="flex flex-wrap gap-1 mb-2">${badges}</div>
+
+                    <!-- 상세 지표 칩 -->
+                    <div class="flex flex-wrap gap-x-3 text-[10px] text-gray-500 mb-2">
+                        <span>RSI <span class="text-gray-300 font-mono">${meta.rsi||'-'}</span></span>
+                        <span>공매도비율 <span class="text-red-300 font-mono">${meta.short_pct||0}%</span></span>
+                        <span>커버소요 <span class="text-gray-300 font-mono">${meta.short_ratio||0}일</span></span>
+                        <span>유통주 <span class="text-gray-300 font-mono">${meta.float_m||0}M</span></span>
+                    </div>
+
+                    <!-- 기대 수익 -->
+                    <div class="text-right">
+                        <span class="font-black text-sm" style="color:${squeezeColor}">
+                            ${scoreNum >= 80 ? '🚀 EXPLOSIVE' : scoreNum >= 60 ? '⚡ HIGH POTENTIAL' : '📈 WATCHLIST'}
+                        </span>
+                        <span class="text-gray-600 text-[10px] ml-1">(숏스퀴즈 발동 시)</span>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+    });
+
+    animateBars();
+}
+
+// ══════════════════════════════════════════════════════════════
+//  전략 설명 패널
+// ══════════════════════════════════════════════════════════════
+function renderStrategyPanel() {
+    const el = document.getElementById('strategy-panel');
+
+    if (currentMarket === 'kr') {
+        el.innerHTML = `
+        <h4 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-5">7단계 필터 × 6팩터 채점 (250점)</h4>
+        <div class="grid grid-cols-2 gap-6 text-xs text-gray-500">
+            <div class="space-y-2">
+                <div class="font-bold text-gray-400 mb-2">진입 필터 (AND 조건)</div>
+                <div class="flex gap-2"><span class="text-gray-500 font-bold w-4">①</span> 주가 1,000원↑ (동전주 제외)</div>
+                <div class="flex gap-2"><span class="text-blue-400 font-bold w-4">②</span> MA50&gt;MA200 정배열 + 현재가&gt;MA50</div>
+                <div class="flex gap-2"><span class="text-blue-400 font-bold w-4">③</span> 시총 500억~3조 (스윙 최적 구간)</div>
+                <div class="flex gap-2"><span class="text-blue-400 font-bold w-4">④</span> 매집봉 + VCP 진폭 15%↓ + 거래량 가뭄</div>
+                <div class="flex gap-2"><span class="text-blue-400 font-bold w-4">⑤</span> 52주 고가 10% 이내 (돌파 임박)</div>
+                <div class="flex gap-2"><span class="text-purple-400 font-bold w-4">⑥</span><span class="text-purple-300">기관 3일 연속 순매수 (핵심)</span></div>
+                <div class="flex gap-2"><span class="text-green-400 font-bold w-4">⑦</span> 외인+기관 동시 매수 1일↑</div>
+            </div>
+            <div class="space-y-2">
+                <div class="font-bold text-gray-400 mb-2">채점 팩터 (250점)</div>
+                <div class="flex justify-between"><span>세력 흔적 (스파이크·침묵·저가)</span><span class="text-blue-400">70점</span></div>
+                <div class="flex justify-between"><span>수급 강도 (기관연속 가중)</span><span class="text-purple-400">40점</span></div>
+                <div class="flex justify-between"><span>BB 밴드 수축도</span><span class="text-indigo-400">40점</span></div>
+                <div class="flex justify-between"><span>OBV 다이버전스</span><span class="text-cyan-400">40점</span></div>
+                <div class="flex justify-between"><span>52주 고가 근접도</span><span class="text-yellow-400">30점</span></div>
+                <div class="flex justify-between"><span>RSI 골디락스 구간 (45~60)</span><span class="text-orange-400">30점</span></div>
+            </div>
+        </div>`;
+    } else {
+        el.innerHTML = `
+        <h4 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-5">숏스퀴즈 탐지 기준 (100점)</h4>
+        <div class="grid grid-cols-2 gap-6 text-xs text-gray-500">
+            <div class="space-y-2">
+                <div class="font-bold text-gray-400 mb-2">진입 조건 (AND 3가지)</div>
+                <div class="flex gap-2"><span class="text-red-400 font-bold w-4">①</span> 유통주식수(Float) 150M 이하</div>
+                <div class="flex gap-2"><span class="text-red-400 font-bold w-4">②</span> 공매도 비율 10% 이상</div>
+                <div class="flex gap-2"><span class="text-orange-400 font-bold w-4">③</span> 거래량 평균 대비 2배 이상 폭발</div>
+            </div>
+            <div class="space-y-2">
+                <div class="font-bold text-gray-400 mb-2">채점 팩터 (100점)</div>
+                <div class="flex justify-between"><span>공매도 강도 (10%→40%)</span><span class="text-red-400">40점</span></div>
+                <div class="flex justify-between"><span>거래량 급등 (2배→8배↑)</span><span class="text-orange-400">30점</span></div>
+                <div class="flex justify-between"><span>유통주 희소성 (소형일수록 ↑)</span><span class="text-purple-400">20점</span></div>
+                <div class="flex justify-between"><span>숏커버링 소요일</span><span class="text-pink-400">10점</span></div>
+            </div>
+        </div>
+        <div class="mt-4 pt-4 border-t border-gray-800 text-xs text-gray-600 leading-relaxed">
+            <span class="text-red-400 font-bold">⚠️ 주의:</span>
+            숏스퀴즈는 단기 폭발성이 크지만 역방향 리스크도 큽니다.
+            반드시 소액 분할 진입 및 손절 라인(-5~10%)을 설정하세요.
+        </div>`;
+    }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  유틸
+// ══════════════════════════════════════════════════════════════
+function noSignalHtml(msg) {
+    return `
+    <div class="bg-[#111827] border border-gray-800 rounded-2xl p-10 text-center">
+        <div class="text-4xl mb-4">🔍</div>
+        <div class="text-lg font-bold text-gray-300 mb-2">오늘은 조건 충족 종목 없음</div>
+        <div class="text-sm text-gray-500 leading-relaxed">${msg}<br>
+            <span class="text-yellow-400 font-bold mt-2 block">신호 없는 날 쉬는 것이 전략의 일부입니다.</span>
+        </div>
+    </div>`;
+}
+
+function animateBars() {
     setTimeout(() => {
         document.querySelectorAll('.bar-fill').forEach(el => {
-            el.style.width = el.dataset.target + '%';
+            el.style.width = (el.dataset.target || 0) + '%';
         });
     }, 150);
 }
 
-// 8. 수동 픽 성적표 렌더링
-function renderMyPicks(data) {
-    const section = document.getElementById('my-picks-section');
-    const table = document.getElementById('my-picks-table');
-    const mp = data.my_manual_report || [];
-    if (mp.length === 0) {
-        section.classList.add('hidden');
-        return;
-    }
-    section.classList.remove('hidden');
-    table.innerHTML = mp.map(p => {
-        const c = p.profit >= 0 ? 'text-green-400' : 'text-red-400';
-        return `<tr class="hover:bg-white/5">
-            <td class="px-6 py-3 text-gray-500 text-xs">${p.date}</td>
-            <td class="px-6 py-3 font-bold">${p.name}</td>
-            <td class="px-6 py-3 font-mono text-gray-300">${Number(p.buy_price).toLocaleString()}원</td>
-            <td class="px-6 py-3 font-mono text-gray-300">${Number(p.curr_price).toLocaleString()}원</td>
-            <td class="px-6 py-3 text-right font-black ${c}">${p.profit >= 0 ? '+' : ''}${p.profit}%</td>
-        </tr>`;
-    }).join('');
-}
-
-// 9. 엔진 가동
+// ══════════════════════════════════════════════════════════════
+//  초기 실행
+// ══════════════════════════════════════════════════════════════
 initLoad();
 </script>
 </body>

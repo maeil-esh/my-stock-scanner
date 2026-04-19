@@ -51,7 +51,14 @@ def get_investor_df(ticker, start, end):
 
 
 def analyze_with_manual_picks():
-    now       = datetime.datetime.now()
+    now = datetime.datetime.now()
+    
+    # 주말(토, 일)일 경우 가장 최근 금요일로 날짜 보정
+    if now.weekday() == 5:    # 토요일
+        now = now - datetime.timedelta(days=1)
+    elif now.weekday() == 6:  # 일요일
+        now = now - datetime.timedelta(days=2)
+        
     today_str = now.strftime("%Y%m%d")
 
     start_90d = get_start_date(90)

@@ -35,7 +35,7 @@ TOP_N         = 5
 #  D. RSI골디락스 30점  E. 수급강도 40점  F. 돌파임박 30점
 # ══════════════════════════════════════════════════════════════
 
-DART_API_KEY = "83af79248938109aee2a83d34e77abb7260337c6"
+DART_API_KEY = os.environ.get("DART_API_KEY", "")
 
 # DART 기업코드 캐시 (전체 ZIP을 한 번만 다운로드)
 _dart_corp_cache = {}

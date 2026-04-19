@@ -7,6 +7,7 @@ import requests
 from bs4 import BeautifulSoup
 from pykrx import stock
 import FinanceDataReader as fdr
+import yfinance as yf
 
 DATA_FILE     = 'stock_data.json'
 HISTORY_FILE  = 'history.json'
@@ -541,7 +542,49 @@ def analyze_with_manual_picks():
     print(f"\n{'⚠️  오늘 신호 없음 — 현금 보유 권장' if no_signal else f'🏁 완료! TOP {len(final_picks)}종목 선정'}")
     print(f"   후보 {log['final']}건 / 전체 {log['total']}건 스크리닝")
     return final_output
+def analyze_us_market():
+    """미국 시장 메가 러너(Short Squeeze) 탐지 엔진"""
+    print("\n🇺🇸 미국 시장 메가 러너 스캐닝 시작...")
+    
+    # [설정] 유통주식수 적고 공매도 많은 미국 종목들 (예시)
+    tickers = ['GME', 'AMC', 'TSLA', 'NVDA', 'CVNA', 'AI', 'UPST', 'PLTR', 'SOFI'] 
+    us_picks = []
+    
+    for symbol in tickers:
+        try:
+            ticker_obj = yf.Ticker(symbol)
+            info = ticker_obj.info
+            
+            # 유통주식수(Float) 및 공매도 비율(Short Interest)
+            float_shares = info.get('floatShares', 1e15) / 1e6
+            short_ratio = info.get('shortPercentOfFloat', 0) * 100
+            
+            hist = ticker_obj.history(period="1mo")
+            if len(hist) < 20: continue
+            
+            curr_price = hist['Close'].iloc[-1]
+            vol_spike = hist['Volume'].iloc[-1] / hist['Volume'].iloc[:-1].mean()
+            
+            # 숏스퀴즈 조건: 유통주 50M 이하 & 공매도 15% 이상
+            if float_shares < 50 and short_ratio > 15:
+                score = min((short_ratio * 2) + (vol_spike * 10) + (50 / float_shares), 100)
+                us_picks.append({
+                    "name": symbol, "code": symbol,
+                    "supply": f"공매도 {round(short_ratio, 1)}%",
+                    "cur_price": round(curr_price, 2),
+                    "score": f"SQUEEZE {int(score)}점",
+                    "tags": f"유통주 {round(float_shares, 1)}M / 숏스퀴즈 가능성",
+                    "expected_return": "EXPLOSIVE"
+                })
+        except: continue
 
+    with open('stock_data_us.json', 'w', encoding='utf-8') as f:
+        json.dump({"today_picks": us_picks[:5], "base_date": datetime.datetime.now().strftime("%Y%m%d")}, f, ensure_ascii=False, indent=4)
+    print(f"🏁 미국 분석 완료! {len(us_picks)}종목 포착")
 
 if __name__ == "__main__":
+    # 1. 한국 엔진 실행
     analyze_with_manual_picks()
+    
+    # 2. 미국 엔진 실행 (방금 추가한 것)
+    analyze_us_market()

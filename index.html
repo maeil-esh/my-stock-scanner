@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ALPHASCAN v1.0 - 세력 흔적 탐지기</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-[#0f172a] text-gray-100 font-sans">
+
+    <header class="p-6 flex justify-between items-center max-w-7xl mx-auto">
+        <div class="flex items-center space-x-2">
+            <span class="text-blue-500 text-2xl font-bold"><i class="fa-solid fa-chart-line"></i> ALPHASCAN</span>
+            <span class="text-gray-500 text-xs mt-1">v1.0 (5Y Verified)</span>
+        </div>
+        <div class="flex items-center space-x-4">
+            <span class="bg-blue-900/40 text-blue-400 px-4 py-1.5 rounded-full text-sm font-medium border border-blue-800/50">7일 스윙 패턴 모드</span>
+            <span id="update-time" class="text-gray-500 text-xs">데이터 로딩 중...</span>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-6 pb-12">
+
+        <!-- ── 상단 KPI 카드 ── -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-[#1e293b] p-6 rounded-xl border border-gray-800 shadow-xl">
+                <p class="text-gray-400 text-sm mb-2">5개년 패턴 평균 승률 (7일 내 +10% ↑)</p>
+                <h2 id="win-rate" class="text-4xl font-bold text-green-500">--%</h2>
+                <p id="total-cases" class="text-gray-600 text-[10px] mt-2">백테스트 데이터 누적 중</p>
+            </div>
+            <div class="bg-[#1e293b] p-6 rounded-xl border border-gray-800 shadow-xl">
+                <p class="text-gray-400 text-sm mb-2">평균 수익률 (7일 홀딩)</p>
+                <h2 id="avg-return" class="text-4xl font-bold text-blue-500">--%</h2>
+                <p class="text-gray-600 text-[10px] mt-2">대량 거래 후 3일 조정 구간의 하방 경직성</p>
+            </div>
+            <div class="bg-[#1e293b] p-6 rounded-xl border border-gray-800 shadow-xl">
+                <p class="text-gray-400 text-sm mb-2">현재 포착된 유효 종목</p>
+                <h2 id="total-count" class="text-4xl font-bold text-yellow-500">0건</h2>
+                <p class="text-gray-600 text-[10px] mt-2">매집 흔적 및 이평선 수렴 조건 충족</p>
+            </div>
+        </div>
+
+        <!-- ── 포착 종목 테이블 ── -->
+        <div class="bg-[#1e293b] rounded-xl border border-gray-800 shadow-2xl overflow-hidden mb-10">
+            <div class="p-6 border-b border-gray-800 flex justify-between items-center">
+                <h3 class="text-lg font-bold italic text-gray-200 underline decoration-blue-500 decoration-2 underline-offset-8">포착 종목 및 검증 리스트</h3>
+                <button onclick="downloadData()" class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-lg text-sm font-bold transition-all shadow-lg shadow-blue-900/20">전체 데이터 다운로드</button>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-[#0f172a]/50 text-gray-500 text-[11px] uppercase tracking-widest">
+                        <tr>
+                            <th class="px-8 py-4">종목명/코드</th>
+                            <th class="px-8 py-4">수급/상태</th>
+                            <th class="px-8 py-4">거래량 변화</th>
+                            <th class="px-8 py-4">전문가 점수</th>
+                            <th class="px-8 py-4">분석 태그</th>
+                            <th class="px-8 py-4 text-right">기대 수익(7D)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stock-table" class="divide-y divide-gray-800">
+                        <tr><td colspan="6" class="text-center text-gray-500 py-12">데이터 로딩 중...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ── 선생님 수동 픽 성적표 ── -->
+        <div id="my-picks-section" class="bg-[#1e293b] rounded-xl border border-yellow-900/40 shadow-2xl overflow-hidden mb-10 hidden">
+            <div class="p-6 border-b border-gray-800">
+                <h3 class="text-lg font-bold italic text-yellow-400 underline decoration-yellow-500 decoration-2 underline-offset-8">
+                    <i class="fa-solid fa-bookmark mr-2"></i>내 수동 픽 성적표 (My Picks)
+                </h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-[#0f172a]/50 text-gray-500 text-[11px] uppercase tracking-widest">
+                        <tr>
+                            <th class="px-8 py-4">매수일</th>
+                            <th class="px-8 py-4">종목명</th>
+                            <th class="px-8 py-4">매수가</th>
+                            <th class="px-8 py-4">현재가</th>
+                            <th class="px-8 py-4 text-right">수익률</th>
+                        </tr>
+                    </thead>
+                    <tbody id="my-picks-table" class="divide-y divide-gray-800"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ── 알고리즘 설명 ── -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="bg-[#1e293b]/40 p-8 rounded-2xl border border-dashed border-gray-800">
+                <h4 class="text-blue-500 font-black italic mb-6 tracking-tighter uppercase">7일 N자형 패턴 알고리즘</h4>
+                <ul class="space-y-4 text-sm text-gray-400">
+                    <li class="flex items-start"><span class="text-blue-500 mr-3 font-bold">1.</span> <strong>기준봉 발생:</strong> 3개월 내 매집봉(피뢰침) 및 20일선 돌파 포착.</li>
+                    <li class="flex items-start"><span class="text-blue-500 mr-3 font-bold">2.</span> <strong>거래량 가뭄:</strong> 급등 전 에너지 응축을 위한 거래량 40% 이하 감소.</li>
+                    <li class="flex items-start"><span class="text-blue-500 mr-3 font-bold">3.</span> <strong>수급 확인:</strong> 가격은 버티는데 외인/기관 순매수 유지 시 진입.</li>
+                </ul>
+            </div>
+            <div class="bg-[#1e293b]/40 p-8 rounded-2xl border border-dashed border-gray-800">
+                <h4 class="text-green-500 font-black italic mb-6 tracking-tighter uppercase">실적 및 리스크 관리</h4>
+                <div class="space-y-4 text-sm">
+                    <div class="flex justify-between border-b border-gray-800 pb-2">
+                        <span class="text-gray-500">최소 영업이익률 (OPM)</span>
+                        <span class="text-gray-200 font-mono">&gt; 10.0%</span>
+                    </div>
+                    <div class="flex justify-between border-b border-gray-800 pb-2">
+                        <span class="text-gray-500">부채 비율 가이드라인</span>
+                        <span class="text-gray-200 font-mono">&lt; 150%</span>
+                    </div>
+                    <div class="flex justify-between pt-2">
+                        <span class="text-red-500 font-bold">손절 라인 (Stop Loss)</span>
+                        <span class="text-red-500 font-mono">-3.5% (기준봉 저가)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let globalData = null;
+
+        fetch('stock_data.json')
+            .then(res => {
+                if (!res.ok) throw new Error('stock_data.json 로드 실패');
+                return res.json();
+            })
+            .then(data => {
+                globalData = data;
+
+                // ── 업데이트 시각
+                const now = new Date();
+                document.getElementById('update-time').innerText =
+                    `데이터 업데이트: ${now.toLocaleDateString('ko-KR')} ${now.toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit'})}`;
+
+                // ── KPI 카드
+                const perf = data.performance || {};
+                document.getElementById('win-rate').innerText   = perf.win_rate   != null ? perf.win_rate + '%'   : '--%';
+                document.getElementById('avg-return').innerText = perf.avg_return  != null ? (perf.avg_return > 0 ? '+' : '') + perf.avg_return + '%' : '--%';
+                document.getElementById('total-cases').innerText =
+                    perf.total_cases ? `백테스트 ${perf.total_cases}건 기준` : '백테스트 데이터 누적 중';
+
+                // ── 포착 종목 테이블
+                const picks = data.today_picks || [];
+                document.getElementById('total-count').innerText = picks.length + '건';
+
+                const tbody = document.getElementById('stock-table');
+                tbody.innerHTML = '';
+
+                if (picks.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-gray-500 py-12">오늘 포착된 종목이 없습니다.</td></tr>';
+                } else {
+                    picks.forEach(item => {
+                        const scoreNum = parseInt((item.score.match(/\((\d+)점\)/) || [])[1] || 0);
+                        const scoreColor = scoreNum >= 80 ? 'text-green-400' : scoreNum >= 60 ? 'text-yellow-400' : 'text-gray-400';
+                        tbody.innerHTML += `
+                        <tr class="hover:bg-gray-800/50 transition-all border-l-4 border-transparent hover:border-blue-500">
+                            <td class="px-8 py-5">
+                                <div class="font-bold text-gray-100 text-base">${item.name}</div>
+                                <div class="text-[10px] text-gray-500">${item.code}</div>
+                            </td>
+                            <td class="px-8 py-5">
+                                <span class="text-blue-400 font-bold italic text-sm">${item.supply}</span>
+                            </td>
+                            <td class="px-8 py-5">
+                                <span class="text-red-500 font-black text-sm">${item.volume_growth}</span>
+                            </td>
+                            <td class="px-8 py-5 ${scoreColor} tracking-tighter text-lg">${item.score}</td>
+                            <td class="px-8 py-5">
+                                <div class="text-[10px] text-gray-400 leading-tight uppercase font-medium">${item.tags}</div>
+                            </td>
+                            <td class="px-8 py-5 text-right">
+                                <div class="text-green-500 font-black text-base">+${item.expected_return}</div>
+                            </td>
+                        </tr>`;
+                    });
+                }
+
+                // ── 수동 픽 성적표
+                const myPicks = data.my_manual_report || [];
+                if (myPicks.length > 0) {
+                    document.getElementById('my-picks-section').classList.remove('hidden');
+                    const myTbody = document.getElementById('my-picks-table');
+                    myTbody.innerHTML = '';
+                    myPicks.forEach(p => {
+                        const profitColor = p.profit >= 0 ? 'text-green-400' : 'text-red-400';
+                        const profitSign  = p.profit >= 0 ? '+' : '';
+                        myTbody.innerHTML += `
+                        <tr class="hover:bg-gray-800/50 transition-all">
+                            <td class="px-8 py-4 text-gray-400 text-sm">${p.date}</td>
+                            <td class="px-8 py-4 font-bold text-gray-100">${p.name}</td>
+                            <td class="px-8 py-4 font-mono text-gray-300">${p.buy_price.toLocaleString()}원</td>
+                            <td class="px-8 py-4 font-mono text-gray-300">${p.curr_price.toLocaleString()}원</td>
+                            <td class="px-8 py-4 text-right font-black text-lg ${profitColor}">${profitSign}${p.profit}%</td>
+                        </tr>`;
+                    });
+                }
+            })
+            .catch(err => {
+                document.getElementById('stock-table').innerHTML =
+                    `<tr><td colspan="6" class="text-center text-red-400 py-12">⚠️ 데이터 로드 실패: ${err.message}<br><span class="text-gray-500 text-xs">GitHub Pages 배포 환경에서 실행하세요 (file:// 프로토콜 불가)</span></td></tr>`;
+            });
+
+        function downloadData() {
+            if (!globalData) return alert('데이터가 아직 로드되지 않았습니다.');
+            const blob = new Blob([JSON.stringify(globalData, null, 2)], {type: 'application/json'});
+            const url  = URL.createObjectURL(blob);
+            const a    = document.createElement('a');
+            a.href     = url;
+            a.download = `alphascan_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>

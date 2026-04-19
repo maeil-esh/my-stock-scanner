@@ -5,36 +5,30 @@ import pandas as pd
 from pykrx import stock
 import FinanceDataReader as fdr
 
-DATA_FILE    = 'stock_data.json'
-HISTORY_FILE = 'history.json'
+DATA_FILE     = 'stock_data.json'
+HISTORY_FILE  = 'history.json'
 MY_PICKS_FILE = 'my_picks.json'
 
 
 def get_financial_data(ticker):
     """
-    재무 데이터 - 현재는 더미(OPM 15%, 부채비율 100%)
-    실제 운영 시 OpenDART API로 교체:
-    https://opendart.fss.or.kr/api/fnlttSinglAcntAll.json
+    현재: 중소형주 테스트용 더미 (OPM 2%, 부채비율 150%)
+    실제 운영 시 OpenDART API로 교체 필요
     """
-    return {"OPM": 15.0, "DebtRatio": 100.0}
+    return {"OPM": 2.0, "DebtRatio": 150.0}
 
 
 def get_start_date(days_ago):
-    """달력 기준 N일 전 날짜 (주말 여유 포함)"""
     return (datetime.datetime.now() - datetime.timedelta(days=int(days_ago * 1.5))).strftime("%Y%m%d")
 
 
 def get_investor_df(ticker, start, end):
-    """
-    pykrx 수급 데이터 조회 + 컬럼명 자동 대응
-    pykrx 버전마다 '외국인합계'/'기관합계' 또는 '외국인'/'기관'으로 다를 수 있어 양쪽 처리
-    """
+    """pykrx 버전별 컬럼명 자동 대응"""
     df = stock.get_market_trading_value_by_date(start, end, ticker)
     if df is None or df.empty:
         return None, None
 
-    foreign_col = None
-    inst_col    = None
+    foreign_col, inst_col = None, None
     for col in df.columns:
         if '외국인' in col: foreign_col = col
         if '기관'   in col: inst_col    = col
@@ -64,7 +58,15 @@ def analyze_with_manual_picks():
     # all_tickers = all_tickers[:200]
 
     final_picks = []
-    filter_log  = {"total": len(all_tickers), "ma20": 0, "accum": 0, "drought": 0, "supply": 0, "fin": 0}
+    filter_log  = {
+        "total":   len(all_tickers),
+        "penny":   0,
+        "ma20":    0,
+        "accum":   0,
+        "drought": 0,
+        "supply":  0,
+        "fin":     0,
+    }
 
     print("🚀 [1] 종목 필터링 시작...")
     for ticker in all_tickers:
@@ -80,12 +82,17 @@ def analyze_with_manual_picks():
             current_vol   = df['Volume'].iloc[-1]
             ma20_now      = df['MA20'].iloc[-1]
 
+            # [방어막] 동전주 제외 (1,000원 미만)
+            if current_close < 1000:
+                continue
+            filter_log['penny'] += 1
+
             # [필터 1] 현재가 > 20일선
             if current_close <= ma20_now:
                 continue
             filter_log['ma20'] += 1
 
-            # [필터 2] 최근 60영업일 내 매집봉 (200% 이상, 양봉, 20일선 위)
+            # [필터 2] 최근 60영업일 내 매집봉 (거래량 200%↑, 양봉, 20일선 위)
             recent = df.iloc[-60:].copy()
             recent['Is_Accum'] = (
                 (recent['Volume'] >= recent['Vol_MA20'] * 2) &
@@ -101,13 +108,13 @@ def analyze_with_manual_picks():
             accum_vol       = last_accum['Volume']
             accum_vol_ratio = accum_vol / last_accum['Vol_MA20']
 
-            # [필터 3] 거래량 가뭄 (현재 거래량 ≤ 매집봉의 60%)
+            # [필터 3] 거래량 가뭄 (매집봉 대비 60% 이하)
             if current_vol > accum_vol * 0.6:
                 continue
             vol_drop_ratio = current_vol / accum_vol
             filter_log['drought'] += 1
 
-            # [필터 4] 수급: 최근 3일 중 1일 이상 외인/기관 순매수
+            # [필터 4] 수급 (외인 or 기관 최근 3일 중 1일 이상 순매수)
             inv_df, cols = get_investor_df(ticker, start_5d, today_str)
             if inv_df is None:
                 continue
@@ -121,31 +128,30 @@ def analyze_with_manual_picks():
                 continue
             filter_log['supply'] += 1
 
-            # [필터 5] 재무 (OPM > 5%, 부채비율 < 200%)
+            # [필터 5] 재무 (적자 제외, 부채비율 300% 미만)
             fin = get_financial_data(ticker)
-            if fin['OPM'] <= 5.0 or fin['DebtRatio'] >= 200.0:
+            if fin['OPM'] < 0.0 or fin['DebtRatio'] >= 300.0:
                 continue
             filter_log['fin'] += 1
 
-            # ── 점수 산출 (100점 만점) ────────────────────────────
-            vol_score  = min(((accum_vol_ratio - 2) / 8) * 20 + 10, 30)
-            dry_score  = min((0.6 - vol_drop_ratio) / 0.4 * 15 + 5, 20)
-            buy_score  = 10 if valid_buy_days == 1 else 20
-            opm_score  = min((fin['OPM']        -   5) / 20 * 15, 15)
-            debt_score = min((200 - fin['DebtRatio']) / 100 * 15, 15)
-            total_score = int(vol_score + dry_score + buy_score + opm_score + debt_score)
+            # ── 점수 산출 (100점 만점) ────────────────────────────────
+            vol_score  = min(((accum_vol_ratio - 2) / 8) * 20 + 20, 40)
+            dry_score  = min((0.6 - vol_drop_ratio) / 0.4 * 20 + 10, 30)
+            buy_score  = 15 if valid_buy_days >= 1 else 0
+            fin_score  = 15
+            total_score = int(vol_score + dry_score + buy_score + fin_score)
 
             stars = "★" * (total_score // 20) + "☆" * (5 - total_score // 20)
 
             if foreign_buy_days > 0 and inst_buy_days > 0:
                 supply_text = "외인+기관 양매수"
-            elif foreign_buy_days >= inst_buy_days:
+            elif foreign_buy_days > 0:
                 supply_text = "외인매수"
             else:
                 supply_text = "기관매수"
 
             name         = stock.get_market_ticker_name(ticker)
-            expected_ret = round(5.0 + (total_score / 100) * 8.0, 1)
+            expected_ret = round(7.0 + (total_score / 100) * 15.0, 1)
 
             final_picks.append({
                 "name":            name,
@@ -153,7 +159,7 @@ def analyze_with_manual_picks():
                 "supply":          supply_text,
                 "volume_growth":   f"+{int(accum_vol_ratio * 100)}%",
                 "score":           f"{stars} ({total_score}점)",
-                "tags":            "매집/가뭄/수급 충족",
+                "tags":            "매집 / 가뭄 / 수급포착",
                 "expected_return": f"{expected_ret}%"
             })
 
@@ -162,13 +168,14 @@ def analyze_with_manual_picks():
         except Exception:
             continue
 
-    # 필터 단계별 결과 출력
-    print("\n📊 [필터 단계별 통과 현황]")
-    print(f"  전체:        {filter_log['total']:>5}건")
+    # 필터 단계별 결과
+    print("\n📊 [필터 단계별 생존 현황]")
+    print(f"  전체 검사:   {filter_log['total']:>5}건")
+    print(f"  동전주 컷:   {filter_log['penny']:>5}건 (생존)")
     print(f"  20일선 위:   {filter_log['ma20']:>5}건")
     print(f"  매집봉 확인: {filter_log['accum']:>5}건")
     print(f"  거래량 가뭄: {filter_log['drought']:>5}건")
-    print(f"  수급 충족:   {filter_log['supply']:>5}건")
+    print(f"  최소 수급:   {filter_log['supply']:>5}건")
     print(f"  재무 통과:   {filter_log['fin']:>5}건  ← 최종 픽")
 
     # ── 수동 픽 검증 ──────────────────────────────────────────────
@@ -178,7 +185,6 @@ def analyze_with_manual_picks():
             try:    my_picks = json.load(f)
             except: my_picks = []
 
-        print("\n📒 [수동 픽 성적 계산 중...]")
         for p in my_picks:
             try:
                 curr_df = stock.get_market_ohlcv(today_str, today_str, p['code'])
@@ -192,8 +198,6 @@ def analyze_with_manual_picks():
                         "curr_price": curr_price,
                         "profit":     profit
                     })
-                    sign = "+" if profit >= 0 else ""
-                    print(f"  {p['name']}: {sign}{profit}%")
             except Exception:
                 continue
 
@@ -202,7 +206,6 @@ def analyze_with_manual_picks():
     history_data = []
 
     if os.path.exists(HISTORY_FILE):
-        print("\n🔍 [백테스트 계산 중...]")
         with open(HISTORY_FILE, 'r', encoding='utf-8') as f:
             try:    history_data = json.load(f)
             except: history_data = []
@@ -233,14 +236,13 @@ def analyze_with_manual_picks():
                 "avg_return":  round(total_return / total_cases, 1),
                 "total_cases": total_cases
             }
-            print(f"  승률: {performance_results['win_rate']}% | 평균수익: {performance_results['avg_return']}% | {total_cases}건")
 
     # ── history 누적 저장 ──────────────────────────────────────────
     history_data.append({"date": today_str, "picks": final_picks})
     with open(HISTORY_FILE, 'w', encoding='utf-8') as f:
         json.dump(history_data, f, ensure_ascii=False, indent=4)
 
-    # ── stock_data.json 저장 (index.html이 읽는 파일) ──────────────
+    # ── stock_data.json 저장 ───────────────────────────────────────
     final_output = {
         "today_picks": sorted(
             final_picks,

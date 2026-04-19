@@ -3,14 +3,12 @@ name: Stock-Auto-Update
 on:
   schedule:
     # 한국 시간 기준 매일 밤 9시 10분 실행 (UTC 12:10)
-    # 월~금(1-5) 장 마감 후 분석 데이터 생성
     - cron: '10 12 * * 1-5'
-  workflow_dispatch: # 수동 실행 버튼 (테스트용)
+  workflow_dispatch: # 수동 실행 버튼
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    # 깃허브에 분석 결과(JSON)를 다시 써넣기 위한 권한 설정
     permissions:
       contents: write
       
@@ -22,19 +20,14 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          # 대용량 연산 시 속도 향상을 위한 캐시 활성화
-          cache: 'pip'
+          # 에러의 원인이 된 cache 부분을 삭제했습니다.
 
       - name: Install High-Performance Libraries
         run: |
           python -m pip install --upgrade pip
-          # 선생님의 590줄 엔진에 필요한 모든 부품들
-          pip install pykrx pandas finance-datareader numpy requests beautifulsoup4 yfinance
-          # 혹시 모를 의존성 에러 방지를 위한 lxml 설치
-          pip install lxml
+          pip install pykrx pandas finance-datareader numpy requests beautifulsoup4 yfinance lxml
 
       - name: Run Ultimate Alpha Engine v3
-        # 대용량 스캔 도중 깃허브 액션 서버가 멈추지 않도록 설정
         env:
           PYTHONUNBUFFERED: "1"
         run: python engine.py
@@ -44,15 +37,14 @@ jobs:
           git config --global user.name 'GitHub Action Bot'
           git config --global user.email 'action@github.com'
           
-          # 한국, 미국, 히스토리 데이터 파일을 모두 추적
+          # 파일이 있을 때만 추가하도록 안전장치 강화
           git add stock_data.json || echo "KR data missing"
           git add stock_data_us.json || echo "US data missing"
           git add history.json || echo "History missing"
           
-          # 변경사항이 있을 때만 커밋 (안전 수칙)
           if git diff --staged --quiet; then
             echo "업데이트할 변경 사항이 없습니다."
           else
-            git commit -m "📈 글로벌 마감 데이터 분석 및 자동 업데이트 (KR/US)"
+            git commit -m "📈 글로벌 마감 데이터 업데이트 (KR/US)"
             git push
           fi

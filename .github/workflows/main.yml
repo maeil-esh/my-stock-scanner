@@ -1,36 +1,58 @@
 name: Stock-Auto-Update
+
 on:
   schedule:
-    # 한국 시간 밤 9시 (UTC 12:00) / 월~금 실행
-    - cron: '0 12 * * 1-5'
-  workflow_dispatch: # 수동 실행 버튼
+    # 한국 시간 기준 매일 밤 9시 10분 실행 (UTC 12:10)
+    # 월~금(1-5) 장 마감 후 분석 데이터 생성
+    - cron: '10 12 * * 1-5'
+  workflow_dispatch: # 수동 실행 버튼 (테스트용)
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    # 깃허브에 분석 결과(JSON)를 다시 써넣기 위한 권한 설정
     permissions:
       contents: write
+      
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.11' # 3.11로 수정
+          python-version: '3.11'
+          # 대용량 연산 시 속도 향상을 위한 캐시 활성화
+          cache: 'pip'
 
-      - name: Install libraries
+      - name: Install High-Performance Libraries
         run: |
-          # yfinance 추가 설치
+          python -m pip install --upgrade pip
+          # 선생님의 590줄 엔진에 필요한 모든 부품들
           pip install pykrx pandas finance-datareader numpy requests beautifulsoup4 yfinance
+          # 혹시 모를 의존성 에러 방지를 위한 lxml 설치
+          pip install lxml
 
-      - name: Run Analysis Engine
+      - name: Run Ultimate Alpha Engine v3
+        # 대용량 스캔 도중 깃허브 액션 서버가 멈추지 않도록 설정
+        env:
+          PYTHONUNBUFFERED: "1"
         run: python engine.py
 
-      - name: Update Data and History
+      - name: Commit and Push Dual Market Data
         run: |
-          git config --global user.name 'GitHub Action'
+          git config --global user.name 'GitHub Action Bot'
           git config --global user.email 'action@github.com'
-          # stock_data_us.json 파일도 추적하도록 추가
-          git add stock_data.json stock_data_us.json history.json
-          git commit -m "KR/US 마감 데이터 분석 및 업데이트" || echo "No changes to commit"
-          git push
+          
+          # 한국, 미국, 히스토리 데이터 파일을 모두 추적
+          git add stock_data.json || echo "KR data missing"
+          git add stock_data_us.json || echo "US data missing"
+          git add history.json || echo "History missing"
+          
+          # 변경사항이 있을 때만 커밋 (안전 수칙)
+          if git diff --staged --quiet; then
+            echo "업데이트할 변경 사항이 없습니다."
+          else
+            git commit -m "📈 글로벌 마감 데이터 분석 및 자동 업데이트 (KR/US)"
+            git push
+          fi

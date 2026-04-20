@@ -14,8 +14,9 @@ import FinanceDataReader as fdr
 from engine_common import (
     DART_API_KEY, get_market_date, get_start_date,
     ko_date, now_label, send_telegram, fetch_macro_summary,
-    calc_rsi, calc_obv
+    build_news_briefing, calc_rsi, calc_obv
 )
+
 
 DATA_FILE    = 'stock_data.json'
 HISTORY_FILE = 'history.json'
@@ -145,97 +146,118 @@ def get_investor_detail(ticker, start, end):
     return recent, (fc, ic), inst_streak, for_streak
 
 
-# ── 채점 ───────────────────────────────────────────────────────
+# ── 채점 — 민혁님 실전 수익 6종목 기반 매집→매수타점 패턴 ────
 
 def score_stock(df, inv_df, cols, inst_streak, for_streak):
+    """
+    매수타점 3단계:
+    [필수] 세력값 0선 돌파 + 매매신호 30 돌파 + 거래량 2배↑
+    [가산] 녹색기간 60일↑ + 전일고가 돌파 + 저가반등 20~80%
+    """
     df = df.copy()
     df['MA20']     = df['Close'].rolling(20).mean()
     df['Vol_MA20'] = df['Volume'].rolling(20).mean()
     df['RSI']      = calc_rsi(df['Close'])
     df['OBV']      = calc_obv(df)
-    df['BB_mid']   = df['Close'].rolling(20).mean()
-    df['BB_std']   = df['Close'].rolling(20).std()
-    df['BB_width'] = (4 * df['BB_std'] / df['BB_mid']).replace([np.inf, -np.inf], np.nan)
 
-    cur = df['Close'].iloc[-1]
-    rsi = df['RSI'].iloc[-1]
+    cur      = df['Close'].iloc[-1]
+    prev_hi  = df['High'].iloc[-2]
+    rsi      = df['RSI'].iloc[-1]
+    rsi_prev = df['RSI'].iloc[-2]
+    vol_ma20 = df['Vol_MA20'].iloc[-1]
+    cur_vol  = df['Volume'].iloc[-1]
     bd = {}; meta = {}
 
-    # [A] 세력 흔적 70점
-    recent_60 = df.iloc[-60:]
-    vm20 = df['Vol_MA20']; m20 = df['MA20']
-    spike_mask = (
-        (recent_60['Volume'] >= vm20.iloc[-60:] * 2.5) &
-        (recent_60['Close']  >  recent_60['Open']) &
-        (recent_60['Close']  >  m20.iloc[-60:])
-    )
-    a = 0; spike_days_ago = 0; silence_ratio = 1.0
-    if spike_mask.any():
-        ls   = recent_60[spike_mask].iloc[-1]
-        svol = ls['Volume']; slow = ls['Low']
-        sr   = svol / (ls['Vol_MA20'] + 1)
-        si   = df.index.get_loc(ls.name)
-        af   = df.iloc[si + 1:]
-        if len(af) >= 3 and cur > slow:
-            sil            = af['Volume'].mean() / (svol + 1)
-            spike_days_ago = len(af)
-            silence_ratio  = round(sil, 2)
-            if sil <= 0.7:
-                a_spike   = min((sr - 2.5) / 5 * 30 + 15, 35)
-                a_silence = min((0.7 - sil) / 0.7 * 25, 25)
-                price_gap = (cur / slow - 1) * 100
-                a_hold    = max(10 - price_gap / 15 * 10, 0)
-                a         = int(a_spike + a_silence + a_hold)
-    bd['세력흔적']         = min(a, 70)
-    meta['spike_days_ago'] = spike_days_ago
-    meta['silence_ratio']  = silence_ratio
+    # ── [A] 세력값 0선 돌파 (핵심 — 최대 40점) ─────────────────
+    # OBV 5일 변화율로 세력 전환 감지
+    obv_now  = df['OBV'].iloc[-1]
+    obv_prev = df['OBV'].iloc[-2]
+    obv_5d   = df['OBV'].iloc[-6] if len(df) >= 6 else df['OBV'].iloc[0]
+    obv_chg  = (obv_now - obv_5d) / (abs(obv_5d) + 1) * 100
 
-    # [B] BB 수축 40점
-    bbs = df['BB_width'].iloc[-90:].dropna()
-    b = 0; bbc = 0
-    if len(bbs) > 10:
-        bmin, bmax = bbs.min(), bbs.max(); brng = bmax - bmin
-        cbw = df['BB_width'].iloc[-1]
-        if brng > 0 and not np.isnan(cbw):
-            c = 1 - (cbw - bmin) / brng
-            b = int(min(c * 40, 40)); bbc = round(c * 100, 1)
-    bd['BB수축'] = b; meta['bb_compress'] = bbc
+    # 전일 음수 → 당일 양수 전환 = 세력 매집 완료 신호
+    obv_cross = obv_now > 0 and obv_prev <= 0
+    a = 0
+    if obv_cross:
+        a = 40  # 전환 당일 최고점
+    elif obv_chg > 0:
+        a = min(int(obv_chg * 2), 30)  # 상승 중이면 비례 점수
+    bd['세력전환'] = a
+    meta['obv_chg'] = round(obv_chg, 2)
+    meta['obv_cross'] = obv_cross
 
-    # [C] OBV 다이버전스 40점
-    pc20 = (cur / df['Close'].iloc[-20] - 1) * 100
-    ob   = abs(df['OBV'].iloc[-20]) + 1
-    op20 = (df['OBV'].iloc[-1] - df['OBV'].iloc[-20]) / ob * 100
-    c    = int(min(max((op20 - pc20) * 2, 0), 40)) if op20 > 0 else 0
-    bd['OBV다이버전스'] = c
+    # ── [B] 녹색 매집 기간 (최대 30점) ─────────────────────────
+    # OBV가 하락(음수)했던 일수 = 세력 저점 매집 기간
+    obv_diff = df['OBV'].diff().iloc[-120:]  # 최근 120거래일
+    green_days = int((obv_diff < 0).sum())
+    b = 0
+    if   green_days >= 120: b = 30  # 6개월↑ — 엔켐형 대시세
+    elif green_days >= 80:  b = 25  # 4개월↑ — 한컴위드형
+    elif green_days >= 60:  b = 20  # 3개월↑ — 글로벌텍스프리형
+    elif green_days >= 30:  b = 12  # 1.5개월↑ — PI첨단소재형
+    elif green_days >= 20:  b = 6   # 1개월↑ — 테크윙형
+    bd['세력매집'] = b
+    meta['green_days'] = green_days
 
-    # [D] RSI 골디락스 30점
+    # ── [C] 매매신호 30 돌파 (최대 30점) ───────────────────────
+    # 스토캐스틱 + RSI 합성
+    low_14  = df['Low'].rolling(14).min()
+    high_14 = df['High'].rolling(14).max()
+    denom   = (high_14 - low_14).iloc[-1]
+    stoch_k = (cur - low_14.iloc[-1]) / denom * 100 if denom > 0 else 50
+    stoch_p = (df['Close'].iloc[-2] - low_14.iloc[-2]) /               max((high_14.iloc[-2] - low_14.iloc[-2]), 1) * 100
+    signal_now  = stoch_k * 0.6 + rsi * 0.4
+    signal_prev = stoch_p * 0.6 + rsi_prev * 0.4
+
+    c = 0
+    signal_cross = signal_now > 30 and signal_prev <= 30  # 30선 돌파
+    if signal_cross:
+        c = 30  # 돌파 당일 최고
+    elif 30 < signal_now <= 70:
+        c = int(20 - abs(signal_now - 50) * 0.4)  # 30~70 구간 비례
+    bd['매매신호'] = max(c, 0)
+    meta['signal'] = round(signal_now, 1)
+    meta['signal_cross'] = signal_cross
+
+    # ── [D] 거래량 스파이크 강도 (최대 40점) ────────────────────
+    # 최근 60일 중 최대 스파이크 배수로 등급 산정
+    vol_ma20_ser = df['Volume'].rolling(20).mean()
+    recent_60    = df.iloc[-60:]
+    spike_ratios = recent_60['Volume'] / (vol_ma20_ser.iloc[-60:] + 1)
+    max_spike    = spike_ratios.max() if not spike_ratios.empty else 0
+    cur_ratio    = cur_vol / (vol_ma20 + 1)
+
     d = 0
-    if not np.isnan(rsi):
-        if   45 <= rsi <= 60: d = int(max(30 - abs(rsi - 52) * 2, 15))
-        elif 40 <= rsi <  45: d = 12
-        elif 60 <  rsi <= 65: d = 10
-    bd['RSI위치'] = d; meta['rsi'] = round(rsi, 1) if not np.isnan(rsi) else 0
+    if   max_spike >= 10: d = 40  # 엔켐형 — 10배↑ 대시세
+    elif max_spike >= 5:  d = 30  # 5~10배 — 강한 신호
+    elif max_spike >= 3:  d = 20  # 3~5배  — 중간 신호
+    elif max_spike >= 2:  d = 10  # 2~3배  — 기본 신호
+    bd['거래량스파이크'] = d
+    meta['max_spike']  = round(max_spike, 1)
+    meta['vol_ratio']  = round(cur_ratio, 2)
 
-    # [E] 수급 강도 40점
-    e = 0; supply_text = "정보없음"
+    # ── [E] 전일 고가 돌파 (최대 15점) ──────────────────────────
+    e = 15 if cur > prev_hi else 0
+    bd['고가돌파'] = e
+
+    # ── [F] 수급 강도 (최대 15점) ────────────────────────────────
+    f = 0; supply_text = "정보없음"
     if inv_df is not None and cols:
         fc, ic = cols
         fd        = int((inv_df[fc] > 0).sum())
         id_       = int((inv_df[ic] > 0).sum())
         both_days = int(((inv_df[fc] > 0) & (inv_df[ic] > 0)).sum())
-        e = min(min(inst_streak*6,24) + min(for_streak*4,12) + both_days*4, 40)
+        f = min(inst_streak * 3 + for_streak * 2 + both_days * 2, 15)
         if fd > 0 and id_ > 0: supply_text = "외인+기관 양매수"
         elif id_ > 0:           supply_text = "기관매수"
         elif fd > 0:            supply_text = "외인매수"
-    bd['수급강도'] = e
+    bd['수급강도'] = f
     meta['supply_text'] = supply_text
     meta['inst_streak'] = inst_streak
     meta['for_streak']  = for_streak
+    meta['rsi']         = round(rsi, 1)
+    meta['bb_compress'] = 0  # 하위 호환용
 
-    # [F] OBV 추세 가산 (바닥반등 전략용) 30점
-    f = 0
-    if op20 > pc20 and op20 > 0: f = min(int(op20 / 5), 30)
-    bd['OBV추세'] = f
 
     return sum(bd.values()), bd, meta
 
@@ -247,7 +269,7 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
 def run_kr_scan():
     now        = datetime.datetime.now()
     today_str  = get_market_date()
-    start_260d = get_start_date(today_str, 260)
+    start_260d = get_start_date(today_str, 180)
     start_10d  = get_start_date(today_str, 10)
     label      = now_label()
 
@@ -281,64 +303,86 @@ def run_kr_scan():
     all_tickers = pre_filtered if supra_success and pre_filtered else all_tickers
 
     candidates = []
-    log = dict(total=len(all_tickers), penny=0, mktcap=0,
-               bottom=0, uptrend=0, vol_spike=0, seforce=0, final=0)
+    log = dict(total=len(all_tickers), penny=0, mktcap=0, obv_up=0, vol_spike=0, seforce=0, final=0)
+    import threading
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    lock = threading.Lock()
 
-    print("🔍 스크리닝 시작...")
-    for i, ticker in enumerate(all_tickers):
+    # 1단계: 병렬 — 가격/기술적 필터 (①~⑤)
+    passed_stage1 = []  # (ticker, df, vol_ma20, mktcap, rebound_pct, cur, cur_vol, cur_vm20)
+
+    def scan_ticker_stage1(ticker):
         try:
             df = fdr.DataReader(ticker, start_260d, today_str)
-            if len(df) < 120: continue
+            if len(df) < 120: return
             close = df['Close']; vol = df['Volume']; cur = close.iloc[-1]
 
             # ① 동전주
-            if cur < 1000: continue
-            log['penny'] += 1
+            if cur < 1000: return
+            with lock: log['penny'] += 1
 
-            # ② 시총
+            # ② 시총 2000억~3조
             mktcap = mktcap_cache.get(ticker)
             if mktcap is None:
                 mktcap = safe_get_market_cap(ticker, today_str)
                 if mktcap is not None: mktcap_cache[ticker] = mktcap
-            if mktcap is None or not (1000 <= mktcap <= 30000): continue
-            log['mktcap'] += 1
+            if mktcap is None or not (2000 <= mktcap <= 30000): return
+            with lock: log['mktcap'] += 1
 
             # ③ 바닥 확인: 52주 저가 대비 +5~60%
             low52 = df['Low'].iloc[-252:].min() if len(df) >= 252 else df['Low'].min()
+            if low52 <= 0: return
             rebound_pct = (cur - low52) / low52 * 100
-            if not (5 <= rebound_pct <= 60): continue
-            log['bottom'] += 1
+            if not (5 <= rebound_pct <= 60): return
+            with lock: log['bottom'] += 1
 
             # ④ MA20 완만한 우상향 + 현재가 MA20 위
-            vol_ma20  = vol.rolling(20).mean()
-            ma20_s    = close.rolling(20).mean()
-            if not (ma20_s.iloc[-1] > ma20_s.iloc[-20] and cur > ma20_s.iloc[-1]): continue
-            log['uptrend'] += 1
+            vol_ma20 = vol.rolling(20).mean()
+            ma20_s   = close.rolling(20).mean()
+            if not (ma20_s.iloc[-1] > ma20_s.iloc[-20] and cur > ma20_s.iloc[-1]): return
+            with lock: log['uptrend'] += 1
 
             # ⑤ 최근 60일 거래량 스파이크 + 이후 수축
             recent_60  = df.iloc[-60:]
             spike_mask = recent_60['Volume'] >= vol_ma20.iloc[-60:] * 2.0
-            if not spike_mask.any(): continue
+            if not spike_mask.any(): return
             last_spike = recent_60[spike_mask].iloc[-1]
-            if cur <= last_spike['Low']: continue
-            si  = df.index.get_loc(last_spike.name)
-            af  = df.iloc[si + 1:]
+            if cur <= last_spike['Low']: return
+            si = df.index.get_loc(last_spike.name)
+            af = df.iloc[si + 1:]
             if len(af) >= 3:
                 sil = af['Volume'].mean() / (last_spike['Volume'] + 1)
-                if sil > 0.6: continue
-            log['vol_spike'] += 1
+                if sil > 0.6: return
+            with lock:
+                log['vol_spike'] += 1
+                passed_stage1.append((ticker, df, vol_ma20, mktcap, rebound_pct, cur,
+                                      vol.iloc[-1], vol_ma20.iloc[-1]))
+        except Exception:
+            return
 
-            # ⑥ 세력: 기관 OR 외인 1일 이상
+    print(f"🔍 1단계: 병렬 가격 스크리닝 (10스레드)...")
+    with ThreadPoolExecutor(max_workers=20) as executor:
+        futures = {executor.submit(scan_ticker_stage1, t): t for t in all_tickers}
+        done = 0
+        for f in as_completed(futures):
+            done += 1
+            if done % 200 == 0:
+                print(f"  진행 {done}/{len(all_tickers)} | 1차 통과: {len(passed_stage1)}건")
+
+    # 2단계: 순차 — 수급 조회 (pykrx 멀티스레드 불안정 방지)
+    print("\n2단계: 수급 스크리닝 " + str(len(passed_stage1)) + "건 순차 조회...")
+    for ticker, df, vol_ma20, mktcap, rebound_pct, cur, cur_vol, cur_vm20 in passed_stage1:
+        try:
             inv_df, cols, inst_streak, for_streak = get_investor_detail(ticker, start_10d, today_str)
-            if inv_df is None or cols is None: continue
-            fc, ic  = cols
-            any_buy = int(((inv_df[fc] > 0) | (inv_df[ic] > 0)).sum())
-            if any_buy < 1: continue
-            log['seforce'] += 1
+            # 수급 조회 실패해도 탈락 안 함 — 점수 0점으로 처리
+            if inv_df is not None and cols is not None:
+                fc, ic  = cols
+                any_buy = int(((inv_df[fc] > 0) | (inv_df[ic] > 0)).sum())
+                if any_buy >= 1: log['seforce'] += 1
+            else:
+                inv_df = None; cols = None; inst_streak = 0; for_streak = 0
 
             # 채점
-            cur_vol  = vol.iloc[-1]
-            cur_vm20 = vol_ma20.iloc[-1]
             total_score, breakdown, meta = score_stock(df, inv_df, cols, inst_streak, for_streak)
             meta['mktcap']      = mktcap
             meta['rebound_pct'] = round(rebound_pct, 1)
@@ -348,17 +392,13 @@ def run_kr_scan():
             if total_score >= 60:
                 candidates.append((total_score, ticker, breakdown, meta))
                 log['final'] += 1
-
         except Exception:
             continue
 
-        if (i + 1) % 200 == 0:
-            print(f"  진행 {i+1}/{len(all_tickers)} | 후보: {len(candidates)}건")
-
-    print(f"\n📊 [필터 현황]")
-    for lbl, key in [("전체","total"),("① 동전주","penny"),("② 시총 1000억~3조","mktcap"),
-                      ("③ 바닥반등 5~60%","bottom"),("④ MA20 우상향","uptrend"),
-                      ("⑤ 거래량 스파이크","vol_spike"),("⑥ 세력(기관OR외인)","seforce"),
+    print(f"\n📊 [필터 현황 — 세력매집 전환 패턴]")
+    for lbl, key in [("전체","total"),("① 동전주 제외","penny"),
+                      ("② 시총 1000억↑","mktcap"),("③ OBV 상승전환","obv_up"),
+                      ("④ 거래량 스파이크","vol_spike"),("⑤ 수급 확인","seforce"),
                       ("최종 통과","final")]:
         print(f"  {lbl:<18} {log[key]:>5}건")
 
@@ -417,6 +457,20 @@ def run_kr_scan():
 
 # ── 텔레그램 메시지 빌드 ───────────────────────────────────────
 
+
+def _signal_label(v):
+    if v >= 70:  return f"{v} 🔴 과매수"
+    elif v >= 50: return f"{v} 🟡 상승중"
+    elif v >= 30: return f"{v} 🟢 진입구간"
+    else:         return f"{v} ⚪ 매집중"
+
+def _spike_label(v):
+    if v >= 10: return "🔥 극강 (엔켐형)"
+    elif v >= 5: return "⚡ 강함"
+    elif v >= 3: return "📈 중간"
+    elif v >= 2: return "📊 기본"
+    else:        return "😴 미발생"
+
 def build_kr_message(kr_data: dict) -> str:
     picks     = kr_data.get("today_picks", [])
     log       = kr_data.get("filter_log", {})
@@ -439,8 +493,9 @@ def build_kr_message(kr_data: dict) -> str:
                 f"점수: {p.get('score','')}",
                 f"현재가: {p.get('cur_price',0):,}원 | 시총: {meta.get('mktcap',0):,}억",
                 f"수급: {p.get('supply','')}",
-                f"저가반등: +{meta.get('rebound_pct',0)}% | 거래량: {meta.get('vol_ratio',0)}배",
-                f"RSI: {meta.get('rsi',0)} | BB수축: {meta.get('bb_compress',0)}%",
+                f"저가반등: +{meta.get('rebound_pct',0)}% | 세력매집: {meta.get('green_days',0)}일",
+                f"세력전환: {'✅ 전환완료' if meta.get('obv_cross') else '⏳ 매집중'} | 매매신호: {_signal_label(meta.get('signal',0))}",
+                f"거래량: {_spike_label(meta.get('max_spike',0))} (최대 {meta.get('max_spike',0)}배) | 현재 {meta.get('vol_ratio',0)}배",
                 f"기대수익: +{p.get('expected_return','')} (7일 목표)",
                 "━" * 24,
             ]
@@ -452,4 +507,5 @@ def build_kr_message(kr_data: dict) -> str:
 if __name__ == "__main__":
     kr_result = run_kr_scan()
     send_telegram(fetch_macro_summary())
+    send_telegram(build_news_briefing())
     send_telegram(build_kr_message(kr_result))

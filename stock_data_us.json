@@ -1,31 +1,6 @@
 {
-    "today_picks": [
-        {
-            "rank": 1,
-            "name": "AST SpaceMobile, Inc.",
-            "code": "ASTS",
-            "company_summary": "AST SpaceMobile, Inc., together with its subsidiaries, designs and develops the constellation of BlueBird satellites in the United States. The company provides a cellular broadband...",
-            "supply": "공매도 20.3% | 📈 MEDIUM",
-            "cur_price": 78.11,
-            "score": "SQUEEZE 32점/100",
-            "score_detail": {
-                "공매도강도": 20,
-                "거래량급증": 5,
-                "유통주희소": 0,
-                "커버소요일": 7
-            },
-            "tags": "유통주 243.1M · 숏비율 20.3% · RSI 53.1",
-            "expected_return": "EXPLOSIVE",
-            "meta": {
-                "float_m": 243.1,
-                "short_pct": 20.3,
-                "vol_spike": 1.55,
-                "rsi": 53.1,
-                "short_ratio": 3.6
-            }
-        }
-    ],
-    "total_candidates": 1,
+    "today_picks": [],
+    "total_candidates": 0,
     "total_screened": 30,
     "base_date": "20260420"
 }

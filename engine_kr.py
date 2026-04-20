@@ -14,8 +14,9 @@ import FinanceDataReader as fdr
 from engine_common import (
     DART_API_KEY, get_market_date, get_start_date,
     ko_date, now_label, send_telegram, fetch_macro_summary,
-    calc_rsi, calc_obv
+    build_news_briefing, calc_rsi, calc_obv
 )
+
 
 DATA_FILE    = 'stock_data.json'
 HISTORY_FILE = 'history.json'
@@ -471,4 +472,5 @@ def build_kr_message(kr_data: dict) -> str:
 if __name__ == "__main__":
     kr_result = run_kr_scan()
     send_telegram(fetch_macro_summary())
+    send_telegram(build_news_briefing())
     send_telegram(build_kr_message(kr_result))

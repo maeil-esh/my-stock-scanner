@@ -1,5 +1,5 @@
 """
-engine_common.py — 공통 유틸, 텔레그램, 매크로
+engine_common.py — 공통 유틸, 텔레그램, 매크로, 뉴스 브리핑
 engine_kr.py / engine_us.py 에서 import해서 사용
 """
 import os
@@ -7,6 +7,7 @@ import datetime
 import requests
 import numpy as np
 import yfinance as yf
+from bs4 import BeautifulSoup
 
 TELEGRAM_TOKEN   = os.environ.get("TELEGRAM_TOKEN", "")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
@@ -31,7 +32,6 @@ def get_start_date(base_str, days_ago):
 
 
 def ko_date(date_str: str) -> str:
-    """20260420 또는 datetime → '2026.04.20 (월)' 형식"""
     try:
         d = datetime.datetime.strptime(date_str, "%Y%m%d")
     except Exception:
@@ -43,7 +43,6 @@ def ko_date(date_str: str) -> str:
 
 
 def now_label() -> str:
-    """현재 시각 레이블 — '09:30 스캔' 등"""
     h = datetime.datetime.now().hour
     if h < 11:   return "🔔 장 시작 스캔"
     elif h < 15: return "📊 장 중간 스캔"
@@ -104,6 +103,92 @@ def fetch_macro_summary() -> str:
             lines.append(f"{name:<8} 조회 실패")
 
     lines += ["━" * 24, "💡 <i>UK2 Investment · AI 브리핑</i>"]
+    return "\n".join(lines)
+
+
+# ── 뉴스 크롤링 ────────────────────────────────────────────────
+
+def fetch_naver_news(max_items: int = 10) -> list:
+    """네이버 금융 뉴스 헤드라인 수집"""
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    }
+    news = []
+    urls = [
+        "https://finance.naver.com/news/news_list.naver?mode=LSS2D&section_id=101&section_id2=258",
+        "https://finance.naver.com/news/news_list.naver?mode=LSS2D&section_id=101&section_id2=259",
+    ]
+    for url in urls:
+        try:
+            r = requests.get(url, headers=headers, timeout=8)
+            r.encoding = "euc-kr"
+            soup = BeautifulSoup(r.text, "html.parser")
+            for item in soup.select("dl dd.articleSubject a"):
+                title = item.get_text(strip=True)
+                if title and len(title) > 5:
+                    news.append(title)
+                if len(news) >= max_items:
+                    break
+        except Exception:
+            continue
+        if len(news) >= max_items:
+            break
+    return news[:max_items]
+
+
+def fetch_theme_news(max_items: int = 5) -> list:
+    """네이버 금융 테마 뉴스 수집"""
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    }
+    news = []
+    try:
+        r = requests.get(
+            "https://finance.naver.com/news/news_list.naver?mode=LSS2D&section_id=101&section_id2=260",
+            headers=headers, timeout=8
+        )
+        r.encoding = "euc-kr"
+        soup = BeautifulSoup(r.text, "html.parser")
+        for item in soup.select("dl dd.articleSubject a"):
+            title = item.get_text(strip=True)
+            if title and len(title) > 5:
+                news.append(title)
+            if len(news) >= max_items:
+                break
+    except Exception:
+        pass
+    return news[:max_items]
+
+
+def build_news_briefing() -> str:
+    """전일 이슈 + 금일 유력 테마 텔레그램 메시지 생성"""
+    today = datetime.datetime.now().strftime("%Y.%m.%d (%a)")
+    for en, ko in DAY_MAP.items():
+        today = today.replace(en, ko)
+
+    lines = [f"🗞 <b>시황 브리핑 — {today}</b>", "━" * 24]
+
+    # 전일 이슈
+    market_news = fetch_naver_news(max_items=8)
+    lines.append("📌 <b>전일 주요 이슈</b>")
+    if market_news:
+        for i, title in enumerate(market_news, 1):
+            lines.append(f"  {i}. {title}")
+    else:
+        lines.append("  뉴스 수집 실패")
+
+    lines.append("")
+
+    # 금일 유력 테마
+    theme_news = fetch_theme_news(max_items=5)
+    lines.append("🔥 <b>금일 유력 테마</b>")
+    if theme_news:
+        for i, title in enumerate(theme_news, 1):
+            lines.append(f"  {i}. {title}")
+    else:
+        lines.append("  테마 수집 실패")
+
+    lines += ["━" * 24, "💡 <i>출처: 네이버 금융</i>"]
     return "\n".join(lines)
 
 

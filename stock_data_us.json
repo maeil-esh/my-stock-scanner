@@ -1,15 +1,127 @@
 {
-    "today_picks": [],
-    "performance": {
-        "win_rate": 0.0,
-        "avg_return": 0.0,
-        "total_cases": 0
-    },
-    "my_manual_report": [],
-    "total_candidates": 0,
-    "total_screened": 21,
-    "filter_log": {
-        "inst3": 0
-    },
+    "today_picks": [
+        {
+            "rank": 1,
+            "name": "Groupon, Inc.",
+            "code": "GRPN",
+            "company_summary": "Groupon, Inc. operates a marketplace that connects consumers to merchants by offering goods and services at a discount in North America and international. It provides deals in vari...",
+            "supply": "공매도 50.0% | 🔥 EXTREME",
+            "cur_price": 14.21,
+            "score": "SQUEEZE 76점/100",
+            "score_detail": {
+                "공매도강도": 40,
+                "거래량급증": 10,
+                "유통주희소": 16,
+                "커버소요일": 10
+            },
+            "tags": "유통주 29.0M · 숏비율 50.0% · RSI 70.9",
+            "expected_return": "EXPLOSIVE",
+            "meta": {
+                "float_m": 29.0,
+                "short_pct": 50.0,
+                "vol_spike": 2.67,
+                "rsi": 70.9,
+                "short_ratio": 7.7
+            }
+        },
+        {
+            "rank": 2,
+            "name": "Hertz Global Holdings, Inc",
+            "code": "HTZ",
+            "company_summary": "Hertz Global Holdings, Inc. operates as a vehicle rental company. It operates through two segments: Americas RAC and International RAC. The company offers vehicle rental services u...",
+            "supply": "공매도 50.0% | ⚡ HIGH",
+            "cur_price": 7.43,
+            "score": "SQUEEZE 60점/100",
+            "score_detail": {
+                "공매도강도": 40,
+                "거래량급증": 7,
+                "유통주희소": 3,
+                "커버소요일": 10
+            },
+            "tags": "유통주 126.1M · 숏비율 50.0% · RSI 81.0",
+            "expected_return": "EXPLOSIVE",
+            "meta": {
+                "float_m": 126.1,
+                "short_pct": 50.0,
+                "vol_spike": 1.97,
+                "rsi": 81.0,
+                "short_ratio": 10.2
+            }
+        },
+        {
+            "rank": 3,
+            "name": "Hims & Hers Health, Inc.",
+            "code": "HIMS",
+            "company_summary": "Hims & Hers Health, Inc. operates as a consumer-first health and wellness platform that connects consumers to licensed healthcare professionals in the United States, the United Kin...",
+            "supply": "공매도 38.7% | ⚡ HIGH",
+            "cur_price": 28.82,
+            "score": "SQUEEZE 50점/100",
+            "score_detail": {
+                "공매도강도": 38,
+                "거래량급증": 8,
+                "유통주희소": 0,
+                "커버소요일": 3
+            },
+            "tags": "유통주 207.4M · 숏비율 38.7% · RSI 78.8",
+            "expected_return": "EXPLOSIVE",
+            "meta": {
+                "float_m": 207.4,
+                "short_pct": 38.7,
+                "vol_spike": 2.15,
+                "rsi": 78.8,
+                "short_ratio": 2.0
+            }
+        },
+        {
+            "rank": 4,
+            "name": "IonQ, Inc.",
+            "code": "IONQ",
+            "company_summary": "IonQ, Inc. develops quantum computing systems in the United States, Switzerland, and Internationally. It sells access to quantum computers of various qubit capacities. The company ...",
+            "supply": "공매도 22.3% | 📈 MEDIUM",
+            "cur_price": 46.09,
+            "score": "SQUEEZE 37점/100",
+            "score_detail": {
+                "공매도강도": 22,
+                "거래량급증": 6,
+                "유통주희소": 0,
+                "커버소요일": 8
+            },
+            "tags": "유통주 360.0M · 숏비율 22.3% · RSI 85.8",
+            "expected_return": "EXPLOSIVE",
+            "meta": {
+                "float_m": 360.0,
+                "short_pct": 22.3,
+                "vol_spike": 1.82,
+                "rsi": 85.8,
+                "short_ratio": 4.0
+            }
+        },
+        {
+            "rank": 5,
+            "name": "Koss Corporation",
+            "code": "KOSS",
+            "company_summary": "Koss Corporation, together with its subsidiaries, engages in the design, manufacture, and sale of stereo headphones and related accessories in the United States, Sweden, the Czech ...",
+            "supply": "공매도 3.9% | 📈 MEDIUM",
+            "cur_price": 4.17,
+            "score": "SQUEEZE 35점/100",
+            "score_detail": {
+                "공매도강도": 0,
+                "거래량급증": 6,
+                "유통주희소": 19,
+                "커버소요일": 9
+            },
+            "tags": "유통주 5.5M · 숏비율 3.9% · RSI 80.0",
+            "expected_return": "EXPLOSIVE",
+            "meta": {
+                "float_m": 5.5,
+                "short_pct": 3.9,
+                "vol_spike": 1.74,
+                "rsi": 80.0,
+                "short_ratio": 4.9
+            }
+        }
+    ],
+    "total_candidates": 8,
+    "total_screened": 30,
     "base_date": "20260420"
 }

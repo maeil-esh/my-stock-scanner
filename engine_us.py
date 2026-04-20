@@ -97,7 +97,7 @@ def run_us_scan():
             ratio_score = min(short_ratio * 1.5, 10) if short_ratio else 0
             total_score = int(short_score + vol_score + float_score + ratio_score)
 
-            if total_score < 40: continue
+            if total_score < 5: continue
 
             squeeze_level = (
                 "🔥 EXTREME" if total_score >= 80 else

@@ -77,22 +77,30 @@ def run_us_scan():
             float_m     = float_shares / 1e6 if float_shares else 999
             short_pct_p = short_pct * 100     if short_pct    else 0
 
-            # 거래량 스파이크 필수
-            if vol_spike < 1.5:
-                continue
+            # ── 숏스퀴즈 3대 핵심 필터 ──────────────────────────
+            # ① 유통주 50M 이하 (소형주 — 커버링 물량 부족)
+            if float_m > 50 and float_m < 999: continue
+            # ② 공매도 비율 20% 이상 (강제 청산 압력 충분)
+            if short_pct_p < 20: continue
+            # ③ 거래량 스파이크 2배 이상 (트리거 발생)
+            if vol_spike < 2.0: continue
 
-            # 채점
-            short_score = min((short_pct_p - 10) / 30 * 30 + 10, 40) if short_pct_p >= 10 else 0
-            vol_score   = min((vol_spike - 1.5) / 6 * 30 + 5, 35)
-            float_score = max(20 - (float_m / 150 * 20), 0) if float_m < 999 else 0
-            ratio_score = min(short_ratio * 2, 10) if short_ratio else 0
+            # ── 스퀴즈 점수 (100점 만점) ─────────────────────────
+            # 공매도 강도 (최대 40점): 비율이 높을수록
+            short_score = min((short_pct_p - 20) / 40 * 35 + 5, 40)
+            # 거래량 폭발 (최대 30점): 스파이크 클수록
+            vol_score   = min((vol_spike - 2.0) / 8 * 25 + 5, 30)
+            # 유통주 희소성 (최대 20점): 적을수록
+            float_score = max(20 - (float_m / 50 * 20), 0) if float_m < 999 else 0
+            # 커버 소요일 (최대 10점): 길수록 압박 강함
+            ratio_score = min(short_ratio * 1.5, 10) if short_ratio else 0
             total_score = int(short_score + vol_score + float_score + ratio_score)
 
-            if total_score < 10: continue
+            if total_score < 40: continue
 
             squeeze_level = (
-                "🔥 EXTREME" if total_score >= 70 else
-                "⚡ HIGH"    if total_score >= 45 else
+                "🔥 EXTREME" if total_score >= 80 else
+                "⚡ HIGH"    if total_score >= 60 else
                 "📈 MEDIUM"
             )
             short_str = f"{round(short_pct_p,1)}%" if short_pct_p > 0 else "데이터없음"

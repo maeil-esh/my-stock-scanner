@@ -45,6 +45,7 @@ def run_us_scan():
     us_picks  = []; skipped = 0
 
     for symbol in WATCHLIST:
+        print(f"  🔍 {symbol} 조회 중...")
         try:
             t = yf.Ticker(symbol)
 

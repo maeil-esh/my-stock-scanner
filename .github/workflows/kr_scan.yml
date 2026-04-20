@@ -1,11 +1,10 @@
-
 name: KR-Scan
 
 on:
   schedule:
-    - cron: '30 0 * * 1-5'   # 09:30 KST (UTC 00:30) 장 시작
-    - cron: '0 4 * * 1-5'    # 13:00 KST (UTC 04:00) 장 중간
-    - cron: '0 7 * * 1-5'    # 16:00 KST (UTC 07:00) 장 마감
+    - cron: '30 0 * * 1-5'   # 09:30 KST
+    - cron: '0 4 * * 1-5'    # 13:00 KST
+    - cron: '0 7 * * 1-5'    # 16:00 KST
   workflow_dispatch:
 
 jobs:
@@ -36,6 +35,7 @@ jobs:
         run: |
           git config --global user.name 'GitHub Action'
           git config --global user.email 'action@github.com'
+          git pull --rebase origin main || true
           git add stock_data.json history.json
           git commit -m "KR scan $(date +'%Y-%m-%d %H:%M KST')" || echo "No changes"
           git push

@@ -97,7 +97,6 @@ def run_us_scan():
             ratio_score = min(short_ratio * 1.5, 10) if short_ratio else 0
             total_score = int(short_score + vol_score + float_score + ratio_score)
 
-            if total_score < 5: continue
 
             squeeze_level = (
                 "🔥 EXTREME" if total_score >= 80 else
@@ -107,6 +106,7 @@ def run_us_scan():
             short_str = f"{round(short_pct_p,1)}%" if short_pct_p > 0 else "데이터없음"
             float_str = f"{round(float_m,1)}M"     if float_m < 999  else "데이터없음"
 
+            print(f"  📌 {symbol} | {total_score}점 | 공매도 {short_str} | 거래량 {vol_spike}x | float {float_str}")
             us_picks.append({
                 "rank": len(us_picks) + 1,
                 "name": short_name, "code": symbol,

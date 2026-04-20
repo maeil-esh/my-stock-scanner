@@ -2,7 +2,7 @@ name: US-Scan
 
 on:
   schedule:
-    - cron: '0 22 * * 1-5'   # 07:00 KST (UTC 22:00 전날) 미장 종료 후
+    - cron: '0 22 * * 1-5'   # 07:00 KST
   workflow_dispatch:
 
 jobs:
@@ -23,7 +23,7 @@ jobs:
 
       - name: Install libraries
         run: |
-          pip install yfinance requests numpy
+          pip install yfinance requests numpy beautifulsoup4
 
       - name: Run US Scanner
         run: python engine_us.py
@@ -32,6 +32,7 @@ jobs:
         run: |
           git config --global user.name 'GitHub Action'
           git config --global user.email 'action@github.com'
+          git pull --rebase origin main || true
           git add stock_data_us.json
           git commit -m "US scan $(date +'%Y-%m-%d %H:%M KST')" || echo "No changes"
           git push

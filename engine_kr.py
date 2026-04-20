@@ -353,11 +353,13 @@ def run_kr_scan():
     for ticker, df, vol_ma20, mktcap, rebound_pct, cur, cur_vol, cur_vm20 in passed_stage1:
         try:
             inv_df, cols, inst_streak, for_streak = get_investor_detail(ticker, start_10d, today_str)
-            if inv_df is None or cols is None: continue
-            fc, ic  = cols
-            any_buy = int(((inv_df[fc] > 0) | (inv_df[ic] > 0)).sum())
-            if any_buy < 1: continue
-            log['seforce'] += 1
+            # 수급 조회 실패해도 탈락 안 함 — 점수 0점으로 처리
+            if inv_df is not None and cols is not None:
+                fc, ic  = cols
+                any_buy = int(((inv_df[fc] > 0) | (inv_df[ic] > 0)).sum())
+                if any_buy >= 1: log['seforce'] += 1
+            else:
+                inv_df = None; cols = None; inst_streak = 0; for_streak = 0
 
             # 채점
             total_score, breakdown, meta = score_stock(df, inv_df, cols, inst_streak, for_streak)

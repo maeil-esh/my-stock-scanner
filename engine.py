@@ -44,15 +44,11 @@ _dart_corp_cache = {}
 # ── 유틸 함수 ──────────────────────────────────────────────────
 
 def get_market_date():
-    """
-    평일이면 오늘 날짜 반환
-    주말(토/일)이면 가장 최근 금요일 반환
-    """
     today = datetime.datetime.now()
-    wd = today.weekday()  # 0=월 1=화 2=수 3=목 4=금 5=토 6=일
-    if wd == 5:           # 토요일 → 금요일
+    wd = today.weekday()
+    if wd == 5:
         today -= datetime.timedelta(days=1)
-    elif wd == 6:         # 일요일 → 금요일
+    elif wd == 6:
         today -= datetime.timedelta(days=2)
     return today.strftime("%Y%m%d")
 
@@ -65,7 +61,6 @@ def get_start_date(base_str, days_ago):
 # ── pykrx 백업 함수 ────────────────────────────────────────────
 
 def safe_get_market_ticker_list(date_str, market):
-    """pykrx 실패 시 fdr로 종목 목록 백업 조회"""
     try:
         tickers = stock.get_market_ticker_list(date_str, market=market)
         if tickers and len(tickers) > 0:
@@ -82,36 +77,51 @@ def safe_get_market_ticker_list(date_str, market):
 
 def safe_get_market_cap(ticker, date_str):
     """
-    시가총액 조회 (억원)
-    pykrx 실패 시 fdr StockListing으로 백업
+    시가총액 조회 (억원) — 컬럼명 유연 탐지 + 다중 백업
     """
-    # 1차: pykrx
+    # 1차: pykrx 단일 종목
     try:
         df = stock.get_market_cap(date_str, date_str, ticker)
         if df is not None and not df.empty:
-            val = df['시가총액'].iloc[-1]
-            if val > 0:
-                return int(val / 1e8)
+            cap_col = _find_cap_col(df)
+            if cap_col:
+                val = df[cap_col].iloc[-1]
+                if val > 0:
+                    return int(val / 1e8)
     except Exception:
         pass
 
-    # 2차: fdr StockListing (시총 컬럼 포함)
+    # 2차: fdr StockListing
     try:
-        market = "KOSPI" if len(ticker) == 6 else "KOSDAQ"
-        df = fdr.StockListing(market)
-        row = df[df['Code'] == ticker]
-        if not row.empty:
-            cap = row.iloc[0].get('Marcap', 0) or row.iloc[0].get('MarCap', 0)
-            if cap and cap > 0:
-                return int(cap / 1e8)
+        for market in ["KOSPI", "KOSDAQ"]:
+            df = fdr.StockListing(market)
+            row = df[df['Code'] == ticker]
+            if not row.empty:
+                for col in ['Marcap', 'MarCap', 'marcap', 'mktcap', 'MktCap']:
+                    if col in row.columns:
+                        cap = row.iloc[0][col]
+                        if cap and cap > 0:
+                            return int(cap / 1e8)
     except Exception:
         pass
 
     return None
 
 
+def _find_cap_col(df):
+    """데이터프레임에서 시가총액 컬럼명 자동 탐지"""
+    candidates = ['시가총액', 'Mktcap', 'MktCap', 'mktcap', 'marcap', 'Marcap', '시가홀액']
+    for c in candidates:
+        if c in df.columns:
+            return c
+    # 부분 매칭
+    for col in df.columns:
+        if '시가' in col or 'cap' in col.lower():
+            return col
+    return None
+
+
 def safe_get_ohlcv(ticker, date_str):
-    """pykrx 일봉 조회 실패 시 None 반환"""
     try:
         df = stock.get_market_ohlcv(date_str, date_str, ticker)
         if df is not None and not df.empty:
@@ -124,7 +134,6 @@ def safe_get_ohlcv(ticker, date_str):
 # ── DART 재무 데이터 ───────────────────────────────────────────
 
 def load_dart_corp_codes():
-    """DART 전체 기업코드 ZIP을 한 번만 다운로드하여 캐시"""
     global _dart_corp_cache
     if _dart_corp_cache:
         return
@@ -147,12 +156,6 @@ def load_dart_corp_codes():
 
 
 def get_financial_data(ticker):
-    """
-    OpenDART API로 실제 재무 데이터 조회
-    - OPM: 영업이익률 (%)
-    - DebtRatio: 부채비율 (%)
-    실패 시 더미값 반환 (필터 통과 처리)
-    """
     if not DART_API_KEY or not _dart_corp_cache:
         return {"OPM": 5.0, "DebtRatio": 100.0}
 
@@ -164,8 +167,8 @@ def get_financial_data(ticker):
         year     = str(datetime.datetime.now().year - 1)
         base_url = "https://opendart.fss.or.kr/api/fnlttSinglAcntAll.json"
 
-        for reprt_code in ['11011', '11012']:   # 사업보고서 → 반기보고서 순
-            for fs_div in ['CFS', 'OFS']:       # 연결 → 개별 순
+        for reprt_code in ['11011', '11012']:
+            for fs_div in ['CFS', 'OFS']:
                 params = {
                     'crtfc_key':  DART_API_KEY,
                     'corp_code':  corp_code,
@@ -204,7 +207,6 @@ def get_financial_data(ticker):
 # ── 네이버 기업 개요 ───────────────────────────────────────────
 
 def get_company_summary(ticker, name):
-    """네이버 금융 기업 개요 (TOP 5 확정 후 5회만 호출)"""
     try:
         url = f"https://finance.naver.com/item/coinfo.naver?code={ticker}"
         headers = {
@@ -238,7 +240,6 @@ def get_company_summary(ticker, name):
 # ── 수급 데이터 ────────────────────────────────────────────────
 
 def get_investor_detail(ticker, start, end):
-    """수급 상세: (inv_df, cols, 기관연속일, 외인연속일)"""
     try:
         df = stock.get_market_trading_value_by_date(start, end, ticker)
     except Exception:
@@ -358,7 +359,6 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
     bd['OBV다이버전스'] = c
 
     # ── [D] RSI 골디락스 구간 (최대 30점) ────────────────────
-    # 45~60: 과열 전 단계 최적 진입 구간
     d = 0
     if not np.isnan(rsi):
         if   45 <= rsi <= 60: d = int(max(30 - abs(rsi - 52) * 2, 15))
@@ -410,7 +410,6 @@ def analyze_with_manual_picks():
     print(f"📅 기준일: {today_str}  (원본: {now.strftime('%Y%m%d')})")
     print(f"🎯 목표: 7일 +10% / 승률 68~73% 최적화 엔진 v3\n")
 
-    # DART 기업코드 사전 로드 (1회)
     load_dart_corp_codes()
 
     kospi_tickers  = safe_get_market_ticker_list(today_str, "KOSPI")
@@ -418,28 +417,38 @@ def analyze_with_manual_picks():
     all_tickers    = kospi_tickers + kosdaq_tickers
     print(f"📋 전체 종목: {len(all_tickers)}개\n")
 
-    # ── 시총 사전 필터링 (전체 1회 조회 → 속도 대폭 개선) ────────
+    # ── 시총 사전 필터링 ──────────────────────────────────────
     print("⚡ 시총 사전 필터링 중 (500억~3조)...")
-    mktcap_cache = {}   # ticker → 시총(억원)
+    mktcap_cache = {}
     pre_filtered  = []
+    supra_success = False
 
     try:
         df_cap = stock.get_market_cap(today_str)
         if df_cap is not None and not df_cap.empty:
-            for idx, row in df_cap.iterrows():
-                cap = int(row['시가총액'] / 1e8)
-                mktcap_cache[str(idx)] = cap
-                if 500 <= cap <= 30000:
-                    pre_filtered.append(str(idx))
-            print(f"  → 사전 필터 통과: {len(pre_filtered)}종목 (전체 {len(all_tickers)}개 중)")
+            # ★ 핵심 수정: 컬럼명 유연 탐지
+            print(f"  📋 pykrx 시총 컬럼 확인: {df_cap.columns.tolist()}")
+            cap_col = _find_cap_col(df_cap)
+
+            if cap_col:
+                for idx, row in df_cap.iterrows():
+                    cap = int(row[cap_col] / 1e8)
+                    mktcap_cache[str(idx)] = cap
+                    if 500 <= cap <= 30000:
+                        pre_filtered.append(str(idx))
+                print(f"  → 사전 필터 통과: {len(pre_filtered)}종목 (전체 {len(all_tickers)}개 중)")
+                supra_success = True
+            else:
+                print(f"  ⚠️  시총 컬럼 탐지 실패: {df_cap.columns.tolist()} → 전체 종목 스캔")
+        else:
+            print("  ⚠️  시총 데이터 비어있음 → 전체 종목 스캔")
     except Exception as e:
         print(f"  ⚠️  시총 사전 필터 실패: {e} → 전체 종목 스캔")
+
+    if not supra_success:
         pre_filtered = all_tickers
 
-    # 사전 필터 적용 (없으면 전체)
     all_tickers = pre_filtered if pre_filtered else all_tickers
-
-    # all_tickers = all_tickers[:300]  # 빠른 테스트 시 주석 해제
 
     candidates = []
     log = dict(
@@ -463,15 +472,19 @@ def analyze_with_manual_picks():
                 continue
             log['penny'] += 1
 
-            # ② 정배열 (MA50 > MA200, 현재가 > MA50)
+            # ② 정배열
             ma50  = close.rolling(50).mean().iloc[-1]
             ma200 = close.rolling(200).mean().iloc[-1]
             if not (ma50 > ma200 and cur > ma50):
                 continue
             log['trend'] += 1
 
-            # ③ 시총 캐시에서 바로 조회 (API 재호출 없음)
+            # ③ 시총 — 캐시 우선, 미스 시 개별 API 백업
             mktcap = mktcap_cache.get(ticker)
+            if mktcap is None:
+                mktcap = safe_get_market_cap(ticker, today_str)
+                if mktcap is not None:
+                    mktcap_cache[ticker] = mktcap  # 캐시 저장
             if mktcap is None or not (500 <= mktcap <= 30000):
                 continue
             log['mktcap'] += 1
@@ -481,7 +494,7 @@ def analyze_with_manual_picks():
             ma20_s    = close.rolling(20).mean()
             recent_60 = df.iloc[-60:]
             spike_mask = (
-                (recent_60['Volume'] >= vol_ma20.iloc[-60:] * 2.0) &  # 2.5→2.0배 완화
+                (recent_60['Volume'] >= vol_ma20.iloc[-60:] * 2.0) &
                 (recent_60['Close']  >  recent_60['Open']) &
                 (recent_60['Close']  >  ma20_s.iloc[-60:])
             )
@@ -495,17 +508,17 @@ def analyze_with_manual_picks():
             price_rng = (r10['High'].max() - r10['Low'].min()) / r10['Low'].min() * 100
             cur_vol   = vol.iloc[-1]
             cur_vm20  = vol_ma20.iloc[-1]
-            if price_rng > 20 or cur_vol > cur_vm20 * 0.6:  # 15→20%, 50→60% 완화
+            if price_rng > 20 or cur_vol > cur_vm20 * 0.6:
                 continue
             log['spike'] += 1
 
-            # ⑤ 52주 고가 20% 이내 (10→20% 완화)
+            # ⑤ 52주 고가 20% 이내
             high52 = get_52week_high(df)
             if (high52 - cur) / high52 * 100 > 20:
                 continue
             log['high52'] += 1
 
-            # ⑥ 기관 2일 연속 순매수 (3일→2일 완화)
+            # ⑥ 기관 2일 연속 순매수
             inv_df, cols, inst_streak, for_streak = get_investor_detail(
                 ticker, start_10d, today_str
             )
@@ -513,7 +526,7 @@ def analyze_with_manual_picks():
                 continue
             log['inst3'] += 1
 
-            # ⑦ 외인 또는 기관 매수 1일↑ (동시→OR 조건 완화)
+            # ⑦ 외인 또는 기관 매수 1일↑
             fc, ic     = cols
             valid_days = int(((inv_df[fc] > 0) | (inv_df[ic] > 0)).sum())
             both_days  = int(((inv_df[fc] > 0) & (inv_df[ic] > 0)).sum())
@@ -530,7 +543,7 @@ def analyze_with_manual_picks():
             meta['cur_close'] = int(cur)
             meta['vol_ratio'] = round(cur_vol / (cur_vm20 + 1), 2)
 
-            if total_score >= 100:  # 130→100점 완화
+            if total_score >= 100:
                 candidates.append((total_score, ticker, breakdown, meta))
                 log['final'] += 1
 
@@ -680,11 +693,6 @@ def analyze_with_manual_picks():
 # ══════════════════════════════════════════════════════════════
 
 def analyze_us_market():
-    """
-    미국 시장 메가 러너 (Short Squeeze) 탐지 엔진
-    조건: Float ≤ 150M + 공매도 ≥ 10% + 거래량 ≥ 2배
-    점수: 공매도강도(40) + 거래량급증(30) + 유통주희소(20) + 커버소요일(10)
-    """
     print("\n🇺🇸 미국 시장 숏스퀴즈 스캐닝 시작...")
 
     WATCHLIST = [
@@ -730,11 +738,9 @@ def analyze_us_market():
             rs    = gain / loss.replace(0, np.nan)
             rsi   = round((100 - 100 / (1 + rs)).iloc[-1], 1)
 
-            # 핵심 조건: Float ≤ 150M, 공매도 ≥ 10%, 거래량 ≥ 2배
             if float_m > 150 or short_pct_p < 10 or vol_spike < 2.0:
                 continue
 
-            # 점수 산출
             short_score = min((short_pct_p - 10) / 30 * 30 + 10, 40)
             vol_score   = min((vol_spike - 2) / 6 * 25 + 5, 30)
             float_score = max(20 - (float_m / 150 * 20), 0)
@@ -808,7 +814,6 @@ TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "7497968326")
 
 
 def send_telegram(message: str):
-    """텔레그램 메시지 전송"""
     if not TELEGRAM_TOKEN:
         print("⚠️  TELEGRAM_TOKEN 없음 — 전송 스킵")
         return
@@ -828,13 +833,11 @@ def send_telegram(message: str):
 
 
 def build_kr_message(kr_data: dict) -> str:
-    """한국 시장 결과 메시지 생성"""
     picks    = kr_data.get("today_picks", [])
     perf     = kr_data.get("performance", {})
     log      = kr_data.get("filter_log", {})
     base_date = kr_data.get("base_date", "")
 
-    # 날짜 포맷
     try:
         d = datetime.datetime.strptime(base_date, "%Y%m%d")
         date_str = d.strftime("%Y.%m.%d (%a)").replace(
@@ -881,10 +884,8 @@ def build_kr_message(kr_data: dict) -> str:
 
 
 def build_us_message(us_data: dict) -> str:
-    """미국 시장 결과 메시지 생성"""
     picks     = us_data.get("today_picks", [])
     screened  = us_data.get("total_screened", 0)
-    today_str = us_data.get("base_date", "")
 
     lines = [
         f"🇺🇸 <b>ULTIMATE ALPHA v3 — 미국 숏스퀴즈</b>",
@@ -917,9 +918,8 @@ def build_us_message(us_data: dict) -> str:
 # ══════════════════════════════════════════════════════════════
 
 if __name__ == "__main__":
-    kr_result = analyze_with_manual_picks()   # 한국 시장
-    us_result = analyze_us_market()           # 미국 시장
+    kr_result = analyze_with_manual_picks()
+    us_result = analyze_us_market()
 
-    # 텔레그램 전송
     send_telegram(build_kr_message(kr_result))
     send_telegram(build_us_message(us_result))

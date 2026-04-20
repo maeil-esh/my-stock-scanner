@@ -287,7 +287,10 @@ def run_kr_scan():
     from concurrent.futures import ThreadPoolExecutor, as_completed
     lock = threading.Lock()
 
-    def scan_ticker(ticker):
+    # 1단계: 병렬 — 가격/기술적 필터 (①~⑤)
+    passed_stage1 = []  # (ticker, df, vol_ma20, mktcap, rebound_pct, cur, cur_vol, cur_vm20)
+
+    def scan_ticker_stage1(ticker):
         try:
             df = fdr.DataReader(ticker, start_260d, today_str)
             if len(df) < 120: return
@@ -305,7 +308,7 @@ def run_kr_scan():
             if mktcap is None or not (2000 <= mktcap <= 30000): return
             with lock: log['mktcap'] += 1
 
-            # ③ 바닥 확인: 52주 저가 대비 +5~60% (divide by zero 방지)
+            # ③ 바닥 확인: 52주 저가 대비 +5~60%
             low52 = df['Low'].iloc[-252:].min() if len(df) >= 252 else df['Low'].min()
             if low52 <= 0: return
             rebound_pct = (cur - low52) / low52 * 100
@@ -329,19 +332,35 @@ def run_kr_scan():
             if len(af) >= 3:
                 sil = af['Volume'].mean() / (last_spike['Volume'] + 1)
                 if sil > 0.6: return
-            with lock: log['vol_spike'] += 1
+            with lock:
+                log['vol_spike'] += 1
+                passed_stage1.append((ticker, df, vol_ma20, mktcap, rebound_pct, cur,
+                                      vol.iloc[-1], vol_ma20.iloc[-1]))
+        except Exception:
+            return
 
-            # ⑥ 세력: 기관 OR 외인 1일 이상
+    print(f"🔍 1단계: 병렬 가격 스크리닝 (10스레드)...")
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        futures = {executor.submit(scan_ticker_stage1, t): t for t in all_tickers}
+        done = 0
+        for f in as_completed(futures):
+            done += 1
+            if done % 200 == 0:
+                print(f"  진행 {done}/{len(all_tickers)} | 1차 통과: {len(passed_stage1)}건")
+
+    # 2단계: 순차 — 수급 조회 (pykrx 멀티스레드 불안정 방지)
+    print(f"
+🔍 2단계: 수급 스크리닝 ({len(passed_stage1)}건 순차 조회)...")
+    for ticker, df, vol_ma20, mktcap, rebound_pct, cur, cur_vol, cur_vm20 in passed_stage1:
+        try:
             inv_df, cols, inst_streak, for_streak = get_investor_detail(ticker, start_10d, today_str)
-            if inv_df is None or cols is None: return
+            if inv_df is None or cols is None: continue
             fc, ic  = cols
             any_buy = int(((inv_df[fc] > 0) | (inv_df[ic] > 0)).sum())
-            if any_buy < 1: return
-            with lock: log['seforce'] += 1
+            if any_buy < 1: continue
+            log['seforce'] += 1
 
             # 채점
-            cur_vol  = vol.iloc[-1]
-            cur_vm20 = vol_ma20.iloc[-1]
             total_score, breakdown, meta = score_stock(df, inv_df, cols, inst_streak, for_streak)
             meta['mktcap']      = mktcap
             meta['rebound_pct'] = round(rebound_pct, 1)
@@ -349,20 +368,10 @@ def run_kr_scan():
             meta['vol_ratio']   = round(cur_vol / (cur_vm20 + 1), 2)
 
             if total_score >= 60:
-                with lock:
-                    candidates.append((total_score, ticker, breakdown, meta))
-                    log['final'] += 1
+                candidates.append((total_score, ticker, breakdown, meta))
+                log['final'] += 1
         except Exception:
-            return
-
-    print(f"🔍 병렬 스크리닝 시작 (10스레드)...")
-    with ThreadPoolExecutor(max_workers=10) as executor:
-        futures = {executor.submit(scan_ticker, t): t for t in all_tickers}
-        done = 0
-        for f in as_completed(futures):
-            done += 1
-            if done % 200 == 0:
-                print(f"  진행 {done}/{len(all_tickers)} | 후보: {len(candidates)}건")
+            continue
 
     print(f"\n📊 [필터 현황]")
     for lbl, key in [("전체","total"),("① 동전주","penny"),("② 시총 2000억~3조","mktcap"),

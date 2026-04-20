@@ -10,8 +10,8 @@
     "total_screened": 2770,
     "filter_log": {
         "total": 2770,
-        "penny": 2468,
-        "trend": 981,
+        "penny": 2470,
+        "trend": 1003,
         "mktcap": 0,
         "spike": 0,
         "high52": 0,
@@ -19,5 +19,5 @@
         "both_buy": 0,
         "final": 0
     },
-    "base_date": "20260417"
+    "base_date": "20260420"
 }

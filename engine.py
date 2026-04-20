@@ -44,11 +44,16 @@ _dart_corp_cache = {}
 # ── 유틸 함수 ──────────────────────────────────────────────────
 
 def get_market_date():
-    """주말이면 가장 최근 금요일 반환 (pykrx 에러 방지)"""
+    """
+    평일이면 오늘 날짜 반환
+    주말(토/일)이면 가장 최근 금요일 반환
+    """
     today = datetime.datetime.now()
-    wd = today.weekday()
-    if wd == 5: today -= datetime.timedelta(days=1)
-    elif wd == 6: today -= datetime.timedelta(days=2)
+    wd = today.weekday()  # 0=월 1=화 2=수 3=목 4=금 5=토 6=일
+    if wd == 5:           # 토요일 → 금요일
+        today -= datetime.timedelta(days=1)
+    elif wd == 6:         # 일요일 → 금요일
+        today -= datetime.timedelta(days=2)
     return today.strftime("%Y%m%d")
 
 
@@ -476,7 +481,7 @@ def analyze_with_manual_picks():
             ma20_s    = close.rolling(20).mean()
             recent_60 = df.iloc[-60:]
             spike_mask = (
-                (recent_60['Volume'] >= vol_ma20.iloc[-60:] * 2.5) &
+                (recent_60['Volume'] >= vol_ma20.iloc[-60:] * 2.0) &  # 2.5→2.0배 완화
                 (recent_60['Close']  >  recent_60['Open']) &
                 (recent_60['Close']  >  ma20_s.iloc[-60:])
             )
@@ -490,28 +495,29 @@ def analyze_with_manual_picks():
             price_rng = (r10['High'].max() - r10['Low'].min()) / r10['Low'].min() * 100
             cur_vol   = vol.iloc[-1]
             cur_vm20  = vol_ma20.iloc[-1]
-            if price_rng > 15 or cur_vol > cur_vm20 * 0.5:
+            if price_rng > 20 or cur_vol > cur_vm20 * 0.6:  # 15→20%, 50→60% 완화
                 continue
             log['spike'] += 1
 
-            # ⑤ 52주 고가 10% 이내
+            # ⑤ 52주 고가 20% 이내 (10→20% 완화)
             high52 = get_52week_high(df)
-            if (high52 - cur) / high52 * 100 > 10:
+            if (high52 - cur) / high52 * 100 > 20:
                 continue
             log['high52'] += 1
 
-            # ⑥ 기관 3일 연속 순매수
+            # ⑥ 기관 2일 연속 순매수 (3일→2일 완화)
             inv_df, cols, inst_streak, for_streak = get_investor_detail(
                 ticker, start_10d, today_str
             )
-            if inv_df is None or inst_streak < 3:
+            if inv_df is None or inst_streak < 2:
                 continue
             log['inst3'] += 1
 
-            # ⑦ 외인+기관 동시 매수 1일↑
-            fc, ic    = cols
-            both_days = int(((inv_df[fc] > 0) & (inv_df[ic] > 0)).sum())
-            if both_days < 1:
+            # ⑦ 외인 또는 기관 매수 1일↑ (동시→OR 조건 완화)
+            fc, ic     = cols
+            valid_days = int(((inv_df[fc] > 0) | (inv_df[ic] > 0)).sum())
+            both_days  = int(((inv_df[fc] > 0) & (inv_df[ic] > 0)).sum())
+            if valid_days < 1:
                 continue
             log['both_buy'] += 1
 
@@ -524,7 +530,7 @@ def analyze_with_manual_picks():
             meta['cur_close'] = int(cur)
             meta['vol_ratio'] = round(cur_vol / (cur_vm20 + 1), 2)
 
-            if total_score >= 130:
+            if total_score >= 100:  # 130→100점 완화
                 candidates.append((total_score, ticker, breakdown, meta))
                 log['final'] += 1
 

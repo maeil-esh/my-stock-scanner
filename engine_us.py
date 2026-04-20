@@ -28,7 +28,7 @@ WATCHLIST = [
     # 바이오
     'OCGN','NVAX','SAVA','PACB',
     # 밈주식 생존종목
-    'GME','AMC','MVIS','TLRY','KOSS','SPCE','NKLA',
+        'GME','AMC','MVIS','TLRY','KOSS','SPCE',
 ]
 
 

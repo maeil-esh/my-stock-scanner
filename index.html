@@ -15,8 +15,9 @@
         .card-4      { border-color:#60a5fa55; background:#60a5fa08; }
         .card-5      { border-color:#34d39955; background:#34d39908; }
         .badge { display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:600; }
-        .mkt-active { background:#1e40af!important; color:#fff!important; border-color:#3b82f6!important; }
-        .mkt-idle   { color:#6b7280!important; border-color:transparent!important; background:transparent!important; }
+        /* ✅ Fix 1: mkt-active/idle을 CSS로 고정 — Tailwind CDN purge 문제 우회 */
+        .mkt-active { background:#1e40af !important; color:#fff !important; border-color:#3b82f6 !important; }
+        .mkt-idle   { color:#6b7280 !important; border-color:transparent !important; background:transparent !important; }
     </style>
 </head>
 <body class="text-gray-100 font-sans min-h-screen">
@@ -25,12 +26,13 @@
 
     <!-- 시장 탭 -->
     <div class="flex bg-[#111827] p-1 rounded-xl border border-gray-800 mb-6 w-fit">
+        <!-- ✅ Fix 3: ml-1은 btn-us에 인라인 고정 — 동적 클래스 생성 제거 -->
         <button onclick="switchMarket('kr')" id="btn-kr"
             class="mkt-active px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 border transition-all">
             🇰🇷 한국 시장
         </button>
         <button onclick="switchMarket('us')" id="btn-us"
-            class="mkt-idle px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 border ml-1 transition-all">
+            class="mkt-idle px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 border transition-all ml-1">
             🇺🇸 미국 시장
         </button>
     </div>
@@ -44,6 +46,7 @@
             <p id="strategy-desc" class="text-gray-500 text-xs mt-1"></p>
         </div>
         <div class="text-right">
+            <!-- ✅ Fix 2: 데이터 기준일 / 페이지 로드 시각으로 의미 분리 -->
             <div id="update-time" class="text-gray-500 text-xs">로딩 중...</div>
             <div id="base-date" class="text-gray-600 text-[10px] mt-0.5"></div>
         </div>
@@ -141,15 +144,13 @@ const US_FACTOR_STYLE = {
 let currentMarket = 'kr';
 
 // ══════════════════════════════════════════════════════════════
-//  시장 전환
+//  ✅ Fix 1+3: 시장 전환 — 동적 클래스 생성 제거, 버튼별 고정 처리
 // ══════════════════════════════════════════════════════════════
 function switchMarket(market) {
     currentMarket = market;
-    ['kr','us'].forEach(m => {
-        document.getElementById('btn-' + m).className =
-            `px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 border transition-all ml-${m==='us'?'1':'0'} ${
-                m === market ? 'mkt-active' : 'mkt-idle'}`;
-    });
+    const BASE = 'px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 border transition-all';
+    document.getElementById('btn-kr').className = `${BASE} ${market === 'kr' ? 'mkt-active' : 'mkt-idle'}`;
+    document.getElementById('btn-us').className = `${BASE} ml-1 ${market === 'us' ? 'mkt-active' : 'mkt-idle'}`;
     initLoad();
 }
 
@@ -179,7 +180,7 @@ function initLoad() {
             </div>`;
         })
         .finally(() => {
-            renderStrategyPanel();  // 성공/실패 무관하게 항상 표시
+            renderStrategyPanel();
         });
 }
 
@@ -187,10 +188,14 @@ function initLoad() {
 //  공통 렌더링
 // ══════════════════════════════════════════════════════════════
 function renderHeader(data) {
-    const now = new Date();
-    document.getElementById('update-time').textContent =
-        `업데이트: ${now.toLocaleDateString('ko-KR')} ${now.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}`;
-    document.getElementById('base-date').textContent = `기준일: ${data.base_date || '-'}`;
+    // ✅ Fix 2: update-time = 데이터 기준일, base-date = 페이지 로드 시각으로 의미 분리
+    const bd = data.base_date || '';
+    const dateStr = bd.length === 8
+        ? `${bd.slice(0,4)}.${bd.slice(4,6)}.${bd.slice(6,8)}`
+        : '-';
+    document.getElementById('update-time').textContent = `데이터 기준일: ${dateStr}`;
+    document.getElementById('base-date').textContent =
+        `로드: ${new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}`;
     document.getElementById('strategy-desc').textContent = currentMarket === 'kr'
         ? '기관 3일 연속 × 52주 돌파 임박 × VCP — 한국 시장 승률 극대화'
         : 'Short Squeeze 탐지 × Micro-Float × 거래량 급등 — 미국 메가 러너 포착';
@@ -363,17 +368,19 @@ function renderUsPicks(data) {
         const detail = item.score_detail || {};
         const meta   = item.meta || {};
 
-        const scoreNum = parseInt((item.score.match(/(\d+)점/) || [])[1] || 0);
-        const scorePct = Math.min(scoreNum, 100);
+        // ✅ Fix 4: scoreNum 파싱 강화 — "SQUEEZE 75점/100", "EXPLOSIVE" 등 다양한 형식 대응
+        let scoreNum = 0;
+        const m1 = item.score.match(/(\d+)점/);
+        const m2 = item.score.match(/(\d+)/);
+        if (m1) scoreNum = parseInt(m1[1]);
+        else if (m2) scoreNum = parseInt(m2[1]);
+        scoreNum = Math.min(scoreNum, 100);
 
-        // 숏 비율 바
-        const shortBar  = Math.min((meta.short_pct || 0) / 60 * 100, 100);
-        // 거래량 스파이크 바
-        const volBar    = Math.min((meta.vol_spike || 0) / 10 * 100, 100);
-        // 유통주 희소성 바 (적을수록 높음)
-        const floatBar  = Math.max(100 - (meta.float_m || 50) / 50 * 100, 0);
+        const scorePct = scoreNum;
+        const shortBar = Math.min((meta.short_pct || 0) / 60 * 100, 100);
+        const volBar   = Math.min((meta.vol_spike || 0) / 10 * 100, 100);
+        const floatBar = Math.max(100 - (meta.float_m || 50) / 50 * 100, 0);
 
-        // 스퀴즈 레벨 색상
         const squeezeColor =
             scoreNum >= 80 ? '#ef4444' :
             scoreNum >= 60 ? '#f97316' : '#eab308';
@@ -391,16 +398,13 @@ function renderUsPicks(data) {
                     <span class="text-xl font-black" style="color:${rm.color}">${rm.label}</span>
                 </div>
                 <div class="flex-1 p-4">
-
-                    <!-- 헤더 -->
                     <div class="flex justify-between items-start mb-2">
                         <div>
                             <div class="flex items-center gap-2">
                                 <span class="text-lg font-black text-white">${item.name}</span>
                                 <span class="px-2 py-0.5 rounded text-[10px] font-black"
                                       style="background:${squeezeColor}22;color:${squeezeColor};border:1px solid ${squeezeColor}44;">
-                                    ${item.supply.includes('EXTREME') ? '🔥 EXTREME' :
-                                      item.supply.includes('HIGH')    ? '⚡ HIGH'    : '📈 MEDIUM'}
+                                    ${scoreNum >= 80 ? '🔥 EXTREME' : scoreNum >= 60 ? '⚡ HIGH' : '📈 MEDIUM'}
                                 </span>
                             </div>
                             <div class="text-[11px] text-gray-500 mt-0.5">
@@ -414,14 +418,10 @@ function renderUsPicks(data) {
                             <div class="text-[10px] text-gray-400 mt-0.5">공매도 ${meta.short_pct||0}%</div>
                         </div>
                     </div>
-
-                    <!-- 기업 개요 -->
                     ${item.company_summary ? `
                     <div class="text-[11px] text-gray-400 bg-black/20 rounded-lg px-3 py-2 mb-3 leading-relaxed border-l-2 border-red-900">
                         <i class="fa-solid fa-flag-usa text-gray-600 mr-1" style="font-size:10px;"></i>${item.company_summary}
                     </div>` : ''}
-
-                    <!-- 핵심 지표 바 3개 -->
                     <div class="space-y-2 mb-3">
                         <div>
                             <div class="flex justify-between text-[10px] text-gray-500 mb-1">
@@ -451,19 +451,13 @@ function renderUsPicks(data) {
                             </div>
                         </div>
                     </div>
-
-                    <!-- 팩터 뱃지 -->
                     <div class="flex flex-wrap gap-1 mb-2">${badges}</div>
-
-                    <!-- 상세 지표 칩 -->
                     <div class="flex flex-wrap gap-x-3 text-[10px] text-gray-500 mb-2">
                         <span>RSI <span class="text-gray-300 font-mono">${meta.rsi||'-'}</span></span>
-                        <span>공매도비율 <span class="text-red-300 font-mono">${meta.short_pct||0}%</span></span>
+                        <span>공매도 <span class="text-red-300 font-mono">${meta.short_pct||0}%</span></span>
                         <span>커버소요 <span class="text-gray-300 font-mono">${meta.short_ratio||0}일</span></span>
                         <span>유통주 <span class="text-gray-300 font-mono">${meta.float_m||0}M</span></span>
                     </div>
-
-                    <!-- 기대 수익 -->
                     <div class="text-right">
                         <span class="font-black text-sm" style="color:${squeezeColor}">
                             ${scoreNum >= 80 ? '🚀 EXPLOSIVE' : scoreNum >= 60 ? '⚡ HIGH POTENTIAL' : '📈 WATCHLIST'}

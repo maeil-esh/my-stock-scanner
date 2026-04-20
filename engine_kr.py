@@ -196,7 +196,7 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
     elif green_days >= 60:  b = 20  # 3개월↑ — 글로벌텍스프리형
     elif green_days >= 30:  b = 12  # 1.5개월↑ — PI첨단소재형
     elif green_days >= 20:  b = 6   # 1개월↑ — 테크윙형
-    bd['녹색매집'] = b
+    bd['세력매집'] = b
     meta['green_days'] = green_days
 
     # ── [C] 매매신호 30 돌파 (최대 30점) ───────────────────────
@@ -219,14 +219,22 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
     meta['signal'] = round(signal_now, 1)
     meta['signal_cross'] = signal_cross
 
-    # ── [D] 거래량 폭발 (최대 20점) ─────────────────────────────
+    # ── [D] 거래량 스파이크 강도 (최대 40점) ────────────────────
+    # 최근 60일 중 최대 스파이크 배수로 등급 산정
+    vol_ma20_ser = df['Volume'].rolling(20).mean()
+    recent_60    = df.iloc[-60:]
+    spike_ratios = recent_60['Volume'] / (vol_ma20_ser.iloc[-60:] + 1)
+    max_spike    = spike_ratios.max() if not spike_ratios.empty else 0
+    cur_ratio    = cur_vol / (vol_ma20 + 1)
+
     d = 0
-    vol_ratio = cur_vol / (vol_ma20 + 1)
-    if   vol_ratio >= 3.0: d = 20
-    elif vol_ratio >= 2.0: d = 15  # 필수 기준
-    elif vol_ratio >= 1.5: d = 8
-    bd['거래량폭발'] = d
-    meta['vol_ratio'] = round(vol_ratio, 2)
+    if   max_spike >= 10: d = 40  # 엔켐형 — 10배↑ 대시세
+    elif max_spike >= 5:  d = 30  # 5~10배 — 강한 신호
+    elif max_spike >= 3:  d = 20  # 3~5배  — 중간 신호
+    elif max_spike >= 2:  d = 10  # 2~3배  — 기본 신호
+    bd['거래량스파이크'] = d
+    meta['max_spike']  = round(max_spike, 1)
+    meta['vol_ratio']  = round(cur_ratio, 2)
 
     # ── [E] 전일 고가 돌파 (최대 15점) ──────────────────────────
     e = 15 if cur > prev_hi else 0
@@ -295,8 +303,7 @@ def run_kr_scan():
     all_tickers = pre_filtered if supra_success and pre_filtered else all_tickers
 
     candidates = []
-    log = dict(total=len(all_tickers), penny=0, mktcap=0,
-               bottom=0, uptrend=0, vol_spike=0, seforce=0, final=0)
+    log = dict(total=len(all_tickers), penny=0, mktcap=0, obv_up=0, vol_spike=0, seforce=0, final=0)
     import threading
     from concurrent.futures import ThreadPoolExecutor, as_completed
     lock = threading.Lock()
@@ -450,6 +457,20 @@ def run_kr_scan():
 
 # ── 텔레그램 메시지 빌드 ───────────────────────────────────────
 
+
+def _signal_label(v):
+    if v >= 70:  return f"{v} 🔴 과매수"
+    elif v >= 50: return f"{v} 🟡 상승중"
+    elif v >= 30: return f"{v} 🟢 진입구간"
+    else:         return f"{v} ⚪ 매집중"
+
+def _spike_label(v):
+    if v >= 10: return "🔥 극강 (엔켐형)"
+    elif v >= 5: return "⚡ 강함"
+    elif v >= 3: return "📈 중간"
+    elif v >= 2: return "📊 기본"
+    else:        return "😴 미발생"
+
 def build_kr_message(kr_data: dict) -> str:
     picks     = kr_data.get("today_picks", [])
     log       = kr_data.get("filter_log", {})
@@ -472,8 +493,9 @@ def build_kr_message(kr_data: dict) -> str:
                 f"점수: {p.get('score','')}",
                 f"현재가: {p.get('cur_price',0):,}원 | 시총: {meta.get('mktcap',0):,}억",
                 f"수급: {p.get('supply','')}",
-                f"저가반등: +{meta.get('rebound_pct',0)}% | 녹색매집: {meta.get('green_days',0)}일",
-                f"세력전환: {'✅' if meta.get('obv_cross') else '⏳'} | 매매신호: {meta.get('signal',0)} | 거래량: {meta.get('vol_ratio',0)}배",
+                f"저가반등: +{meta.get('rebound_pct',0)}% | 세력매집: {meta.get('green_days',0)}일",
+                f"세력전환: {'✅ 전환완료' if meta.get('obv_cross') else '⏳ 매집중'} | 매매신호: {_signal_label(meta.get('signal',0))}",
+                f"거래량: {_spike_label(meta.get('max_spike',0))} (최대 {meta.get('max_spike',0)}배) | 현재 {meta.get('vol_ratio',0)}배",
                 f"기대수익: +{p.get('expected_return','')} (7일 목표)",
                 "━" * 24,
             ]

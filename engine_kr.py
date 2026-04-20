@@ -283,58 +283,61 @@ def run_kr_scan():
     candidates = []
     log = dict(total=len(all_tickers), penny=0, mktcap=0,
                bottom=0, uptrend=0, vol_spike=0, seforce=0, final=0)
+    import threading
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    lock = threading.Lock()
 
-    print("🔍 스크리닝 시작...")
-    for i, ticker in enumerate(all_tickers):
+    def scan_ticker(ticker):
         try:
             df = fdr.DataReader(ticker, start_260d, today_str)
-            if len(df) < 120: continue
+            if len(df) < 120: return
             close = df['Close']; vol = df['Volume']; cur = close.iloc[-1]
 
             # ① 동전주
-            if cur < 1000: continue
-            log['penny'] += 1
+            if cur < 1000: return
+            with lock: log['penny'] += 1
 
-            # ② 시총
+            # ② 시총 2000억~3조
             mktcap = mktcap_cache.get(ticker)
             if mktcap is None:
                 mktcap = safe_get_market_cap(ticker, today_str)
                 if mktcap is not None: mktcap_cache[ticker] = mktcap
-            if mktcap is None or not (1000 <= mktcap <= 30000): continue
-            log['mktcap'] += 1
+            if mktcap is None or not (2000 <= mktcap <= 30000): return
+            with lock: log['mktcap'] += 1
 
-            # ③ 바닥 확인: 52주 저가 대비 +5~60%
+            # ③ 바닥 확인: 52주 저가 대비 +5~60% (divide by zero 방지)
             low52 = df['Low'].iloc[-252:].min() if len(df) >= 252 else df['Low'].min()
+            if low52 <= 0: return
             rebound_pct = (cur - low52) / low52 * 100
-            if not (5 <= rebound_pct <= 60): continue
-            log['bottom'] += 1
+            if not (5 <= rebound_pct <= 60): return
+            with lock: log['bottom'] += 1
 
             # ④ MA20 완만한 우상향 + 현재가 MA20 위
-            vol_ma20  = vol.rolling(20).mean()
-            ma20_s    = close.rolling(20).mean()
-            if not (ma20_s.iloc[-1] > ma20_s.iloc[-20] and cur > ma20_s.iloc[-1]): continue
-            log['uptrend'] += 1
+            vol_ma20 = vol.rolling(20).mean()
+            ma20_s   = close.rolling(20).mean()
+            if not (ma20_s.iloc[-1] > ma20_s.iloc[-20] and cur > ma20_s.iloc[-1]): return
+            with lock: log['uptrend'] += 1
 
             # ⑤ 최근 60일 거래량 스파이크 + 이후 수축
             recent_60  = df.iloc[-60:]
             spike_mask = recent_60['Volume'] >= vol_ma20.iloc[-60:] * 2.0
-            if not spike_mask.any(): continue
+            if not spike_mask.any(): return
             last_spike = recent_60[spike_mask].iloc[-1]
-            if cur <= last_spike['Low']: continue
-            si  = df.index.get_loc(last_spike.name)
-            af  = df.iloc[si + 1:]
+            if cur <= last_spike['Low']: return
+            si = df.index.get_loc(last_spike.name)
+            af = df.iloc[si + 1:]
             if len(af) >= 3:
                 sil = af['Volume'].mean() / (last_spike['Volume'] + 1)
-                if sil > 0.6: continue
-            log['vol_spike'] += 1
+                if sil > 0.6: return
+            with lock: log['vol_spike'] += 1
 
             # ⑥ 세력: 기관 OR 외인 1일 이상
             inv_df, cols, inst_streak, for_streak = get_investor_detail(ticker, start_10d, today_str)
-            if inv_df is None or cols is None: continue
+            if inv_df is None or cols is None: return
             fc, ic  = cols
             any_buy = int(((inv_df[fc] > 0) | (inv_df[ic] > 0)).sum())
-            if any_buy < 1: continue
-            log['seforce'] += 1
+            if any_buy < 1: return
+            with lock: log['seforce'] += 1
 
             # 채점
             cur_vol  = vol.iloc[-1]
@@ -346,17 +349,23 @@ def run_kr_scan():
             meta['vol_ratio']   = round(cur_vol / (cur_vm20 + 1), 2)
 
             if total_score >= 60:
-                candidates.append((total_score, ticker, breakdown, meta))
-                log['final'] += 1
-
+                with lock:
+                    candidates.append((total_score, ticker, breakdown, meta))
+                    log['final'] += 1
         except Exception:
-            continue
+            return
 
-        if (i + 1) % 200 == 0:
-            print(f"  진행 {i+1}/{len(all_tickers)} | 후보: {len(candidates)}건")
+    print(f"🔍 병렬 스크리닝 시작 (10스레드)...")
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        futures = {executor.submit(scan_ticker, t): t for t in all_tickers}
+        done = 0
+        for f in as_completed(futures):
+            done += 1
+            if done % 200 == 0:
+                print(f"  진행 {done}/{len(all_tickers)} | 후보: {len(candidates)}건")
 
     print(f"\n📊 [필터 현황]")
-    for lbl, key in [("전체","total"),("① 동전주","penny"),("② 시총 1000억~3조","mktcap"),
+    for lbl, key in [("전체","total"),("① 동전주","penny"),("② 시총 2000억~3조","mktcap"),
                       ("③ 바닥반등 5~60%","bottom"),("④ MA20 우상향","uptrend"),
                       ("⑤ 거래량 스파이크","vol_spike"),("⑥ 세력(기관OR외인)","seforce"),
                       ("최종 통과","final")]:

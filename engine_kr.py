@@ -349,8 +349,7 @@ def run_kr_scan():
                 print(f"  진행 {done}/{len(all_tickers)} | 1차 통과: {len(passed_stage1)}건")
 
     # 2단계: 순차 — 수급 조회 (pykrx 멀티스레드 불안정 방지)
-    print(f"
-🔍 2단계: 수급 스크리닝 ({len(passed_stage1)}건 순차 조회)...")
+    print("\n2단계: 수급 스크리닝 " + str(len(passed_stage1)) + "건 순차 조회...")
     for ticker, df, vol_ma20, mktcap, rebound_pct, cur, cur_vol, cur_vm20 in passed_stage1:
         try:
             inv_df, cols, inst_streak, for_streak = get_investor_detail(ticker, start_10d, today_str)

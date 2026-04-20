@@ -1,163 +1,38 @@
-"""
-engine_us.py — 미장 숏스퀴즈 스캐너
-실행: python engine_us.py
-스케줄: 07:00 KST (미장 종료 후)
-"""
-import os, json, datetime
-import numpy as np
-import yfinance as yf
+name: US-Scan
 
-from engine_common import (
-    ko_date, now_label, send_telegram, fetch_macro_summary,
-    build_news_briefing
-)
+on:
+  schedule:
+    - cron: '0 22 * * 1-5'   # 07:00 KST
+  workflow_dispatch:
 
-DATA_FILE_US = 'stock_data_us.json'
+jobs:
+  us-scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      TELEGRAM_TOKEN:   ${{ secrets.TELEGRAM_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+    steps:
+      - uses: actions/checkout@v3
 
-WATCHLIST = [
-    'CAR','HTZ','GRPN',
-    'UPST','SOFI','AFRM','OPEN','HIMS',
-    'PLTR','AI','SNAP','MRVL','ASTS','IONQ','ACHR',
-    'CLF','PBF','DK','LYB','DOW',
-    'OCGN','NVAX','SAVA','PACB',
-    'GME','AMC','MVIS','TLRY','KOSS','SPCE',
-]
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
 
+      - name: Install libraries
+        run: |
+          pip install yfinance requests numpy beautifulsoup4
 
-def run_us_scan():
-    print("\n🇺🇸 미국 숏스퀴즈 스캐닝 시작...")
-    today_str = datetime.datetime.now().strftime("%Y%m%d")
-    us_picks = []; skipped = 0
+      - name: Run US Scanner
+        run: python engine_us.py
 
-    for symbol in WATCHLIST:
-        try:
-            t = yf.Ticker(symbol)
-
-            # 가격/거래량 데이터
-            hist = t.history(period="3mo")
-            if hist is None or len(hist) < 20:
-                print(f"  ⚠️  {symbol} 데이터 없음")
-                skipped += 1; continue
-
-            cur_price  = round(float(hist['Close'].iloc[-1]), 2)
-            avg_vol_20 = hist['Volume'].iloc[-21:-1].mean()
-            cur_vol    = hist['Volume'].iloc[-1]
-            vol_spike  = round(cur_vol / (avg_vol_20 + 1), 2)
-
-            # RSI
-            delta = hist['Close'].diff()
-            gain  = delta.where(delta > 0, 0).rolling(14).mean()
-            loss  = (-delta.where(delta < 0, 0)).rolling(14).mean()
-            rs    = gain / loss.replace(0, np.nan)
-            rsi   = round(float((100 - 100 / (1 + rs)).iloc[-1]), 1)
-
-            # info
-            try:    info = t.info
-            except: info = {}
-
-            float_shares = info.get('floatShares') or info.get('impliedSharesOutstanding')
-            short_pct    = info.get('shortPercentOfFloat')
-            short_ratio  = info.get('shortRatio') or 0
-            short_name   = info.get('shortName', symbol)
-
-            float_m     = float_shares / 1e6 if float_shares else 0
-            short_pct_p = short_pct * 100     if short_pct    else 0
-
-            print(f"  📌 {symbol} | 거래량 {vol_spike}x | 공매도 {round(short_pct_p,1)}% | float {round(float_m,1)}M")
-
-            # 채점 — 데이터 없어도 거래량만으로 점수 부여
-            short_score = min((short_pct_p - 10) / 30 * 35 + 5, 40) if short_pct_p >= 10 else 0
-            vol_score   = min((vol_spike - 1.0) / 5 * 25 + 5, 30)   if vol_spike >= 1.0 else 0
-            float_score = max(20 - (float_m / 100 * 20), 0)          if 0 < float_m < 100 else 5
-            ratio_score = min(short_ratio * 1.5, 10)                  if short_ratio else 0
-            total_score = int(short_score + vol_score + float_score + ratio_score)
-
-            short_str = f"{round(short_pct_p,1)}%" if short_pct_p > 0 else "N/A"
-            float_str = f"{round(float_m,1)}M"     if float_m > 0     else "N/A"
-
-            squeeze_level = (
-                "🔥 EXTREME" if total_score >= 70 else
-                "⚡ HIGH"    if total_score >= 45 else
-                "📈 MEDIUM"  if total_score >= 20 else
-                "📊 LOW"
-            )
-
-            us_picks.append({
-                "rank": len(us_picks) + 1,
-                "name": short_name, "code": symbol,
-                "company_summary": (info.get('longBusinessSummary','')[:150]+'...')
-                                   if info.get('longBusinessSummary') else symbol,
-                "supply": f"공매도 {short_str} | {squeeze_level}",
-                "cur_price": cur_price,
-                "score": f"SQUEEZE {total_score}점/100",
-                "score_detail": {
-                    "공매도강도": int(short_score), "거래량급증": int(vol_score),
-                    "유통주희소": int(float_score), "커버소요일": int(ratio_score),
-                },
-                "tags": f"유통주 {float_str} · 숏비율 {short_str} · RSI {rsi}",
-                "expected_return": "HIGH RISK",
-                "meta": {
-                    "float_m": round(float_m,1), "short_pct": round(short_pct_p,1),
-                    "vol_spike": vol_spike, "rsi": rsi,
-                    "short_ratio": round(short_ratio,1),
-                }
-            })
-
-        except Exception as e:
-            print(f"  ⚠️  {symbol} 오류: {e}")
-            skipped += 1
-
-    us_picks.sort(
-        key=lambda x: int(x['score'].split()[1].replace('점/100','')),
-        reverse=True
-    )
-    top5 = us_picks[:5]
-    for i, p in enumerate(top5): p['rank'] = i + 1
-
-    print(f"\n🏁 미국 완료! 전체 {len(us_picks)}건 -> TOP {len(top5)}")
-    for p in top5:
-        print(f"  #{p['rank']} {p['name']} | {p['score']}")
-
-    us_output = {
-        "today_picks": top5, "total_candidates": len(us_picks),
-        "total_screened": len(WATCHLIST) - skipped, "base_date": today_str,
-    }
-    with open(DATA_FILE_US, 'w', encoding='utf-8') as f:
-        json.dump(us_output, f, ensure_ascii=False, indent=4)
-
-    return us_output
-
-
-def build_us_message(us_data: dict) -> str:
-    picks     = us_data.get("today_picks", [])
-    screened  = us_data.get("total_screened", 0)
-    base_date = us_data.get("base_date", "")
-
-    lines = [
-        f"🇺🇸 <b>미장 숏스퀴즈 — {ko_date(base_date)} 장 종료 후</b>",
-        f"📋 워치리스트 {screened}종목 스캔",
-        "━" * 24,
-    ]
-    if not picks:
-        lines.append("⚠️ 오늘 조건 충족 종목 없음")
-    else:
-        for p in picks:
-            meta = p.get("meta", {})
-            lines += [
-                f"<b>#{p['rank']} {p['name']} (${p['code']})</b>",
-                f"점수: {p.get('score','')}",
-                f"현재가: ${p.get('cur_price',0)}",
-                f"공매도: {meta.get('short_pct',0)}% | 유통주: {meta.get('float_m',0)}M",
-                f"거래량스파이크: {meta.get('vol_spike',0)}배 | RSI: {meta.get('rsi',0)}",
-                f"숏커버소요: {meta.get('short_ratio',0)}일",
-                f"{p.get('supply','')}",
-                "━" * 24,
-            ]
-    return "\n".join(lines)
-
-
-if __name__ == "__main__":
-    us_result = run_us_scan()
-    send_telegram(fetch_macro_summary())
-    send_telegram(build_news_briefing())
-    send_telegram(build_us_message(us_result))
+      - name: Save Results
+        run: |
+          git config --global user.name 'GitHub Action'
+          git config --global user.email 'action@github.com'
+          git pull --rebase origin main || true
+          git add stock_data_us.json
+          git commit -m "US scan $(date +'%Y-%m-%d %H:%M KST')" || echo "No changes"
+          git push

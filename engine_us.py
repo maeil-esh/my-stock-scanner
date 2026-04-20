@@ -8,8 +8,11 @@ import numpy as np
 import yfinance as yf
 
 from engine_common import (
-    ko_date, now_label, send_telegram, fetch_macro_summary
+    ko_date, now_label, send_telegram, fetch_macro_summary,
+    build_news_briefing
 )
+
+
 
 DATA_FILE_US = 'stock_data_us.json'
 
@@ -171,4 +174,5 @@ def build_us_message(us_data: dict) -> str:
 if __name__ == "__main__":
     us_result = run_us_scan()
     send_telegram(fetch_macro_summary())
+    send_telegram(build_news_briefing())
     send_telegram(build_us_message(us_result))

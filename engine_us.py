@@ -78,12 +78,12 @@ def run_us_scan():
             short_pct_p = short_pct * 100     if short_pct    else 0
 
             # ── 숏스퀴즈 3대 핵심 필터 ──────────────────────────
-            # ① 유통주 50M 이하 (소형주 — 커버링 물량 부족)
-            if float_m > 50 and float_m < 999: continue
-            # ② 공매도 비율 20% 이상 (강제 청산 압력 충분)
-            if short_pct_p < 20: continue
-            # ③ 거래량 스파이크 2배 이상 (트리거 발생)
-            if vol_spike < 2.0: continue
+            # ① 유통주 100M 이하 (소형주 — 커버링 물량 부족)
+            if float_m > 100 and float_m < 999: continue
+            # ② 공매도 비율 15% 이상 (강제 청산 압력 충분)
+            if short_pct_p < 15: continue
+            # ③ 거래량 스파이크 1.5배 이상
+            if vol_spike < 1.5: continue
 
             # ── 스퀴즈 점수 (100점 만점) ─────────────────────────
             # 공매도 강도 (최대 40점): 비율이 높을수록

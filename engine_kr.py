@@ -146,97 +146,110 @@ def get_investor_detail(ticker, start, end):
     return recent, (fc, ic), inst_streak, for_streak
 
 
-# ── 채점 ───────────────────────────────────────────────────────
+# ── 채점 — 민혁님 실전 수익 6종목 기반 매집→매수타점 패턴 ────
 
 def score_stock(df, inv_df, cols, inst_streak, for_streak):
+    """
+    매수타점 3단계:
+    [필수] 세력값 0선 돌파 + 매매신호 30 돌파 + 거래량 2배↑
+    [가산] 녹색기간 60일↑ + 전일고가 돌파 + 저가반등 20~80%
+    """
     df = df.copy()
     df['MA20']     = df['Close'].rolling(20).mean()
     df['Vol_MA20'] = df['Volume'].rolling(20).mean()
     df['RSI']      = calc_rsi(df['Close'])
     df['OBV']      = calc_obv(df)
-    df['BB_mid']   = df['Close'].rolling(20).mean()
-    df['BB_std']   = df['Close'].rolling(20).std()
-    df['BB_width'] = (4 * df['BB_std'] / df['BB_mid']).replace([np.inf, -np.inf], np.nan)
 
-    cur = df['Close'].iloc[-1]
-    rsi = df['RSI'].iloc[-1]
+    cur      = df['Close'].iloc[-1]
+    prev_hi  = df['High'].iloc[-2]
+    rsi      = df['RSI'].iloc[-1]
+    rsi_prev = df['RSI'].iloc[-2]
+    vol_ma20 = df['Vol_MA20'].iloc[-1]
+    cur_vol  = df['Volume'].iloc[-1]
     bd = {}; meta = {}
 
-    # [A] 세력 흔적 70점
-    recent_60 = df.iloc[-60:]
-    vm20 = df['Vol_MA20']; m20 = df['MA20']
-    spike_mask = (
-        (recent_60['Volume'] >= vm20.iloc[-60:] * 2.5) &
-        (recent_60['Close']  >  recent_60['Open']) &
-        (recent_60['Close']  >  m20.iloc[-60:])
-    )
-    a = 0; spike_days_ago = 0; silence_ratio = 1.0
-    if spike_mask.any():
-        ls   = recent_60[spike_mask].iloc[-1]
-        svol = ls['Volume']; slow = ls['Low']
-        sr   = svol / (ls['Vol_MA20'] + 1)
-        si   = df.index.get_loc(ls.name)
-        af   = df.iloc[si + 1:]
-        if len(af) >= 3 and cur > slow:
-            sil            = af['Volume'].mean() / (svol + 1)
-            spike_days_ago = len(af)
-            silence_ratio  = round(sil, 2)
-            if sil <= 0.7:
-                a_spike   = min((sr - 2.5) / 5 * 30 + 15, 35)
-                a_silence = min((0.7 - sil) / 0.7 * 25, 25)
-                price_gap = (cur / slow - 1) * 100
-                a_hold    = max(10 - price_gap / 15 * 10, 0)
-                a         = int(a_spike + a_silence + a_hold)
-    bd['세력흔적']         = min(a, 70)
-    meta['spike_days_ago'] = spike_days_ago
-    meta['silence_ratio']  = silence_ratio
+    # ── [A] 세력값 0선 돌파 (핵심 — 최대 40점) ─────────────────
+    # OBV 5일 변화율로 세력 전환 감지
+    obv_now  = df['OBV'].iloc[-1]
+    obv_prev = df['OBV'].iloc[-2]
+    obv_5d   = df['OBV'].iloc[-6] if len(df) >= 6 else df['OBV'].iloc[0]
+    obv_chg  = (obv_now - obv_5d) / (abs(obv_5d) + 1) * 100
 
-    # [B] BB 수축 40점
-    bbs = df['BB_width'].iloc[-90:].dropna()
-    b = 0; bbc = 0
-    if len(bbs) > 10:
-        bmin, bmax = bbs.min(), bbs.max(); brng = bmax - bmin
-        cbw = df['BB_width'].iloc[-1]
-        if brng > 0 and not np.isnan(cbw):
-            c = 1 - (cbw - bmin) / brng
-            b = int(min(c * 40, 40)); bbc = round(c * 100, 1)
-    bd['BB수축'] = b; meta['bb_compress'] = bbc
+    # 전일 음수 → 당일 양수 전환 = 세력 매집 완료 신호
+    obv_cross = obv_now > 0 and obv_prev <= 0
+    a = 0
+    if obv_cross:
+        a = 40  # 전환 당일 최고점
+    elif obv_chg > 0:
+        a = min(int(obv_chg * 2), 30)  # 상승 중이면 비례 점수
+    bd['세력전환'] = a
+    meta['obv_chg'] = round(obv_chg, 2)
+    meta['obv_cross'] = obv_cross
 
-    # [C] OBV 다이버전스 40점
-    pc20 = (cur / df['Close'].iloc[-20] - 1) * 100
-    ob   = abs(df['OBV'].iloc[-20]) + 1
-    op20 = (df['OBV'].iloc[-1] - df['OBV'].iloc[-20]) / ob * 100
-    c    = int(min(max((op20 - pc20) * 2, 0), 40)) if op20 > 0 else 0
-    bd['OBV다이버전스'] = c
+    # ── [B] 녹색 매집 기간 (최대 30점) ─────────────────────────
+    # OBV가 하락(음수)했던 일수 = 세력 저점 매집 기간
+    obv_diff = df['OBV'].diff().iloc[-120:]  # 최근 120거래일
+    green_days = int((obv_diff < 0).sum())
+    b = 0
+    if   green_days >= 120: b = 30  # 6개월↑ — 엔켐형 대시세
+    elif green_days >= 80:  b = 25  # 4개월↑ — 한컴위드형
+    elif green_days >= 60:  b = 20  # 3개월↑ — 글로벌텍스프리형
+    elif green_days >= 30:  b = 12  # 1.5개월↑ — PI첨단소재형
+    elif green_days >= 20:  b = 6   # 1개월↑ — 테크윙형
+    bd['녹색매집'] = b
+    meta['green_days'] = green_days
 
-    # [D] RSI 골디락스 30점
+    # ── [C] 매매신호 30 돌파 (최대 30점) ───────────────────────
+    # 스토캐스틱 + RSI 합성
+    low_14  = df['Low'].rolling(14).min()
+    high_14 = df['High'].rolling(14).max()
+    denom   = (high_14 - low_14).iloc[-1]
+    stoch_k = (cur - low_14.iloc[-1]) / denom * 100 if denom > 0 else 50
+    stoch_p = (df['Close'].iloc[-2] - low_14.iloc[-2]) /               max((high_14.iloc[-2] - low_14.iloc[-2]), 1) * 100
+    signal_now  = stoch_k * 0.6 + rsi * 0.4
+    signal_prev = stoch_p * 0.6 + rsi_prev * 0.4
+
+    c = 0
+    signal_cross = signal_now > 30 and signal_prev <= 30  # 30선 돌파
+    if signal_cross:
+        c = 30  # 돌파 당일 최고
+    elif 30 < signal_now <= 70:
+        c = int(20 - abs(signal_now - 50) * 0.4)  # 30~70 구간 비례
+    bd['매매신호'] = max(c, 0)
+    meta['signal'] = round(signal_now, 1)
+    meta['signal_cross'] = signal_cross
+
+    # ── [D] 거래량 폭발 (최대 20점) ─────────────────────────────
     d = 0
-    if not np.isnan(rsi):
-        if   45 <= rsi <= 60: d = int(max(30 - abs(rsi - 52) * 2, 15))
-        elif 40 <= rsi <  45: d = 12
-        elif 60 <  rsi <= 65: d = 10
-    bd['RSI위치'] = d; meta['rsi'] = round(rsi, 1) if not np.isnan(rsi) else 0
+    vol_ratio = cur_vol / (vol_ma20 + 1)
+    if   vol_ratio >= 3.0: d = 20
+    elif vol_ratio >= 2.0: d = 15  # 필수 기준
+    elif vol_ratio >= 1.5: d = 8
+    bd['거래량폭발'] = d
+    meta['vol_ratio'] = round(vol_ratio, 2)
 
-    # [E] 수급 강도 40점
-    e = 0; supply_text = "정보없음"
+    # ── [E] 전일 고가 돌파 (최대 15점) ──────────────────────────
+    e = 15 if cur > prev_hi else 0
+    bd['고가돌파'] = e
+
+    # ── [F] 수급 강도 (최대 15점) ────────────────────────────────
+    f = 0; supply_text = "정보없음"
     if inv_df is not None and cols:
         fc, ic = cols
         fd        = int((inv_df[fc] > 0).sum())
         id_       = int((inv_df[ic] > 0).sum())
         both_days = int(((inv_df[fc] > 0) & (inv_df[ic] > 0)).sum())
-        e = min(min(inst_streak*6,24) + min(for_streak*4,12) + both_days*4, 40)
+        f = min(inst_streak * 3 + for_streak * 2 + both_days * 2, 15)
         if fd > 0 and id_ > 0: supply_text = "외인+기관 양매수"
         elif id_ > 0:           supply_text = "기관매수"
         elif fd > 0:            supply_text = "외인매수"
-    bd['수급강도'] = e
+    bd['수급강도'] = f
     meta['supply_text'] = supply_text
     meta['inst_streak'] = inst_streak
     meta['for_streak']  = for_streak
+    meta['rsi']         = round(rsi, 1)
+    meta['bb_compress'] = 0  # 하위 호환용
 
-    # [F] OBV 추세 가산 (바닥반등 전략용) 30점
-    f = 0
-    if op20 > pc20 and op20 > 0: f = min(int(op20 / 5), 30)
-    bd['OBV추세'] = f
 
     return sum(bd.values()), bd, meta
 
@@ -459,8 +472,8 @@ def build_kr_message(kr_data: dict) -> str:
                 f"점수: {p.get('score','')}",
                 f"현재가: {p.get('cur_price',0):,}원 | 시총: {meta.get('mktcap',0):,}억",
                 f"수급: {p.get('supply','')}",
-                f"저가반등: +{meta.get('rebound_pct',0)}% | 거래량: {meta.get('vol_ratio',0)}배",
-                f"RSI: {meta.get('rsi',0)} | BB수축: {meta.get('bb_compress',0)}%",
+                f"저가반등: +{meta.get('rebound_pct',0)}% | 녹색매집: {meta.get('green_days',0)}일",
+                f"세력전환: {'✅' if meta.get('obv_cross') else '⏳'} | 매매신호: {meta.get('signal',0)} | 거래량: {meta.get('vol_ratio',0)}배",
                 f"기대수익: +{p.get('expected_return','')} (7일 목표)",
                 "━" * 24,
             ]

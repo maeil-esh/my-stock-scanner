@@ -410,7 +410,7 @@ def run_kr_scan():
 
     print(f"📅 기준일: {today_str} | {label}")
     print(f"{cfg['emoji']} 시장 레짐: {regime} ({cfg['desc']}) | TOP {TOP_N_LOCAL}, 임계값 {SCORE_THRESHOLD}점 | RS ≥ {RS_THRESHOLD:+d}%")
-    print(f"🎯 전략: 바닥반등 + MA20 우상향 + 거래량 스파이크 + RS필터(레짐차등) + 수급\n")
+    print(f"🎯 전략: 세력매집(OBV↑) + 추세전환 + 매매신호 활성 + 눌림목(-15%이내)\n")
 
     load_dart_corp_codes()
 
@@ -448,7 +448,9 @@ def run_kr_scan():
 
     candidates = []
     log = dict(total=len(all_tickers), penny=0, mktcap=0,
-               bottom=0, uptrend=0, vol_spike=0, rs_pass=0, seforce=0, final=0)
+               bottom=0, uptrend=0, vol_spike=0, rs_pass=0,
+               obv_ok=0, signal_ok=0, trend_ok=0, pullback_ok=0,
+               seforce=0, final=0)
     lock = threading.Lock()
     passed_stage1 = []
 
@@ -481,14 +483,17 @@ def run_kr_scan():
             if low52 <= 0:
                 return
             rebound_pct = (cur - low52) / low52 * 100
-            if not (5 <= rebound_pct <= 60):
+            if not (15 <= rebound_pct <= 200):
                 return
             with lock:
                 log['bottom'] += 1
 
             vol_ma20 = vol.rolling(20).mean()
             ma20_s   = close.rolling(20).mean()
+            ma60_s   = close.rolling(60).mean()
             if not (ma20_s.iloc[-1] > ma20_s.iloc[-20] and cur > ma20_s.iloc[-1]):
+                return
+            if len(close) >= 60 and ma60_s.iloc[-1] <= ma60_s.iloc[-30]:
                 return
             with lock:
                 log['uptrend'] += 1
@@ -506,7 +511,7 @@ def run_kr_scan():
             if len(af) >= 3:
                 sil = af['Volume'].mean() / (last_spike['Volume'] + 1)
                 silence_ratio = round(float(sil), 2)
-                if sil > 0.6:
+                if sil > 0.85:
                     return
             with lock:
                 log['vol_spike'] += 1
@@ -517,6 +522,70 @@ def run_kr_scan():
                 return
             with lock:
                 log['rs_pass'] += 1
+
+            # ══════════════════════════════════════════════════════════
+            # [신규] 눌림목 매수 전략 — 세력매집/매매신호/추세전환/눌림목
+            # ══════════════════════════════════════════════════════════
+
+            # [F1] 세력매집 확인 — OBV가 최근 40일 대비 상승 추세
+            #      (세력매집 지표가 0선을 향해 올라오거나 돌파한 상태)
+            try:
+                obv = calc_obv(df)
+                obv_now   = obv.iloc[-1]
+                obv_40ago = obv.iloc[-40] if len(obv) >= 40 else obv.iloc[0]
+                if obv_now <= obv_40ago:
+                    return
+            except Exception:
+                return
+            with lock:
+                log['obv_ok'] += 1
+
+            # [F2] 매매신호 활성화 — RSI+Stochastic 혼합이 45~100 구간
+            #      (상승 추세 진입 확인, 하한은 살짝 여유 두되 꼭지 매수는 뒤 필터로 제어)
+            try:
+                rsi_ser  = calc_rsi(close)
+                rsi_cur  = float(rsi_ser.iloc[-1])
+                low_14   = df['Low'].rolling(14).min().iloc[-1]
+                high_14  = df['High'].rolling(14).max().iloc[-1]
+                denom    = high_14 - low_14
+                stoch_cur = (cur - low_14) / denom * 100 if denom > 0 else 50.0
+                signal_cur = stoch_cur * 0.6 + rsi_cur * 0.4
+                if not (45 <= signal_cur <= 100):
+                    return
+            except Exception:
+                return
+            with lock:
+                log['signal_ok'] += 1
+
+            # [F3] 스파이크 이후 추세 전환 확인 — 스파이크봉 종가 대비 +3% 이상 상승한 적 있음
+            #      (거래량 폭발 후 실제로 치고 올라간 종목만 유효)
+            try:
+                spike_close = float(last_spike['Close'])
+                post_high   = float(af['High'].max()) if len(af) >= 1 else spike_close
+                if spike_close <= 0 or post_high / spike_close < 1.03:
+                    return
+            except Exception:
+                return
+            with lock:
+                log['trend_ok'] += 1
+
+            # [F4] 눌림목 구간 확인 — 최근 10일 고점 대비 -20% 이내
+            #      (이미 올랐는데 잠시 조정 중이거나 신고가 근접, 깊은 조정도 일부 허용)
+            try:
+                recent_high_10d = float(df['High'].iloc[-10:].max())
+                if recent_high_10d <= 0:
+                    return
+                pullback_pct = (cur - recent_high_10d) / recent_high_10d * 100
+                if pullback_pct < -20:
+                    return
+            except Exception:
+                return
+            with lock:
+                log['pullback_ok'] += 1
+
+            # ══════════════════════════════════════════════════════════
+
+            with lock:
                 passed_stage1.append((ticker, df, vol_ma20, mktcap, rebound_pct, cur,
                                       vol.iloc[-1], vol_ma20.iloc[-1], silence_ratio, rs))
         except Exception:
@@ -569,7 +638,12 @@ def run_kr_scan():
     for lbl, key in [("전체","total"),("① 동전주 제외","penny"),
                       ("② 시총 필터","mktcap"),("③ 바닥반등 조건","bottom"),
                       ("④ MA20 우상향","uptrend"),("⑤ 거래량 스파이크","vol_spike"),
-                      (rs_label,"rs_pass"),("⑦ 수급 확인","seforce"),("최종 통과","final")]:
+                      (rs_label,"rs_pass"),
+                      ("⑦ 세력매집(OBV↑)","obv_ok"),
+                      ("⑧ 매매신호 활성","signal_ok"),
+                      ("⑨ 추세전환 확인","trend_ok"),
+                      ("⑩ 눌림목 구간","pullback_ok"),
+                      ("⑪ 수급 확인","seforce"),("최종 통과","final")]:
         print(f"  {lbl:<18} {log[key]:>5}건")
 
     candidates.sort(key=lambda x: x[0], reverse=True)

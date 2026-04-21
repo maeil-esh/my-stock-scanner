@@ -1,0 +1,41 @@
+name: US Scanner
+
+on:
+  schedule:
+    - cron: '30 22 * * 0-4'  # 07:30 KST (US 프리마켓)
+  workflow_dispatch:
+
+jobs:
+  us-scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+
+      - name: Install libraries
+        run: pip install -r requirements.txt
+
+      - name: Run US Scanner
+        env:
+          TELEGRAM_TOKEN:   ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python engine_us.py
+
+      - name: Save Results
+        run: |
+          git config --global user.name 'GitHub Action'
+          git config --global user.email 'action@github.com'
+          git pull origin main --rebase --autostash
+          git add -A -- ':!__pycache__'
+          git diff --staged --quiet || git commit -m "US scan [$(date +'%Y-%m-%d %H:%M UTC')]"
+          git push

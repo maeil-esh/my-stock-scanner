@@ -410,7 +410,7 @@ def run_kr_scan():
 
     print(f"📅 기준일: {today_str} | {label}")
     print(f"{cfg['emoji']} 시장 레짐: {regime} ({cfg['desc']}) | TOP {TOP_N_LOCAL}, 임계값 {SCORE_THRESHOLD}점 | RS ≥ {RS_THRESHOLD:+d}%")
-    print(f"🎯 전략: 세력매집(OBV↑) + 추세전환 + 매매신호 활성 + 눌림목(-15%이내)\n")
+    print(f"🎯 전략: 선행매집 스캔 (OBV↑ / 가격↔ / 변동성수축 / 스파이크 직후)\n")
 
     load_dart_corp_codes()
 
@@ -450,6 +450,7 @@ def run_kr_scan():
     log = dict(total=len(all_tickers), penny=0, mktcap=0,
                bottom=0, uptrend=0, vol_spike=0, rs_pass=0,
                obv_ok=0, signal_ok=0, trend_ok=0, pullback_ok=0,
+               vol_contract_ok=0,
                seforce=0, final=0)
     lock = threading.Lock()
     passed_stage1 = []
@@ -483,7 +484,8 @@ def run_kr_scan():
             if low52 <= 0:
                 return
             rebound_pct = (cur - low52) / low52 * 100
-            if not (15 <= rebound_pct <= 200):
+            # 선행 매집형: 저점 대비 아직 30% 이내만 허용 (이미 많이 오른 종목 제외)
+            if not (0 <= rebound_pct <= 30):
                 return
             with lock:
                 log['bottom'] += 1
@@ -491,9 +493,11 @@ def run_kr_scan():
             vol_ma20 = vol.rolling(20).mean()
             ma20_s   = close.rolling(20).mean()
             ma60_s   = close.rolling(60).mean()
-            if not (ma20_s.iloc[-1] > ma20_s.iloc[-20] and cur > ma20_s.iloc[-1]):
+            # 선행 매집형: MA20 근처 ±3% 허용 (박스권 허용), MA20 평평~소폭 상승
+            ma20_slope = ma20_s.iloc[-1] / ma20_s.iloc[-20] if ma20_s.iloc[-20] > 0 else 1
+            if not (0.98 <= ma20_slope <= 1.15):  # MA20 -2%~+15% 사이 (평평하거나 약상승)
                 return
-            if len(close) >= 60 and ma60_s.iloc[-1] <= ma60_s.iloc[-30]:
+            if cur < ma20_s.iloc[-1] * 0.97:  # MA20 -3% 밑으로는 너무 약세
                 return
             with lock:
                 log['uptrend'] += 1
@@ -527,21 +531,29 @@ def run_kr_scan():
             # [신규] 눌림목 매수 전략 — 세력매집/매매신호/추세전환/눌림목
             # ══════════════════════════════════════════════════════════
 
-            # [F1] 세력매집 확인 — OBV가 최근 40일 대비 상승 추세
-            #      (세력매집 지표가 0선을 향해 올라오거나 돌파한 상태)
+            # [F1] 선행 매집 확인 — OBV가 최근 20일 대비 상승인데 가격은 정체
+            #      (세력 매집 중 / 가격 반응 전 단계 = "오를 예정" 핵심 시그널)
             try:
                 obv = calc_obv(df)
                 obv_now   = obv.iloc[-1]
-                obv_40ago = obv.iloc[-40] if len(obv) >= 40 else obv.iloc[0]
-                if obv_now <= obv_40ago:
+                obv_20ago = obv.iloc[-20] if len(obv) >= 20 else obv.iloc[0]
+                # OBV 상승률
+                obv_change = (obv_now - obv_20ago) / (abs(obv_20ago) + 1) * 100
+                # 가격 상승률 (20일)
+                price_20ago = close.iloc[-20] if len(close) >= 20 else close.iloc[0]
+                price_change = (cur - price_20ago) / price_20ago * 100 if price_20ago > 0 else 0
+                # OBV는 양(+) 상승, 가격은 -5%~+15% 박스권 = 매집 진행 중 / 가격 반응 전
+                if obv_change <= 0:
+                    return
+                if price_change > 15:  # 가격이 이미 15% 이상 튐 = 매집 끝남
                     return
             except Exception:
                 return
             with lock:
                 log['obv_ok'] += 1
 
-            # [F2] 매매신호 활성화 — RSI+Stochastic 혼합이 45~100 구간
-            #      (상승 추세 진입 확인, 하한은 살짝 여유 두되 꼭지 매수는 뒤 필터로 제어)
+            # [F2] 매매신호 중립~약강세 구간 — 30~70
+            #      (아직 과열 아님, 곧 상승 시작할 구간)
             try:
                 rsi_ser  = calc_rsi(close)
                 rsi_cur  = float(rsi_ser.iloc[-1])
@@ -550,38 +562,56 @@ def run_kr_scan():
                 denom    = high_14 - low_14
                 stoch_cur = (cur - low_14) / denom * 100 if denom > 0 else 50.0
                 signal_cur = stoch_cur * 0.6 + rsi_cur * 0.4
-                if not (45 <= signal_cur <= 100):
+                if not (30 <= signal_cur <= 70):
                     return
             except Exception:
                 return
             with lock:
                 log['signal_ok'] += 1
 
-            # [F3] 스파이크 이후 추세 전환 확인 — 스파이크봉 종가 대비 +3% 이상 상승한 적 있음
-            #      (거래량 폭발 후 실제로 치고 올라간 종목만 유효)
+            # [F3] 스파이크 이후 가격 반응이 아직 작음 (+0% ~ +15%)
+            #      거래량은 터졌는데 가격은 아직 따라오지 않은 = "매집 완료 직전" 시그널
             try:
                 spike_close = float(last_spike['Close'])
                 post_high   = float(af['High'].max()) if len(af) >= 1 else spike_close
-                if spike_close <= 0 or post_high / spike_close < 1.03:
+                if spike_close <= 0:
+                    return
+                post_return = post_high / spike_close
+                if not (1.00 <= post_return <= 1.15):  # 스파이크 후 +0~15%만
                     return
             except Exception:
                 return
             with lock:
                 log['trend_ok'] += 1
 
-            # [F4] 눌림목 구간 확인 — 최근 10일 고점 대비 -20% 이내
-            #      (이미 올랐는데 잠시 조정 중이거나 신고가 근접, 깊은 조정도 일부 허용)
+            # [F4] 안정 박스권 확인 — 최근 10일 고점 대비 -10% 이내
+            #      (심한 조정 없이 조용히 매집 중인 구간)
             try:
                 recent_high_10d = float(df['High'].iloc[-10:].max())
                 if recent_high_10d <= 0:
                     return
                 pullback_pct = (cur - recent_high_10d) / recent_high_10d * 100
-                if pullback_pct < -20:
+                if pullback_pct < -10:
                     return
             except Exception:
                 return
             with lock:
                 log['pullback_ok'] += 1
+
+            # [F5] 변동성 수축 확인 — 최근 20일 고저 변동폭이 좁음 (박스권 형성)
+            #      변동성 수축 후 팽창 = 큰 움직임의 전조
+            try:
+                high_20 = float(df['High'].iloc[-20:].max())
+                low_20  = float(df['Low'].iloc[-20:].min())
+                if low_20 <= 0:
+                    return
+                range_pct = (high_20 - low_20) / low_20 * 100
+                if range_pct > 25:  # 20일간 25% 이상 흔들렸으면 이미 움직이는 중
+                    return
+            except Exception:
+                return
+            with lock:
+                log['vol_contract_ok'] += 1
 
             # ══════════════════════════════════════════════════════════
 
@@ -636,15 +666,16 @@ def run_kr_scan():
     print(f"\n📊 [필터 현황 — {regime} 레짐]")
     rs_label = f"⑥ RS ≥ {RS_THRESHOLD:+d}%"
     for lbl, key in [("전체","total"),("① 동전주 제외","penny"),
-                      ("② 시총 필터","mktcap"),("③ 바닥반등 조건","bottom"),
-                      ("④ MA20 우상향","uptrend"),("⑤ 거래량 스파이크","vol_spike"),
+                      ("② 시총 필터","mktcap"),("③ 저점대비 0~30%","bottom"),
+                      ("④ MA20 박스권","uptrend"),("⑤ 거래량 스파이크","vol_spike"),
                       (rs_label,"rs_pass"),
-                      ("⑦ 세력매집(OBV↑)","obv_ok"),
-                      ("⑧ 매매신호 활성","signal_ok"),
-                      ("⑨ 추세전환 확인","trend_ok"),
-                      ("⑩ 눌림목 구간","pullback_ok"),
-                      ("⑪ 수급 확인","seforce"),("최종 통과","final")]:
-        print(f"  {lbl:<18} {log[key]:>5}건")
+                      ("⑦ 선행매집(OBV↑/가격↔)","obv_ok"),
+                      ("⑧ 매매신호 30~70","signal_ok"),
+                      ("⑨ 스파이크후 +0~15%","trend_ok"),
+                      ("⑩ 안정박스 -10%이내","pullback_ok"),
+                      ("⑪ 변동성수축 ≤25%","vol_contract_ok"),
+                      ("⑫ 수급 확인","seforce"),("최종 통과","final")]:
+        print(f"  {lbl:<22} {log[key]:>5}건")
 
     candidates.sort(key=lambda x: x[0], reverse=True)
     top_raw = candidates[:TOP_N_LOCAL]

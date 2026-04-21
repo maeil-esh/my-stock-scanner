@@ -1,17 +1,16 @@
 {
     "today_picks": [],
-    "scan_label": "📊 장 중간 스캔",
+    "scan_label": "🔔 장 시작 스캔",
     "total_candidates": 0,
     "total_screened": 2770,
     "filter_log": {
         "total": 2770,
         "penny": 2499,
-        "mktcap": 877,
-        "bottom": 366,
-        "uptrend": 89,
-        "vol_spike": 71,
+        "mktcap": 536,
+        "obv_up": 0,
+        "vol_spike": 0,
         "seforce": 0,
         "final": 0
     },
-    "base_date": "20260420"
+    "base_date": "20260421"
 }

@@ -2,50 +2,50 @@
     "today_picks": [
         {
             "rank": 1,
-            "name": "Avis Budget Group, Inc.",
-            "code": "CAR",
-            "company_summary": "Avis Budget Group, Inc., together with its subsidiaries, provides car and truck rentals, car sharing, and ancillary products and services to businesse...",
-            "supply": "공매도 93.0% | 🔥 EXTREME",
-            "cur_price": 608.8,
-            "score": "SQUEEZE 76점/100",
-            "score_detail": {
-                "공매도강도": 40,
-                "거래량급증": 8,
-                "유통주희소": 17,
-                "커버소요일": 10
-            },
-            "tags": "유통주 10.1M · 숏비율 93.0% · RSI 94.7",
-            "expected_return": "HIGH RISK",
-            "meta": {
-                "float_m": 10.1,
-                "short_pct": 93.0,
-                "vol_spike": 1.62,
-                "rsi": 94.7,
-                "short_ratio": 9.7
-            }
-        },
-        {
-            "rank": 2,
             "name": "Groupon, Inc.",
             "code": "GRPN",
             "company_summary": "Groupon, Inc. operates a marketplace that connects consumers to merchants by offering goods and services at a discount in North America and internatio...",
-            "supply": "공매도 50.0% | ⚡ HIGH",
-            "cur_price": 14.95,
-            "score": "SQUEEZE 69점/100",
+            "supply": "공매도 50.0% | 🔥 EXTREME",
+            "cur_price": 16.66,
+            "score": "SQUEEZE 91점/100",
             "score_detail": {
                 "공매도강도": 40,
-                "거래량급증": 5,
+                "거래량급증": 27,
                 "유통주희소": 14,
                 "커버소요일": 10
             },
-            "tags": "유통주 29.0M · 숏비율 50.0% · RSI 65.6",
+            "tags": "유통주 29.0M · 숏비율 50.0% · RSI 71.6",
             "expected_return": "HIGH RISK",
             "meta": {
                 "float_m": 29.0,
                 "short_pct": 50.0,
-                "vol_spike": 1.07,
-                "rsi": 65.6,
+                "vol_spike": 5.41,
+                "rsi": 71.6,
                 "short_ratio": 7.7
+            }
+        },
+        {
+            "rank": 2,
+            "name": "Avis Budget Group, Inc.",
+            "code": "CAR",
+            "company_summary": "Avis Budget Group, Inc., together with its subsidiaries, provides car and truck rentals, car sharing, and ancillary products and services to businesse...",
+            "supply": "공매도 93.0% | 🔥 EXTREME",
+            "cur_price": 713.97,
+            "score": "SQUEEZE 83점/100",
+            "score_detail": {
+                "공매도강도": 40,
+                "거래량급증": 15,
+                "유통주희소": 17,
+                "커버소요일": 10
+            },
+            "tags": "유통주 10.1M · 숏비율 93.0% · RSI 95.9",
+            "expected_return": "HIGH RISK",
+            "meta": {
+                "float_m": 10.1,
+                "short_pct": 93.0,
+                "vol_spike": 3.19,
+                "rsi": 95.9,
+                "short_ratio": 9.7
             }
         },
         {
@@ -54,21 +54,21 @@
             "code": "HTZ",
             "company_summary": "Hertz Global Holdings, Inc. operates as a vehicle rental company. It operates through two segments: Americas RAC and International RAC. The company of...",
             "supply": "공매도 50.0% | ⚡ HIGH",
-            "cur_price": 7.81,
-            "score": "SQUEEZE 66점/100",
+            "cur_price": 7.17,
+            "score": "SQUEEZE 68점/100",
             "score_detail": {
                 "공매도강도": 40,
-                "거래량급증": 11,
+                "거래량급증": 13,
                 "유통주희소": 5,
                 "커버소요일": 10
             },
-            "tags": "유통주 126.1M · 숏비율 50.0% · RSI 78.1",
+            "tags": "유통주 126.1M · 숏비율 50.0% · RSI 66.5",
             "expected_return": "HIGH RISK",
             "meta": {
                 "float_m": 126.1,
                 "short_pct": 50.0,
-                "vol_spike": 2.31,
-                "rsi": 78.1,
+                "vol_spike": 2.61,
+                "rsi": 66.5,
                 "short_ratio": 10.2
             }
         },
@@ -78,50 +78,50 @@
             "code": "HIMS",
             "company_summary": "Hims & Hers Health, Inc. operates as a consumer-first health and wellness platform that connects consumers to licensed healthcare professionals in the...",
             "supply": "공매도 38.7% | ⚡ HIGH",
-            "cur_price": 31.01,
-            "score": "SQUEEZE 58점/100",
+            "cur_price": 29.76,
+            "score": "SQUEEZE 56점/100",
             "score_detail": {
                 "공매도강도": 38,
-                "거래량급증": 12,
+                "거래량급증": 9,
                 "유통주희소": 5,
                 "커버소요일": 2
             },
-            "tags": "유통주 207.4M · 숏비율 38.7% · RSI 75.7",
+            "tags": "유통주 207.4M · 숏비율 38.7% · RSI 70.4",
             "expected_return": "HIGH RISK",
             "meta": {
                 "float_m": 207.4,
                 "short_pct": 38.7,
-                "vol_spike": 2.41,
-                "rsi": 75.7,
+                "vol_spike": 1.92,
+                "rsi": 70.4,
                 "short_ratio": 2.0
             }
         },
         {
             "rank": 5,
-            "name": "C3.ai, Inc.",
-            "code": "AI",
-            "company_summary": "C3.ai, Inc. operates as an enterprise artificial intelligence application software company. The company offers C3 agentic AI platform, an application ...",
-            "supply": "공매도 31.8% | ⚡ HIGH",
-            "cur_price": 9.38,
-            "score": "SQUEEZE 45점/100",
+            "name": "Koss Corporation",
+            "code": "KOSS",
+            "company_summary": "Koss Corporation, together with its subsidiaries, engages in the design, manufacture, and sale of stereo headphones and related accessories in the Uni...",
+            "supply": "공매도 3.9% | ⚡ HIGH",
+            "cur_price": 4.23,
+            "score": "SQUEEZE 51점/100",
             "score_detail": {
-                "공매도강도": 30,
-                "거래량급증": 0,
-                "유통주희소": 5,
-                "커버소요일": 10
+                "공매도강도": 0,
+                "거래량급증": 25,
+                "유통주희소": 18,
+                "커버소요일": 7
             },
-            "tags": "유통주 135.2M · 숏비율 31.8% · RSI 57.1",
+            "tags": "유통주 5.5M · 숏비율 3.9% · RSI 63.4",
             "expected_return": "HIGH RISK",
             "meta": {
-                "float_m": 135.2,
-                "short_pct": 31.8,
-                "vol_spike": 0.54,
-                "rsi": 57.1,
-                "short_ratio": 7.5
+                "float_m": 5.5,
+                "short_pct": 3.9,
+                "vol_spike": 5.01,
+                "rsi": 63.4,
+                "short_ratio": 4.9
             }
         }
     ],
     "total_candidates": 30,
     "total_screened": 30,
-    "base_date": "20260421"
+    "base_date": "20260422"
 }

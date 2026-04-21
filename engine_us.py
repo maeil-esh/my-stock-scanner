@@ -6,11 +6,14 @@ engine_us.py — 미장 숏스퀴즈 스캐너
 import os, json, datetime
 import numpy as np
 import yfinance as yf
+from zoneinfo import ZoneInfo                           # [FIX] KST
 
 from engine_common import (
     ko_date, now_label, send_telegram, fetch_macro_summary,
-    build_news_briefing
+    build_news_briefing, calc_rsi                       # [FIX] calc_rsi import — 인라인 SMA 제거
 )
+
+KST = ZoneInfo("Asia/Seoul")
 
 DATA_FILE_US = 'stock_data_us.json'
 
@@ -26,7 +29,7 @@ WATCHLIST = [
 
 def run_us_scan():
     print("\n🇺🇸 미국 숏스퀴즈 스캐닝 시작...")
-    today_str = datetime.datetime.now().strftime("%Y%m%d")
+    today_str = datetime.datetime.now(KST).strftime("%Y%m%d")  # [FIX] UTC→KST
     us_picks = []; skipped = 0
 
     for symbol in WATCHLIST:
@@ -44,28 +47,33 @@ def run_us_scan():
             cur_vol    = hist['Volume'].iloc[-1]
             vol_spike  = round(cur_vol / (avg_vol_20 + 1), 2)
 
-            # RSI
-            delta = hist['Close'].diff()
-            gain  = delta.where(delta > 0, 0).rolling(14).mean()
-            loss  = (-delta.where(delta < 0, 0)).rolling(14).mean()
-            rs    = gain / loss.replace(0, np.nan)
-            rsi   = round(float((100 - 100 / (1 + rs)).iloc[-1]), 1)
+            # [FIX] RSI — engine_common calc_rsi(EWM) 통일, 인라인 SMA 제거
+            rsi = round(float(calc_rsi(hist['Close']).iloc[-1]), 1)
 
-            # info
-            try:    info = t.info
-            except: info = {}
+            # [FIX] fast_info 우선 → info fallback (속도 개선 + rate limit 방지)
+            float_shares = short_pct = short_name = None
+            short_ratio = 0
+            fi = t.fast_info
+            float_shares = getattr(fi, 'shares_outstanding', None)  # fast_info 근사값
 
-            float_shares = info.get('floatShares') or info.get('impliedSharesOutstanding')
-            short_pct    = info.get('shortPercentOfFloat')
-            short_ratio  = info.get('shortRatio') or 0
-            short_name   = info.get('shortName', symbol)
+            try:
+                info = t.info
+                float_shares = info.get('floatShares') or info.get('impliedSharesOutstanding') or float_shares
+                short_pct    = info.get('shortPercentOfFloat')
+                short_ratio  = info.get('shortRatio') or 0
+                short_name   = info.get('shortName', symbol)
+                long_summary = info.get('longBusinessSummary', '')
+            except Exception:
+                info = {}
+                short_name   = symbol
+                long_summary = ''
 
             float_m     = float_shares / 1e6 if float_shares else 0
             short_pct_p = short_pct * 100     if short_pct    else 0
 
             print(f"  📌 {symbol} | 거래량 {vol_spike}x | 공매도 {round(short_pct_p,1)}% | float {round(float_m,1)}M")
 
-            # 채점 — 데이터 없어도 거래량만으로 점수 부여
+            # 채점
             short_score = min((short_pct_p - 10) / 30 * 35 + 5, 40) if short_pct_p >= 10 else 0
             vol_score   = min((vol_spike - 1.0) / 5 * 25 + 5, 30)   if vol_spike >= 1.0 else 0
             float_score = max(20 - (float_m / 100 * 20), 0)          if 0 < float_m < 100 else 5
@@ -85,11 +93,10 @@ def run_us_scan():
             us_picks.append({
                 "rank": len(us_picks) + 1,
                 "name": short_name, "code": symbol,
-                "company_summary": (info.get('longBusinessSummary','')[:150]+'...')
-                                   if info.get('longBusinessSummary') else symbol,
+                "company_summary": (long_summary[:150] + '...') if long_summary else symbol,
                 "supply": f"공매도 {short_str} | {squeeze_level}",
                 "cur_price": cur_price,
-                "score": f"SQUEEZE {total_score}점/100",
+                "score": total_score,                           # [FIX] 정수 저장 — 문자열 파싱 제거
                 "score_detail": {
                     "공매도강도": int(short_score), "거래량급증": int(vol_score),
                     "유통주희소": int(float_score), "커버소요일": int(ratio_score),
@@ -97,9 +104,11 @@ def run_us_scan():
                 "tags": f"유통주 {float_str} · 숏비율 {short_str} · RSI {rsi}",
                 "expected_return": "HIGH RISK",
                 "meta": {
-                    "float_m": round(float_m,1), "short_pct": round(short_pct_p,1),
-                    "vol_spike": vol_spike, "rsi": rsi,
-                    "short_ratio": round(short_ratio,1),
+                    "float_m":    round(float_m, 1),
+                    "short_pct":  round(short_pct_p, 1),
+                    "vol_spike":  vol_spike,
+                    "rsi":        rsi,
+                    "short_ratio": round(short_ratio, 1),
                 }
             })
 
@@ -107,16 +116,18 @@ def run_us_scan():
             print(f"  ⚠️  {symbol} 오류: {e}")
             skipped += 1
 
-    us_picks.sort(
-        key=lambda x: int(x['score'].split()[1].replace('점/100','')),
-        reverse=True
-    )
+    # [FIX] 정수 score로 직접 정렬 — 문자열 파싱 크래시 제거
+    us_picks.sort(key=lambda x: x['score'], reverse=True)
     top5 = us_picks[:5]
     for i, p in enumerate(top5): p['rank'] = i + 1
 
     print(f"\n🏁 미국 완료! 전체 {len(us_picks)}건 -> TOP {len(top5)}")
     for p in top5:
-        print(f"  #{p['rank']} {p['name']} | {p['score']}")
+        print(f"  #{p['rank']} {p['name']} | SQUEEZE {p['score']}점/100")
+
+    # 저장용 score는 표시 문자열로 변환
+    for p in us_picks:
+        p['score'] = f"SQUEEZE {p['score']}점/100"
 
     us_output = {
         "today_picks": top5, "total_candidates": len(us_picks),

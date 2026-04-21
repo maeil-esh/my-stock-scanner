@@ -10,7 +10,8 @@ from zoneinfo import ZoneInfo                           # [FIX] KST
 
 from engine_common import (
     ko_date, now_label, send_telegram, fetch_macro_summary,
-    build_news_briefing, calc_rsi                       # [FIX] calc_rsi import — 인라인 SMA 제거
+    build_news_briefing, calc_rsi,                      # [FIX] calc_rsi import — 인라인 SMA 제거
+    json_safe                                           # [FIX] numpy bool 직렬화
 )
 
 KST = ZoneInfo("Asia/Seoul")
@@ -45,7 +46,7 @@ def run_us_scan():
             cur_price  = round(float(hist['Close'].iloc[-1]), 2)
             avg_vol_20 = hist['Volume'].iloc[-21:-1].mean()
             cur_vol    = hist['Volume'].iloc[-1]
-            vol_spike  = round(cur_vol / (avg_vol_20 + 1), 2)
+            vol_spike  = round(float(cur_vol / (avg_vol_20 + 1)), 2)  # [FIX] np.float64 → float
 
             # [FIX] RSI — engine_common calc_rsi(EWM) 통일, 인라인 SMA 제거
             rsi = round(float(calc_rsi(hist['Close']).iloc[-1]), 1)
@@ -68,8 +69,8 @@ def run_us_scan():
                 short_name   = symbol
                 long_summary = ''
 
-            float_m     = float_shares / 1e6 if float_shares else 0
-            short_pct_p = short_pct * 100     if short_pct    else 0
+            float_m     = float(float_shares) / 1e6 if float_shares else 0  # [FIX] np scalar → float
+            short_pct_p = float(short_pct) * 100    if short_pct    else 0  # [FIX] np scalar → float
 
             print(f"  📌 {symbol} | 거래량 {vol_spike}x | 공매도 {round(short_pct_p,1)}% | float {round(float_m,1)}M")
 
@@ -77,7 +78,7 @@ def run_us_scan():
             short_score = min((short_pct_p - 10) / 30 * 35 + 5, 40) if short_pct_p >= 10 else 0
             vol_score   = min((vol_spike - 1.0) / 5 * 25 + 5, 30)   if vol_spike >= 1.0 else 0
             float_score = max(20 - (float_m / 100 * 20), 0)          if 0 < float_m < 100 else 5
-            ratio_score = min(short_ratio * 1.5, 10)                  if short_ratio else 0
+            ratio_score = min(float(short_ratio) * 1.5, 10)           if short_ratio else 0  # [FIX]
             total_score = int(short_score + vol_score + float_score + ratio_score)
 
             short_str = f"{round(short_pct_p,1)}%" if short_pct_p > 0 else "N/A"
@@ -108,7 +109,7 @@ def run_us_scan():
                     "short_pct":  round(short_pct_p, 1),
                     "vol_spike":  vol_spike,
                     "rsi":        rsi,
-                    "short_ratio": round(short_ratio, 1),
+                    "short_ratio": round(float(short_ratio), 1),  # [FIX] np scalar → float
                 }
             })
 
@@ -134,7 +135,7 @@ def run_us_scan():
         "total_screened": len(WATCHLIST) - skipped, "base_date": today_str,
     }
     with open(DATA_FILE_US, 'w', encoding='utf-8') as f:
-        json.dump(us_output, f, ensure_ascii=False, indent=4)
+        json.dump(us_output, f, ensure_ascii=False, indent=4, default=json_safe)  # [FIX]
 
     return us_output
 
@@ -172,3 +173,4 @@ if __name__ == "__main__":
     send_telegram(fetch_macro_summary())
     send_telegram(build_news_briefing())
     send_telegram(build_us_message(us_result))
+

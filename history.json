@@ -726,5 +726,237 @@
                 }
             }
         ]
+    },
+    {
+        "date": "20260421",
+        "label": "🌙 미장 스캔",
+        "regime": "NEUTRAL",
+        "picks": [
+            {
+                "rank": 1,
+                "name": "전진건설로봇",
+                "code": "079900",
+                "company_summary": "전진건설로봇",
+                "supply": "정보없음",
+                "cur_price": 68800,
+                "score": "★★★☆☆ (109점/170)",
+                "tags": "거래량스파이크 40점 / 세력전환 30점 / 고가돌파 15점",
+                "expected_return": "14.6%",
+                "score_detail": {
+                    "세력전환": 30,
+                    "세력매집": 12,
+                    "매매신호": 12,
+                    "거래량스파이크": 40,
+                    "고가돌파": 15,
+                    "수급강도": 0
+                },
+                "meta": {
+                    "rsi": 61.5,
+                    "bb_compress": 0,
+                    "rebound_pct": 71.1,
+                    "vol_ratio": 0.88,
+                    "inst_streak": 0,
+                    "for_streak": 0,
+                    "mktcap": 10039,
+                    "silence_ratio": 0.45,
+                    "green_days": 56,
+                    "obv_cross": false,
+                    "signal": 68.8,
+                    "max_spike": 12.1,
+                    "rs": 0,
+                    "trade": {
+                        "entry": 68800,
+                        "stop_loss": 62237,
+                        "target_1": 81925,
+                        "target_2": 90675,
+                        "risk_pct": 9.5,
+                        "reward_pct": 19.1,
+                        "rr_ratio": 2.0,
+                        "atr": 4375.0
+                    },
+                    "regime": "NEUTRAL"
+                }
+            },
+            {
+                "rank": 2,
+                "name": "글로벌텍스프리",
+                "code": "204620",
+                "company_summary": "글로벌텍스프리",
+                "supply": "정보없음",
+                "cur_price": 5160,
+                "score": "★★☆☆☆ (96점/170)",
+                "tags": "세력전환 40점 / 세력매집 20점 / 거래량스파이크 20점",
+                "expected_return": "13.5%",
+                "score_detail": {
+                    "세력전환": 40,
+                    "세력매집": 20,
+                    "매매신호": 16,
+                    "거래량스파이크": 20,
+                    "고가돌파": 0,
+                    "수급강도": 0
+                },
+                "meta": {
+                    "rsi": 57.2,
+                    "bb_compress": 0,
+                    "rebound_pct": 29.3,
+                    "vol_ratio": 0.62,
+                    "inst_streak": 0,
+                    "for_streak": 0,
+                    "mktcap": 3626,
+                    "silence_ratio": 0.22,
+                    "green_days": 61,
+                    "obv_cross": true,
+                    "signal": 58.9,
+                    "max_spike": 3.1,
+                    "rs": 0,
+                    "trade": {
+                        "entry": 5160,
+                        "stop_loss": 4796,
+                        "target_1": 5886,
+                        "target_2": 6370,
+                        "risk_pct": 7.1,
+                        "reward_pct": 14.1,
+                        "rr_ratio": 2.0,
+                        "atr": 242.1
+                    },
+                    "regime": "NEUTRAL"
+                }
+            },
+            {
+                "rank": 3,
+                "name": "가온전선",
+                "code": "000500",
+                "company_summary": "가온전선",
+                "supply": "정보없음",
+                "cur_price": 155400,
+                "score": "★★☆☆☆ (95점/170)",
+                "tags": "세력전환 30점 / 거래량스파이크 30점 / 세력매집 20점",
+                "expected_return": "13.4%",
+                "score_detail": {
+                    "세력전환": 30,
+                    "세력매집": 20,
+                    "매매신호": 0,
+                    "거래량스파이크": 30,
+                    "고가돌파": 15,
+                    "수급강도": 0
+                },
+                "meta": {
+                    "rsi": 77.2,
+                    "bb_compress": 0,
+                    "rebound_pct": 195.4,
+                    "vol_ratio": 0.96,
+                    "inst_streak": 0,
+                    "for_streak": 0,
+                    "mktcap": 25708,
+                    "silence_ratio": 0.36,
+                    "green_days": 69,
+                    "obv_cross": false,
+                    "signal": 89.7,
+                    "max_spike": 8.1,
+                    "rs": 0,
+                    "trade": {
+                        "entry": 155400,
+                        "stop_loss": 141482,
+                        "target_1": 183235,
+                        "target_2": 201792,
+                        "risk_pct": 9.0,
+                        "reward_pct": 17.9,
+                        "rr_ratio": 2.0,
+                        "atr": 9278.6
+                    },
+                    "regime": "NEUTRAL"
+                }
+            },
+            {
+                "rank": 4,
+                "name": "삼성FN리츠",
+                "code": "448730",
+                "company_summary": "삼성FN리츠",
+                "supply": "정보없음",
+                "cur_price": 7070,
+                "score": "★★☆☆☆ (95점/170)",
+                "tags": "세력전환 30점 / 거래량스파이크 30점 / 세력매집 20점",
+                "expected_return": "13.4%",
+                "score_detail": {
+                    "세력전환": 30,
+                    "세력매집": 20,
+                    "매매신호": 0,
+                    "거래량스파이크": 30,
+                    "고가돌파": 15,
+                    "수급강도": 0
+                },
+                "meta": {
+                    "rsi": 87.7,
+                    "bb_compress": 0,
+                    "rebound_pct": 68.5,
+                    "vol_ratio": 1.3,
+                    "inst_streak": 0,
+                    "for_streak": 0,
+                    "mktcap": 6437,
+                    "silence_ratio": 0.15,
+                    "green_days": 77,
+                    "obv_cross": false,
+                    "signal": 91.4,
+                    "max_spike": 7.6,
+                    "rs": 0,
+                    "trade": {
+                        "entry": 7070,
+                        "stop_loss": 6683,
+                        "target_1": 7843,
+                        "target_2": 8359,
+                        "risk_pct": 5.5,
+                        "reward_pct": 10.9,
+                        "rr_ratio": 2.0,
+                        "atr": 257.9
+                    },
+                    "regime": "NEUTRAL"
+                }
+            },
+            {
+                "rank": 5,
+                "name": "대덕",
+                "code": "008060",
+                "company_summary": "대덕",
+                "supply": "정보없음",
+                "cur_price": 15610,
+                "score": "★★☆☆☆ (89점/170)",
+                "tags": "거래량스파이크 30점 / 세력전환 24점 / 세력매집 20점",
+                "expected_return": "12.9%",
+                "score_detail": {
+                    "세력전환": 24,
+                    "세력매집": 20,
+                    "매매신호": 0,
+                    "거래량스파이크": 30,
+                    "고가돌파": 15,
+                    "수급강도": 0
+                },
+                "meta": {
+                    "rsi": 72.2,
+                    "bb_compress": 0,
+                    "rebound_pct": 102.7,
+                    "vol_ratio": 1.31,
+                    "inst_streak": 0,
+                    "for_streak": 0,
+                    "mktcap": 4883,
+                    "silence_ratio": 0.28,
+                    "green_days": 70,
+                    "obv_cross": false,
+                    "signal": 83.6,
+                    "max_spike": 5.1,
+                    "rs": 0,
+                    "trade": {
+                        "entry": 15610,
+                        "stop_loss": 14864,
+                        "target_1": 17101,
+                        "target_2": 18095,
+                        "risk_pct": 4.8,
+                        "reward_pct": 9.6,
+                        "rr_ratio": 2.0,
+                        "atr": 497.1
+                    },
+                    "regime": "NEUTRAL"
+                }
+            }
+        ]
     }
 ]

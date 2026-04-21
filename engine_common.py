@@ -8,6 +8,9 @@ import requests
 import numpy as np
 import yfinance as yf
 from bs4 import BeautifulSoup
+from zoneinfo import ZoneInfo   # [FIX] UTC→KST 통일
+
+KST = ZoneInfo("Asia/Seoul")
 
 TELEGRAM_TOKEN   = os.environ.get("TELEGRAM_TOKEN", "")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
@@ -19,7 +22,8 @@ DAY_MAP = {"Mon":"월","Tue":"화","Wed":"수","Thu":"목","Fri":"금","Sat":"�
 # ── 날짜 ───────────────────────────────────────────────────────
 
 def get_market_date():
-    today = datetime.datetime.now()
+    """KST 기준 가장 최근 거래일 반환"""                        # [FIX] UTC→KST
+    today = datetime.datetime.now(KST)
     wd = today.weekday()
     if wd == 5:   today -= datetime.timedelta(days=1)
     elif wd == 6: today -= datetime.timedelta(days=2)
@@ -35,7 +39,7 @@ def ko_date(date_str: str) -> str:
     try:
         d = datetime.datetime.strptime(date_str, "%Y%m%d")
     except Exception:
-        d = datetime.datetime.now()
+        d = datetime.datetime.now(KST)                          # [FIX] KST
     s = d.strftime("%Y.%m.%d (%a)")
     for en, ko in DAY_MAP.items():
         s = s.replace(en, ko)
@@ -43,7 +47,7 @@ def ko_date(date_str: str) -> str:
 
 
 def now_label() -> str:
-    h = datetime.datetime.now().hour
+    h = datetime.datetime.now(KST).hour                        # [FIX] UTC→KST
     if h < 11:   return "🔔 장 시작 스캔"
     elif h < 15: return "📊 장 중간 스캔"
     elif h < 19: return "🏁 장 마감 스캔"
@@ -56,19 +60,22 @@ def send_telegram(message: str):
     if not TELEGRAM_TOKEN:
         print("⚠️  TELEGRAM_TOKEN 없음 — 스킵")
         return
-    try:
-        url  = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-        resp = requests.post(url, json={
-            "chat_id": TELEGRAM_CHAT_ID,
-            "text": message,
-            "parse_mode": "HTML"
-        }, timeout=10)
-        if resp.status_code == 200:
-            print("✅ 텔레그램 전송 완료")
-        else:
-            print(f"⚠️  텔레그램 실패: {resp.text}")
-    except Exception as e:
-        print(f"⚠️  텔레그램 오류: {e}")
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+    MAX_LEN = 4096                                              # [FIX] 길이 초과 분할
+    chunks = [message[i:i+MAX_LEN] for i in range(0, len(message), MAX_LEN)]
+    for chunk in chunks:
+        try:
+            resp = requests.post(url, json={
+                "chat_id":    TELEGRAM_CHAT_ID,
+                "text":       chunk,
+                "parse_mode": "HTML"
+            }, timeout=10)
+            if resp.status_code == 200:
+                print(f"✅ 텔레그램 전송 완료 ({len(chunk)}자)")
+            else:
+                print(f"⚠️  텔레그램 실패: {resp.text}")
+        except Exception as e:
+            print(f"⚠️  텔레그램 오류: {e}")
 
 
 # ── 매크로 브리핑 ──────────────────────────────────────────────
@@ -83,7 +90,7 @@ def fetch_macro_summary() -> str:
         "VIX":     ("^VIX",   lambda v: f"{v:.2f}"),
         "US 10Y":  ("^TNX",   lambda v: f"{v:.2f}%"),
     }
-    today = datetime.datetime.now().strftime("%Y.%m.%d (%a)")
+    today = datetime.datetime.now(KST).strftime("%Y.%m.%d (%a)")  # [FIX] KST
     for en, ko in DAY_MAP.items():
         today = today.replace(en, ko)
 
@@ -93,8 +100,13 @@ def fetch_macro_summary() -> str:
     for name, (sym, fmt) in symbols.items():
         try:
             info  = yf.Ticker(sym).fast_info
-            price = info.last_price
-            prev  = info.previous_close
+            # [FIX] fast_info 속성 안전 접근 — 없으면 대체 속성 시도
+            price = (getattr(info, 'last_price', None)
+                     or getattr(info, 'regularMarketPrice', None))
+            prev  = (getattr(info, 'previous_close', None)
+                     or getattr(info, 'regularMarketPreviousClose', None))
+            if not price:
+                raise ValueError("price 없음")
             chg   = (price - prev) / prev * 100 if prev else 0
             arrow = "▲" if chg >= 0 else "▼"
             sign  = "+" if chg >= 0 else ""
@@ -162,13 +174,12 @@ def fetch_theme_news(max_items: int = 5) -> list:
 
 def build_news_briefing() -> str:
     """전일 이슈 + 금일 유력 테마 텔레그램 메시지 생성"""
-    today = datetime.datetime.now().strftime("%Y.%m.%d (%a)")
+    today = datetime.datetime.now(KST).strftime("%Y.%m.%d (%a)")  # [FIX] KST
     for en, ko in DAY_MAP.items():
         today = today.replace(en, ko)
 
     lines = [f"🗞 <b>시황 브리핑 — {today}</b>", "━" * 24]
 
-    # 전일 이슈
     market_news = fetch_naver_news(max_items=8)
     lines.append("📌 <b>전일 주요 이슈</b>")
     if market_news:
@@ -179,7 +190,6 @@ def build_news_briefing() -> str:
 
     lines.append("")
 
-    # 금일 유력 테마
     theme_news = fetch_theme_news(max_items=5)
     lines.append("🔥 <b>금일 유력 테마</b>")
     if theme_news:
@@ -195,9 +205,10 @@ def build_news_briefing() -> str:
 # ── 기술 지표 ──────────────────────────────────────────────────
 
 def calc_rsi(series, period=14):
+    """Wilder EWM 방식 RSI — TradingView 기준과 일치"""         # [FIX] SMA→EWM
     delta = series.diff()
-    gain  = delta.where(delta > 0, 0.0).rolling(period).mean()
-    loss  = (-delta.where(delta < 0, 0.0)).rolling(period).mean()
+    gain  = delta.where(delta > 0, 0.0).ewm(alpha=1/period, adjust=False).mean()
+    loss  = (-delta.where(delta < 0, 0.0)).ewm(alpha=1/period, adjust=False).mean()
     rs    = gain / loss.replace(0, np.nan)
     return 100 - (100 / (1 + rs))
 

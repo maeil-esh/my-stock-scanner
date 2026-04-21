@@ -7,20 +7,20 @@
             "company_summary": "Avis Budget Group, Inc., together with its subsidiaries, provides car and truck rentals, car sharing, and ancillary products and services to businesse...",
             "supply": "공매도 93.0% | 🔥 EXTREME",
             "cur_price": 608.8,
-            "score": "SQUEEZE 75점/100",
+            "score": "SQUEEZE 76점/100",
             "score_detail": {
                 "공매도강도": 40,
-                "거래량급증": 7,
+                "거래량급증": 8,
                 "유통주희소": 17,
                 "커버소요일": 10
             },
-            "tags": "유통주 10.1M · 숏비율 93.0% · RSI 96.9",
+            "tags": "유통주 10.1M · 숏비율 93.0% · RSI 94.7",
             "expected_return": "HIGH RISK",
             "meta": {
                 "float_m": 10.1,
                 "short_pct": 93.0,
-                "vol_spike": 1.52,
-                "rsi": 96.9,
+                "vol_spike": 1.62,
+                "rsi": 94.7,
                 "short_ratio": 9.7
             }
         },
@@ -38,13 +38,13 @@
                 "유통주희소": 14,
                 "커버소요일": 10
             },
-            "tags": "유통주 29.0M · 숏비율 50.0% · RSI 71.6",
+            "tags": "유통주 29.0M · 숏비율 50.0% · RSI 65.6",
             "expected_return": "HIGH RISK",
             "meta": {
                 "float_m": 29.0,
                 "short_pct": 50.0,
-                "vol_spike": 1.06,
-                "rsi": 71.6,
+                "vol_spike": 1.07,
+                "rsi": 65.6,
                 "short_ratio": 7.7
             }
         },
@@ -62,13 +62,13 @@
                 "유통주희소": 5,
                 "커버소요일": 10
             },
-            "tags": "유통주 126.1M · 숏비율 50.0% · RSI 84.5",
+            "tags": "유통주 126.1M · 숏비율 50.0% · RSI 78.1",
             "expected_return": "HIGH RISK",
             "meta": {
                 "float_m": 126.1,
                 "short_pct": 50.0,
-                "vol_spike": 2.3,
-                "rsi": 84.5,
+                "vol_spike": 2.31,
+                "rsi": 78.1,
                 "short_ratio": 10.2
             }
         },
@@ -79,20 +79,20 @@
             "company_summary": "Hims & Hers Health, Inc. operates as a consumer-first health and wellness platform that connects consumers to licensed healthcare professionals in the...",
             "supply": "공매도 38.7% | ⚡ HIGH",
             "cur_price": 31.01,
-            "score": "SQUEEZE 57점/100",
+            "score": "SQUEEZE 58점/100",
             "score_detail": {
                 "공매도강도": 38,
-                "거래량급증": 11,
+                "거래량급증": 12,
                 "유통주희소": 5,
                 "커버소요일": 2
             },
-            "tags": "유통주 207.4M · 숏비율 38.7% · RSI 84.0",
+            "tags": "유통주 207.4M · 숏비율 38.7% · RSI 75.7",
             "expected_return": "HIGH RISK",
             "meta": {
                 "float_m": 207.4,
                 "short_pct": 38.7,
-                "vol_spike": 2.28,
-                "rsi": 84.0,
+                "vol_spike": 2.41,
+                "rsi": 75.7,
                 "short_ratio": 2.0
             }
         },
@@ -110,13 +110,13 @@
                 "유통주희소": 5,
                 "커버소요일": 10
             },
-            "tags": "유통주 135.2M · 숏비율 31.8% · RSI 73.6",
+            "tags": "유통주 135.2M · 숏비율 31.8% · RSI 57.1",
             "expected_return": "HIGH RISK",
             "meta": {
                 "float_m": 135.2,
                 "short_pct": 31.8,
-                "vol_spike": 0.47,
-                "rsi": 73.6,
+                "vol_spike": 0.54,
+                "rsi": 57.1,
                 "short_ratio": 7.5
             }
         }

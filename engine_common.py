@@ -3,6 +3,7 @@ engine_common.py — 공통 유틸, 텔레그램, 매크로, 뉴스 브리핑
 engine_kr.py / engine_us.py 에서 import해서 사용
 """
 import os
+import json                                                     # [FIX] JSON 직렬화
 import datetime
 import requests
 import numpy as np
@@ -215,3 +216,39 @@ def calc_rsi(series, period=14):
 
 def calc_obv(df):
     return (np.sign(df['Close'].diff()).fillna(0) * df['Volume']).cumsum()
+
+
+# ── JSON 직렬화 ────────────────────────────────────────────────  # [FIX] 추가
+
+def json_safe(o):
+    """numpy scalar / bool / datetime → JSON 직렬화 가능 타입 변환
+    
+    사용법:
+        json.dump(data, f, default=json_safe, ensure_ascii=False, indent=2)
+    """
+    if isinstance(o, np.generic):          # np.bool_, np.int64, np.float64 등
+        return o.item()
+    if isinstance(o, datetime.datetime):
+        return o.isoformat()
+    if isinstance(o, datetime.date):
+        return o.isoformat()
+    if isinstance(o, (set, frozenset)):
+        return list(o)
+    raise TypeError(f"Not serializable: {type(o).__name__}")
+
+
+def safe_json_dump(data, filepath, **kwargs):
+    """json.dump 래퍼 — numpy/datetime 타입 자동 처리
+    
+    사용법 (engine_kr.py / engine_us.py):
+        from engine_common import safe_json_dump
+        safe_json_dump(results, "stock_data.json")
+        safe_json_dump(history, "history.json")
+    """
+    kwargs.setdefault("ensure_ascii", False)
+    kwargs.setdefault("indent", 2)
+    kwargs.setdefault("default", json_safe)
+    with open(filepath, "w", encoding="utf-8") as f:
+        json.dump(data, f, **kwargs)
+    print(f"[저장 완료] {filepath}")
+

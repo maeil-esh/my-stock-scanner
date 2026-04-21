@@ -4,6 +4,8 @@ engine_kr.py — 국장 바닥반등+거래량 스캐너
 스케줄: 09:30 / 13:00 / 16:00 KST
 """
 import os, json, datetime, zipfile, io
+import threading                                          # [FIX-4] 상단으로 이동
+from concurrent.futures import ThreadPoolExecutor, as_completed  # [FIX-4] 상단으로 이동
 import numpy as np
 import pandas as pd
 import requests
@@ -24,51 +26,58 @@ TOP_N        = 5
 
 _dart_corp_cache = {}
 
+# 최대 점수 상수 (A:40 + B:30 + C:30 + D:40 + E:15 + F:15 = 170)  # [FIX-7]
+MAX_SCORE = 170
+
 
 # ── pykrx 유틸 ─────────────────────────────────────────────────
 
 def safe_get_market_ticker_list(date_str, market):
-    try:
-        tickers = stock.get_market_ticker_list(date_str, market=market)
-        if tickers and len(tickers) > 0: return list(tickers)
-    except Exception as e:
-        print(f"  ⚠️  pykrx {market} 실패: {e} → fdr 백업")
+    """pykrx 없이 fdr만 사용 — KRX 차단 우회"""
     try:
         df = fdr.StockListing('KOSPI' if market == "KOSPI" else 'KOSDAQ')
-        return list(df['Code'].dropna().astype(str).str.zfill(6))
+        col = 'Code' if 'Code' in df.columns else df.columns[0]
+        return list(df[col].dropna().astype(str).str.zfill(6))
     except Exception as e:
-        print(f"  ❌ fdr {market} 백업 실패: {e}")
+        print(f"  ❌ fdr {market} 실패: {e}")
         return []
 
 
 def _find_cap_col(df):
-    candidates = ['시가총액','Mktcap','MktCap','mktcap','marcap','Marcap']
+    candidates = ['Marcap','MarCap','marcap','mktcap','MktCap','Market Cap']
     for c in candidates:
         if c in df.columns: return c
     for col in df.columns:
-        if '시가' in col or 'cap' in col.lower(): return col
+        if 'cap' in col.lower(): return col
     return None
 
 
-def safe_get_market_cap(ticker, date_str):
+def safe_get_market_cap(ticker, date_str, cache=None):  # [FIX-9] 캐시 참조
+    """pykrx 없이 fdr StockListing → yfinance 순으로 시총 조회"""
+    if cache and ticker in cache:   # [FIX-9] 캐시 히트 시 즉시 반환
+        return cache[ticker]
+    # 1차: fdr StockListing (빠름)
     try:
-        df = stock.get_market_cap(date_str, date_str, ticker)
-        if df is not None and not df.empty:
-            cap_col = _find_cap_col(df)
-            if cap_col:
-                val = df[cap_col].iloc[-1]
-                if val > 0: return int(val / 1e8)
+        for market in ["KOSPI", "KOSDAQ"]:
+            df = fdr.StockListing(market)
+            col = 'Code' if 'Code' in df.columns else df.columns[0]
+            row = df[df[col].astype(str).str.zfill(6) == ticker]
+            if not row.empty:
+                cap_col = _find_cap_col(row)
+                if cap_col:
+                    cap = row.iloc[0][cap_col]
+                    if cap and cap > 0:
+                        return int(cap / 1e8) if cap > 1e6 else int(cap)
     except Exception:
         pass
+    # 2차: yfinance
     try:
-        for market in ["KOSPI","KOSDAQ"]:
-            df = fdr.StockListing(market)
-            row = df[df['Code'] == ticker]
-            if not row.empty:
-                for col in ['Marcap','MarCap','marcap','mktcap','MktCap']:
-                    if col in row.columns:
-                        cap = row.iloc[0][col]
-                        if cap and cap > 0: return int(cap / 1e8)
+        import yfinance as yf
+        for suffix in ['.KS', '.KQ']:
+            info = yf.Ticker(ticker + suffix).fast_info
+            mc = getattr(info, 'market_cap', None)
+            if mc and mc > 0:
+                return int(mc / 1e8)
     except Exception:
         pass
     return None
@@ -153,6 +162,7 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
     매수타점 3단계:
     [필수] 세력값 0선 돌파 + 매매신호 30 돌파 + 거래량 2배↑
     [가산] 녹색기간 60일↑ + 전일고가 돌파 + 저가반등 20~80%
+    최대 점수: 170점 (A:40 + B:30 + C:30 + D:40 + E:15 + F:15)
     """
     df = df.copy()
     df['MA20']     = df['Close'].rolling(20).mean()
@@ -169,58 +179,54 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
     bd = {}; meta = {}
 
     # ── [A] 세력값 0선 돌파 (핵심 — 최대 40점) ─────────────────
-    # OBV 5일 변화율로 세력 전환 감지
     obv_now  = df['OBV'].iloc[-1]
     obv_prev = df['OBV'].iloc[-2]
     obv_5d   = df['OBV'].iloc[-6] if len(df) >= 6 else df['OBV'].iloc[0]
     obv_chg  = (obv_now - obv_5d) / (abs(obv_5d) + 1) * 100
 
-    # 전일 음수 → 당일 양수 전환 = 세력 매집 완료 신호
     obv_cross = obv_now > 0 and obv_prev <= 0
     a = 0
     if obv_cross:
-        a = 40  # 전환 당일 최고점
+        a = 40
     elif obv_chg > 0:
-        a = min(int(obv_chg * 2), 30)  # 상승 중이면 비례 점수
+        a = min(int(obv_chg * 2), 30)
     bd['세력전환'] = a
-    meta['obv_chg'] = round(obv_chg, 2)
-    meta['obv_cross'] = obv_cross
+    meta['obv_chg']  = round(obv_chg, 2)
+    meta['obv_cross'] = obv_cross          # [FIX-3] meta 저장 확인
 
     # ── [B] 녹색 매집 기간 (최대 30점) ─────────────────────────
-    # OBV가 하락(음수)했던 일수 = 세력 저점 매집 기간
-    obv_diff = df['OBV'].diff().iloc[-120:]  # 최근 120거래일
+    obv_diff   = df['OBV'].diff().iloc[-120:]
     green_days = int((obv_diff < 0).sum())
     b = 0
-    if   green_days >= 120: b = 30  # 6개월↑ — 엔켐형 대시세
-    elif green_days >= 80:  b = 25  # 4개월↑ — 한컴위드형
-    elif green_days >= 60:  b = 20  # 3개월↑ — 글로벌텍스프리형
-    elif green_days >= 30:  b = 12  # 1.5개월↑ — PI첨단소재형
-    elif green_days >= 20:  b = 6   # 1개월↑ — 테크윙형
-    bd['세력매집'] = b
-    meta['green_days'] = green_days
+    if   green_days >= 120: b = 30
+    elif green_days >= 80:  b = 25
+    elif green_days >= 60:  b = 20
+    elif green_days >= 30:  b = 12
+    elif green_days >= 20:  b = 6
+    bd['세력매집']    = b
+    meta['green_days'] = green_days        # [FIX-2] 누락 필드 추가
 
     # ── [C] 매매신호 30 돌파 (최대 30점) ───────────────────────
-    # 스토캐스틱 + RSI 합성
     low_14  = df['Low'].rolling(14).min()
     high_14 = df['High'].rolling(14).max()
     denom   = (high_14 - low_14).iloc[-1]
     stoch_k = (cur - low_14.iloc[-1]) / denom * 100 if denom > 0 else 50
-    stoch_p = (df['Close'].iloc[-2] - low_14.iloc[-2]) /               max((high_14.iloc[-2] - low_14.iloc[-2]), 1) * 100
+    stoch_p = (df['Close'].iloc[-2] - low_14.iloc[-2]) / \
+              max((high_14.iloc[-2] - low_14.iloc[-2]), 1) * 100
     signal_now  = stoch_k * 0.6 + rsi * 0.4
     signal_prev = stoch_p * 0.6 + rsi_prev * 0.4
 
     c = 0
-    signal_cross = signal_now > 30 and signal_prev <= 30  # 30선 돌파
+    signal_cross = signal_now > 30 and signal_prev <= 30
     if signal_cross:
-        c = 30  # 돌파 당일 최고
+        c = 30
     elif 30 < signal_now <= 70:
-        c = int(20 - abs(signal_now - 50) * 0.4)  # 30~70 구간 비례
-    bd['매매신호'] = max(c, 0)
-    meta['signal'] = round(signal_now, 1)
+        c = int(20 - abs(signal_now - 50) * 0.4)
+    bd['매매신호']      = max(c, 0)
+    meta['signal']       = round(signal_now, 1)   # [FIX-3] 확인
     meta['signal_cross'] = signal_cross
 
     # ── [D] 거래량 스파이크 강도 (최대 40점) ────────────────────
-    # 최근 60일 중 최대 스파이크 배수로 등급 산정
     vol_ma20_ser = df['Volume'].rolling(20).mean()
     recent_60    = df.iloc[-60:]
     spike_ratios = recent_60['Volume'] / (vol_ma20_ser.iloc[-60:] + 1)
@@ -228,13 +234,13 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
     cur_ratio    = cur_vol / (vol_ma20 + 1)
 
     d = 0
-    if   max_spike >= 10: d = 40  # 엔켐형 — 10배↑ 대시세
-    elif max_spike >= 5:  d = 30  # 5~10배 — 강한 신호
-    elif max_spike >= 3:  d = 20  # 3~5배  — 중간 신호
-    elif max_spike >= 2:  d = 10  # 2~3배  — 기본 신호
+    if   max_spike >= 10: d = 40
+    elif max_spike >= 5:  d = 30
+    elif max_spike >= 3:  d = 20
+    elif max_spike >= 2:  d = 10
     bd['거래량스파이크'] = d
-    meta['max_spike']  = round(max_spike, 1)
-    meta['vol_ratio']  = round(cur_ratio, 2)
+    meta['max_spike'] = round(max_spike, 1)  # [FIX-3] 확인
+    meta['vol_ratio'] = round(cur_ratio, 2)
 
     # ── [E] 전일 고가 돌파 (최대 15점) ──────────────────────────
     e = 15 if cur > prev_hi else 0
@@ -251,13 +257,12 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
         if fd > 0 and id_ > 0: supply_text = "외인+기관 양매수"
         elif id_ > 0:           supply_text = "기관매수"
         elif fd > 0:            supply_text = "외인매수"
-    bd['수급강도'] = f
+    bd['수급강도']     = f
     meta['supply_text'] = supply_text
     meta['inst_streak'] = inst_streak
     meta['for_streak']  = for_streak
     meta['rsi']         = round(rsi, 1)
     meta['bb_compress'] = 0  # 하위 호환용
-
 
     return sum(bd.values()), bd, meta
 
@@ -284,32 +289,38 @@ def run_kr_scan():
     print(f"📋 전체 종목: {len(all_tickers)}개")
 
     # 시총 사전 필터 (1000억~3조)
-    print("⚡ 시총 사전 필터링 중 (1000억~3조)...")
+    print("⚡ 시총 사전 필터링 중 (1000억↑) — fdr StockListing...")
     mktcap_cache = {}; pre_filtered = []; supra_success = False
     try:
-        df_cap = stock.get_market_cap(today_str)
-        if df_cap is not None and not df_cap.empty:
-            cap_col = _find_cap_col(df_cap)
+        for market in ["KOSPI", "KOSDAQ"]:
+            df_cap = fdr.StockListing(market)
+            code_col = 'Code' if 'Code' in df_cap.columns else df_cap.columns[0]
+            cap_col  = _find_cap_col(df_cap)
             if cap_col:
-                for idx, row in df_cap.iterrows():
-                    cap = int(row[cap_col] / 1e8)
-                    mktcap_cache[str(idx)] = cap
-                    if 1000 <= cap <= 30000: pre_filtered.append(str(idx))
-                print(f"  → 필터 통과: {len(pre_filtered)}종목")
-                supra_success = True
+                for _, row in df_cap.iterrows():
+                    ticker_s = str(row[code_col]).zfill(6)
+                    cap_raw  = row[cap_col]
+                    if not cap_raw or cap_raw != cap_raw: continue
+                    cap = int(cap_raw / 1e8) if cap_raw > 1e6 else int(cap_raw)
+                    mktcap_cache[ticker_s] = cap
+                    if cap >= 1000:
+                        pre_filtered.append(ticker_s)
+        if pre_filtered:
+            print(f"  → 필터 통과: {len(pre_filtered)}종목")
+            supra_success = True
     except Exception as e:
         print(f"  ⚠️  시총 필터 실패: {e} → 전체 스캔")
 
     all_tickers = pre_filtered if supra_success and pre_filtered else all_tickers
 
     candidates = []
-    log = dict(total=len(all_tickers), penny=0, mktcap=0, obv_up=0, vol_spike=0, seforce=0, final=0)
-    import threading
-    from concurrent.futures import ThreadPoolExecutor, as_completed
+    # [FIX-1] filter_log 키 불일치 수정 — bottom / uptrend 추가
+    log = dict(total=len(all_tickers), penny=0, mktcap=0,
+               bottom=0, uptrend=0, vol_spike=0, seforce=0, final=0)
     lock = threading.Lock()
 
     # 1단계: 병렬 — 가격/기술적 필터 (①~⑤)
-    passed_stage1 = []  # (ticker, df, vol_ma20, mktcap, rebound_pct, cur, cur_vol, cur_vm20)
+    passed_stage1 = []
 
     def scan_ticker_stage1(ticker):
         try:
@@ -324,7 +335,7 @@ def run_kr_scan():
             # ② 시총 2000억~3조
             mktcap = mktcap_cache.get(ticker)
             if mktcap is None:
-                mktcap = safe_get_market_cap(ticker, today_str)
+                mktcap = safe_get_market_cap(ticker, today_str, cache=mktcap_cache)  # [FIX-9]
                 if mktcap is not None: mktcap_cache[ticker] = mktcap
             if mktcap is None or not (2000 <= mktcap <= 30000): return
             with lock: log['mktcap'] += 1
@@ -334,13 +345,13 @@ def run_kr_scan():
             if low52 <= 0: return
             rebound_pct = (cur - low52) / low52 * 100
             if not (5 <= rebound_pct <= 60): return
-            with lock: log['bottom'] += 1
+            with lock: log['bottom'] += 1  # [FIX-1] 키 존재 확인
 
             # ④ MA20 완만한 우상향 + 현재가 MA20 위
             vol_ma20 = vol.rolling(20).mean()
             ma20_s   = close.rolling(20).mean()
             if not (ma20_s.iloc[-1] > ma20_s.iloc[-20] and cur > ma20_s.iloc[-1]): return
-            with lock: log['uptrend'] += 1
+            with lock: log['uptrend'] += 1  # [FIX-1] 키 존재 확인
 
             # ⑤ 최근 60일 거래량 스파이크 + 이후 수축
             recent_60  = df.iloc[-60:]
@@ -361,7 +372,7 @@ def run_kr_scan():
             return
 
     print(f"🔍 1단계: 병렬 가격 스크리닝 (10스레드)...")
-    with ThreadPoolExecutor(max_workers=20) as executor:
+    with ThreadPoolExecutor(max_workers=10) as executor:  # [FIX-5] 20→10
         futures = {executor.submit(scan_ticker_stage1, t): t for t in all_tickers}
         done = 0
         for f in as_completed(futures):
@@ -374,7 +385,6 @@ def run_kr_scan():
     for ticker, df, vol_ma20, mktcap, rebound_pct, cur, cur_vol, cur_vm20 in passed_stage1:
         try:
             inv_df, cols, inst_streak, for_streak = get_investor_detail(ticker, start_10d, today_str)
-            # 수급 조회 실패해도 탈락 안 함 — 점수 0점으로 처리
             if inv_df is not None and cols is not None:
                 fc, ic  = cols
                 any_buy = int(((inv_df[fc] > 0) | (inv_df[ic] > 0)).sum())
@@ -395,11 +405,12 @@ def run_kr_scan():
         except Exception:
             continue
 
+    # [FIX-1] 출력 라벨 실제 log 키에 맞게 수정
     print(f"\n📊 [필터 현황 — 세력매집 전환 패턴]")
     for lbl, key in [("전체","total"),("① 동전주 제외","penny"),
-                      ("② 시총 1000억↑","mktcap"),("③ OBV 상승전환","obv_up"),
-                      ("④ 거래량 스파이크","vol_spike"),("⑤ 수급 확인","seforce"),
-                      ("최종 통과","final")]:
+                      ("② 시총 1000억↑","mktcap"),("③ 바닥반등 조건","bottom"),
+                      ("④ MA20 우상향","uptrend"),("⑤ 거래량 스파이크","vol_spike"),
+                      ("⑥ 수급 확인","seforce"),("최종 통과","final")]:
         print(f"  {lbl:<18} {log[key]:>5}건")
 
     candidates.sort(key=lambda x: x[0], reverse=True)
@@ -409,27 +420,58 @@ def run_kr_scan():
     final_picks = []
     print(f"\n🏆 [TOP {TOP_N}]")
     for rank, (total_score, ticker, breakdown, meta) in enumerate(top_raw, 1):
-        name         = stock.get_market_ticker_name(ticker)
-        summary      = get_company_summary(ticker, name)
-        stars        = "★" * min(total_score // 50, 5) + "☆" * max(5 - total_score // 50, 0)
+        try:
+            name = stock.get_market_ticker_name(ticker)
+        except Exception:
+            try:
+                for mkt in ["KOSPI","KOSDAQ"]:
+                    df_lst = fdr.StockListing(mkt)
+                    col = 'Code' if 'Code' in df_lst.columns else df_lst.columns[0]
+                    nm_col = 'Name' if 'Name' in df_lst.columns else 'name' if 'name' in df_lst.columns else None
+                    if nm_col:
+                        row = df_lst[df_lst[col].astype(str).str.zfill(6)==ticker]
+                        if not row.empty: name = row.iloc[0][nm_col]; break
+                else:
+                    name = ticker
+            except Exception:
+                name = ticker
+
+        summary = get_company_summary(ticker, name)
+
+        # [FIX-7] 최대 점수 170 기준으로 별점 계산 (34점당 별 1개)
+        star_count = min(total_score // 34, 5)
+        stars      = "★" * star_count + "☆" * (5 - star_count)
+
         supply_text  = meta.get('supply_text', '정보없음')
-        expected_ret = round(5.0 + (total_score / 250) * 15.0, 1)
-        top_f        = sorted(breakdown.items(), key=lambda x: x[1], reverse=True)
-        tag_str      = " / ".join([f"{k} {v}점" for k, v in top_f[:3]])
+
+        # [FIX-7] 기대수익 계산 기준 MAX_SCORE(170)으로 수정
+        expected_ret = round(5.0 + (total_score / MAX_SCORE) * 15.0, 1)
+
+        top_f   = sorted(breakdown.items(), key=lambda x: x[1], reverse=True)
+        tag_str = " / ".join([f"{k} {v}점" for k, v in top_f[:3]])
         print(f"  #{rank} {name}({ticker}) | {total_score}점 | {supply_text}")
 
         final_picks.append({
             "rank": rank, "name": name, "code": ticker,
             "company_summary": summary, "supply": supply_text,
             "cur_price": meta.get('cur_close', 0),
-            "score": f"{stars} ({total_score}점/250)",
+            "score": f"{stars} ({total_score}점/{MAX_SCORE})",  # [FIX-7] /250→/170
             "tags": tag_str, "expected_return": f"{expected_ret}%",
             "score_detail": breakdown,
             "meta": {
-                "rsi": meta.get('rsi', 0), "bb_compress": meta.get('bb_compress', 0),
-                "rebound_pct": meta.get('rebound_pct', 0), "vol_ratio": meta.get('vol_ratio', 0),
-                "inst_streak": meta.get('inst_streak', 0), "for_streak": meta.get('for_streak', 0),
-                "mktcap": meta.get('mktcap', 0), "silence_ratio": meta.get('silence_ratio', 0),
+                "rsi":           meta.get('rsi', 0),
+                "bb_compress":   meta.get('bb_compress', 0),
+                "rebound_pct":   meta.get('rebound_pct', 0),
+                "vol_ratio":     meta.get('vol_ratio', 0),
+                "inst_streak":   meta.get('inst_streak', 0),
+                "for_streak":    meta.get('for_streak', 0),
+                "mktcap":        meta.get('mktcap', 0),
+                "silence_ratio": meta.get('silence_ratio', 0),
+                # [FIX-3] 누락 필드 전부 추가
+                "green_days":    meta.get('green_days', 0),
+                "obv_cross":     meta.get('obv_cross', False),
+                "signal":        meta.get('signal', 0),
+                "max_spike":     meta.get('max_spike', 0),
             }
         })
 
@@ -457,9 +499,8 @@ def run_kr_scan():
 
 # ── 텔레그램 메시지 빌드 ───────────────────────────────────────
 
-
 def _signal_label(v):
-    if v >= 70:  return f"{v} 🔴 과매수"
+    if v >= 70:   return f"{v} 🔴 과매수"
     elif v >= 50: return f"{v} 🟡 상승중"
     elif v >= 30: return f"{v} 🟢 진입구간"
     else:         return f"{v} ⚪ 매집중"

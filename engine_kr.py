@@ -503,4 +503,33 @@ def run_kr_scan():
         json.dump(final_output, f, ensure_ascii=False, indent=4, default=json_safe)  # [FIX]
 
     print(f"\n🏁 완료! TOP {len(final_picks)}종목")
-    retur
+   return final_picks
+
+
+if __name__ == "__main__":
+    # 매크로 브리핑 + 뉴스
+    send_telegram(fetch_macro_summary())
+    send_telegram(build_news_briefing())
+
+    # 스캔 실행
+    picks = run_kr_scan()
+
+    # 텔레그램 결과 발송
+    if not picks:
+        send_telegram("⚠️ 오늘 조건 충족 종목 없음")
+    else:
+        today_str = get_market_date()
+        label     = now_label()
+        lines = [f"🏆 <b>KR 바닥반등 TOP {len(picks)} — {ko_date(today_str)} {label}</b>", "━"*24]
+        for p in picks:
+            lines += [
+                f"#{p['rank']} <b>{p['name']}</b> ({p['code']}) {p['score']}",
+                f"  💰 현재가: {p['cur_price']:,}원",
+                f"  📈 기대수익: {p['expected_return']}",
+                f"  🔖 {p['tags']}",
+                f"  🏦 수급: {p['supply']}",
+                f"  📝 {p['company_summary']}",
+                "",
+            ]
+        lines.append("━"*24)
+        send_telegram("\n".join(lines))

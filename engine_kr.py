@@ -85,13 +85,18 @@ def detect_market_regime(start, end):
 
 
 def regime_config(regime):
-    """레짐별 스캐너 설정"""
+    """레짐별 스캐너 설정
+    rs_threshold: RS 필터 하한값 (레짐별 차등)
+      - BULL:    +5  (강세장은 엄격하게 — 시장보다 확실히 앞선 종목만)
+      - NEUTRAL: -3  (횡보장은 소폭 완화 — 시장 수준 또는 약간 뒤처진 종목도 허용)
+      - BEAR:    -10 (약세장은 대폭 완화 — 덜 빠진 종목도 상대적 강세로 간주)
+    """
     if regime == "BULL":
-        return {"top_n": 5, "threshold": 60, "emoji": "🚀", "desc": "공격 모드"}
+        return {"top_n": 5, "threshold": 60, "rs_threshold": 5,   "emoji": "🚀", "desc": "공격 모드"}
     elif regime == "BEAR":
-        return {"top_n": 2, "threshold": 90, "emoji": "🛡️", "desc": "방어 모드"}
+        return {"top_n": 2, "threshold": 90, "rs_threshold": -10, "emoji": "🛡️", "desc": "방어 모드"}
     else:
-        return {"top_n": 5, "threshold": 70, "emoji": "⚖️", "desc": "중립 모드"}
+        return {"top_n": 5, "threshold": 70, "rs_threshold": -3,  "emoji": "⚖️", "desc": "중립 모드"}
 
 
 # ══════════════════════════════════════════════════════════════
@@ -401,10 +406,11 @@ def run_kr_scan():
     cfg = regime_config(regime)
     TOP_N_LOCAL     = cfg['top_n']
     SCORE_THRESHOLD = cfg['threshold']
+    RS_THRESHOLD    = cfg['rs_threshold']
 
     print(f"📅 기준일: {today_str} | {label}")
-    print(f"{cfg['emoji']} 시장 레짐: {regime} ({cfg['desc']}) | TOP {TOP_N_LOCAL}, 임계값 {SCORE_THRESHOLD}점")
-    print(f"🎯 전략: 바닥반등 + MA20 우상향 + 거래량 스파이크 + RS>0 + 수급\n")
+    print(f"{cfg['emoji']} 시장 레짐: {regime} ({cfg['desc']}) | TOP {TOP_N_LOCAL}, 임계값 {SCORE_THRESHOLD}점 | RS ≥ {RS_THRESHOLD:+d}%")
+    print(f"🎯 전략: 바닥반등 + MA20 우상향 + 거래량 스파이크 + RS필터(레짐차등) + 수급\n")
 
     load_dart_corp_codes()
 
@@ -505,9 +511,9 @@ def run_kr_scan():
             with lock:
                 log['vol_spike'] += 1
 
-            # [PRO-1] 상대강도 필터
+            # [PRO-1] 상대강도 필터 (레짐별 차등 임계값)
             rs = calc_relative_strength(df, kospi_df) if kospi_df is not None else 0
-            if rs <= 0:
+            if rs < RS_THRESHOLD:
                 return
             with lock:
                 log['rs_pass'] += 1
@@ -559,10 +565,11 @@ def run_kr_scan():
             continue
 
     print(f"\n📊 [필터 현황 — {regime} 레짐]")
+    rs_label = f"⑥ RS ≥ {RS_THRESHOLD:+d}%"
     for lbl, key in [("전체","total"),("① 동전주 제외","penny"),
                       ("② 시총 필터","mktcap"),("③ 바닥반등 조건","bottom"),
                       ("④ MA20 우상향","uptrend"),("⑤ 거래량 스파이크","vol_spike"),
-                      ("⑥ RS > 0","rs_pass"),("⑦ 수급 확인","seforce"),("최종 통과","final")]:
+                      (rs_label,"rs_pass"),("⑦ 수급 확인","seforce"),("최종 통과","final")]:
         print(f"  {lbl:<18} {log[key]:>5}건")
 
     candidates.sort(key=lambda x: x[0], reverse=True)

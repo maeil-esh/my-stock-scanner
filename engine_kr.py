@@ -503,7 +503,7 @@ def run_kr_scan():
         json.dump(final_output, f, ensure_ascii=False, indent=4, default=json_safe)  # [FIX]
 
     print(f"\n🏁 완료! TOP {len(final_picks)}종목")
-   return final_picks
+    return final_picks
 
 
 if __name__ == "__main__":

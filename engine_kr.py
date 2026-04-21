@@ -16,7 +16,8 @@ import FinanceDataReader as fdr
 from engine_common import (
     DART_API_KEY, get_market_date, get_start_date,
     ko_date, now_label, send_telegram, fetch_macro_summary,
-    build_news_briefing, calc_rsi, calc_obv
+    build_news_briefing, calc_rsi, calc_obv,
+    json_safe                                                   # [FIX] numpy bool 직렬화
 )
 
 
@@ -197,14 +198,14 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
     obv_5d   = df['OBV'].iloc[-6] if len(df) >= 6 else df['OBV'].iloc[0]
     obv_chg  = (obv_now - obv_5d) / (abs(obv_5d) + 1) * 100
 
-    obv_cross = obv_now > 0 and obv_prev <= 0
+    obv_cross = bool(obv_now > 0 and obv_prev <= 0)            # [FIX] np.bool_ → bool
     a = 0
     if obv_cross:
         a = 40
     elif obv_chg > 0:
         a = min(int(obv_chg * 2), 30)
     bd['세력전환'] = a
-    meta['obv_chg']   = round(obv_chg, 2)
+    meta['obv_chg']   = round(float(obv_chg), 2)              # [FIX] np.float64 → float
     meta['obv_cross'] = obv_cross
 
     # ── [B] 녹색 매집 기간 (최대 30점) ─────────────────────────
@@ -230,13 +231,13 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
     signal_prev = stoch_p * 0.6 + rsi_prev * 0.4
 
     c = 0
-    signal_cross = signal_now > 30 and signal_prev <= 30
+    signal_cross = bool(signal_now > 30 and signal_prev <= 30) # [FIX] np.bool_ → bool
     if signal_cross:
         c = 30
     elif 30 < signal_now <= 70:
         c = int(20 - abs(signal_now - 50) * 0.4)
     bd['매매신호']      = max(c, 0)
-    meta['signal']       = round(signal_now, 1)
+    meta['signal']       = round(float(signal_now), 1)         # [FIX] np.float64 → float
     meta['signal_cross'] = signal_cross
 
     # ── [D] 거래량 스파이크 강도 (최대 40점) ────────────────────
@@ -252,8 +253,8 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
     elif max_spike >= 3:  d = 20
     elif max_spike >= 2:  d = 10
     bd['거래량스파이크'] = d
-    meta['max_spike'] = round(max_spike, 1)
-    meta['vol_ratio'] = round(cur_ratio, 2)
+    meta['max_spike'] = round(float(max_spike), 1)             # [FIX] np.float64 → float
+    meta['vol_ratio'] = round(float(cur_ratio), 2)             # [FIX] np.float64 → float
 
     # ── [E] 전일 고가 돌파 (최대 15점) ──────────────────────────
     e = 15 if cur > prev_hi else 0
@@ -274,7 +275,7 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
     meta['supply_text'] = supply_text
     meta['inst_streak'] = inst_streak
     meta['for_streak']  = for_streak
-    meta['rsi']         = round(rsi, 1)
+    meta['rsi']         = round(float(rsi), 1)                 # [FIX] np.float64 → float
     meta['bb_compress'] = 0  # 하위 호환용
 
     return sum(bd.values()), bd, meta
@@ -377,7 +378,7 @@ def run_kr_scan():
             silence_ratio = 0.0
             if len(af) >= 3:
                 sil = af['Volume'].mean() / (last_spike['Volume'] + 1)
-                silence_ratio = round(sil, 2)                  # [FIX] silence_ratio 계산값 보존
+                silence_ratio = round(float(sil), 2)           # [FIX] np.float64 → float
                 if sil > 0.6: return
             with lock:
                 log['vol_spike'] += 1
@@ -410,9 +411,9 @@ def run_kr_scan():
 
             total_score, breakdown, meta = score_stock(df, inv_df, cols, inst_streak, for_streak)
             meta['mktcap']        = mktcap
-            meta['rebound_pct']   = round(rebound_pct, 1)
+            meta['rebound_pct']   = round(float(rebound_pct), 1)  # [FIX] np.float64 → float
             meta['cur_close']     = int(cur)
-            meta['vol_ratio']     = round(cur_vol / (cur_vm20 + 1), 2)
+            meta['vol_ratio']     = round(float(cur_vol) / (float(cur_vm20) + 1), 2)  # [FIX]
             meta['silence_ratio'] = silence_ratio              # [FIX] dead code 해소 — 실값 연결
 
             if total_score >= 60:
@@ -491,7 +492,7 @@ def run_kr_scan():
             except: history_data = []
     history_data.append({"date": today_str, "label": label, "picks": final_picks})
     with open(HISTORY_FILE, 'w', encoding='utf-8') as f:
-        json.dump(history_data, f, ensure_ascii=False, indent=4)
+        json.dump(history_data, f, ensure_ascii=False, indent=4, default=json_safe)  # [FIX]
 
     final_output = {
         "today_picks": final_picks, "scan_label": label,
@@ -499,62 +500,7 @@ def run_kr_scan():
         "filter_log": log, "base_date": today_str,
     }
     with open(DATA_FILE, 'w', encoding='utf-8') as f:
-        json.dump(final_output, f, ensure_ascii=False, indent=4)
+        json.dump(final_output, f, ensure_ascii=False, indent=4, default=json_safe)  # [FIX]
 
     print(f"\n🏁 완료! TOP {len(final_picks)}종목")
-    return final_output
-
-
-# ── 텔레그램 메시지 빌드 ───────────────────────────────────────
-
-def _signal_label(v):
-    if v >= 70:   return f"{v} 🔴 과매수"
-    elif v >= 50: return f"{v} 🟡 상승중"
-    elif v >= 30: return f"{v} 🟢 진입구간"
-    else:         return f"{v} ⚪ 매집중"
-
-def _spike_label(v):
-    if v >= 10: return "🔥 극강 (엔켐형)"
-    elif v >= 5: return "⚡ 강함"
-    elif v >= 3: return "📈 중간"
-    elif v >= 2: return "📊 기본"
-    else:        return "😴 미발생"
-
-def build_kr_message(kr_data: dict) -> str:
-    picks     = kr_data.get("today_picks", [])
-    log       = kr_data.get("filter_log", {})
-    base_date = kr_data.get("base_date", "")
-    label     = kr_data.get("scan_label", "스캔")
-
-    lines = [
-        f"🇰🇷 <b>국장 알파 — {ko_date(base_date)} {label}</b>",
-        f"📋 {log.get('total',0):,}종목 스캔 → 후보 {log.get('final',0)}건",
-        "━" * 24,
-    ]
-
-    if not picks:
-        lines += ["⚠️ 오늘 조건 충족 종목 없음", "💡 신호 없는 날 쉬는 것도 전략입니다."]
-    else:
-        for p in picks:
-            meta = p.get("meta", {})
-            lines += [
-                f"<b>#{p['rank']} {p['name']} ({p['code']})</b>",
-                f"점수: {p.get('score','')}",
-                f"현재가: {p.get('cur_price',0):,}원 | 시총: {meta.get('mktcap',0):,}억",
-                f"수급: {p.get('supply','')}",
-                f"저가반등: +{meta.get('rebound_pct',0)}% | 세력매집: {meta.get('green_days',0)}일",
-                f"세력전환: {'✅ 전환완료' if meta.get('obv_cross') else '⏳ 매집중'} | 매매신호: {_signal_label(meta.get('signal',0))}",
-                f"거래량: {_spike_label(meta.get('max_spike',0))} (최대 {meta.get('max_spike',0)}배) | 현재 {meta.get('vol_ratio',0)}배",
-                f"거래량수축: {meta.get('silence_ratio', 0)} | 기대수익: +{p.get('expected_return','')} (7일 목표)",
-                "━" * 24,
-            ]
-    return "\n".join(lines)
-
-
-# ── 실행 ───────────────────────────────────────────────────────
-
-if __name__ == "__main__":
-    kr_result = run_kr_scan()
-    send_telegram(fetch_macro_summary())
-    send_telegram(build_news_briefing())
-    send_telegram(build_kr_message(kr_result))
+    retur

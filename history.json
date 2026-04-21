@@ -958,5 +958,237 @@
                 }
             }
         ]
+    },
+    {
+        "date": "20260421",
+        "label": "🌙 미장 스캔",
+        "regime": "NEUTRAL",
+        "picks": [
+            {
+                "rank": 1,
+                "name": "글로벌텍스프리",
+                "code": "204620",
+                "company_summary": "글로벌텍스프리",
+                "supply": "정보없음",
+                "cur_price": 5160,
+                "score": "★★☆☆☆ (96점/170)",
+                "tags": "세력전환 40점 / 세력매집 20점 / 거래량스파이크 20점",
+                "expected_return": "13.5%",
+                "score_detail": {
+                    "세력전환": 40,
+                    "세력매집": 20,
+                    "매매신호": 16,
+                    "거래량스파이크": 20,
+                    "고가돌파": 0,
+                    "수급강도": 0
+                },
+                "meta": {
+                    "rsi": 57.2,
+                    "bb_compress": 0,
+                    "rebound_pct": 29.3,
+                    "vol_ratio": 0.62,
+                    "inst_streak": 0,
+                    "for_streak": 0,
+                    "mktcap": 3626,
+                    "silence_ratio": 0.22,
+                    "green_days": 61,
+                    "obv_cross": true,
+                    "signal": 58.9,
+                    "max_spike": 3.1,
+                    "rs": 0,
+                    "trade": {
+                        "entry": 5160,
+                        "stop_loss": 4796,
+                        "target_1": 5886,
+                        "target_2": 6370,
+                        "risk_pct": 7.1,
+                        "reward_pct": 14.1,
+                        "rr_ratio": 2.0,
+                        "atr": 242.1
+                    },
+                    "regime": "NEUTRAL"
+                }
+            },
+            {
+                "rank": 2,
+                "name": "ESR켄달스퀘어리츠",
+                "code": "365550",
+                "company_summary": "ESR켄달스퀘어리츠",
+                "supply": "정보없음",
+                "cur_price": 4535,
+                "score": "★★☆☆☆ (93점/170)",
+                "tags": "세력전환 30점 / 세력매집 20점 / 매매신호 18점",
+                "expected_return": "13.2%",
+                "score_detail": {
+                    "세력전환": 30,
+                    "세력매집": 20,
+                    "매매신호": 18,
+                    "거래량스파이크": 10,
+                    "고가돌파": 15,
+                    "수급강도": 0
+                },
+                "meta": {
+                    "rsi": 57.3,
+                    "bb_compress": 0,
+                    "rebound_pct": 12.5,
+                    "vol_ratio": 1.17,
+                    "inst_streak": 0,
+                    "for_streak": 0,
+                    "mktcap": 11160,
+                    "silence_ratio": 0.47,
+                    "green_days": 62,
+                    "obv_cross": false,
+                    "signal": 53.4,
+                    "max_spike": 2.1,
+                    "rs": 0,
+                    "trade": {
+                        "entry": 4535,
+                        "stop_loss": 4366,
+                        "target_1": 4872,
+                        "target_2": 5097,
+                        "risk_pct": 3.7,
+                        "reward_pct": 7.4,
+                        "rr_ratio": 2.0,
+                        "atr": 112.5
+                    },
+                    "regime": "NEUTRAL"
+                }
+            },
+            {
+                "rank": 3,
+                "name": "모토닉",
+                "code": "009680",
+                "company_summary": "모토닉",
+                "supply": "정보없음",
+                "cur_price": 10960,
+                "score": "★★☆☆☆ (84점/170)",
+                "tags": "세력전환 30점 / 거래량스파이크 30점 / 세력매집 12점",
+                "expected_return": "12.4%",
+                "score_detail": {
+                    "세력전환": 30,
+                    "세력매집": 12,
+                    "매매신호": 12,
+                    "거래량스파이크": 30,
+                    "고가돌파": 0,
+                    "수급강도": 0
+                },
+                "meta": {
+                    "rsi": 55.0,
+                    "bb_compress": 0,
+                    "rebound_pct": 14.3,
+                    "vol_ratio": 0.89,
+                    "inst_streak": 0,
+                    "for_streak": 0,
+                    "mktcap": 2381,
+                    "silence_ratio": 0.07,
+                    "green_days": 54,
+                    "obv_cross": false,
+                    "signal": 68.0,
+                    "max_spike": 5.6,
+                    "rs": 0,
+                    "trade": {
+                        "entry": 10960,
+                        "stop_loss": 10638,
+                        "target_1": 11602,
+                        "target_2": 12031,
+                        "risk_pct": 2.9,
+                        "reward_pct": 5.9,
+                        "rr_ratio": 2.0,
+                        "atr": 214.3
+                    },
+                    "regime": "NEUTRAL"
+                }
+            },
+            {
+                "rank": 4,
+                "name": "한솔제지",
+                "code": "213500",
+                "company_summary": "한솔제지",
+                "supply": "정보없음",
+                "cur_price": 8840,
+                "score": "★★☆☆☆ (80점/170)",
+                "tags": "세력전환 22점 / 세력매집 20점 / 거래량스파이크 20점",
+                "expected_return": "12.1%",
+                "score_detail": {
+                    "세력전환": 22,
+                    "세력매집": 20,
+                    "매매신호": 18,
+                    "거래량스파이크": 20,
+                    "고가돌파": 0,
+                    "수급강도": 0
+                },
+                "meta": {
+                    "rsi": 54.0,
+                    "bb_compress": 0,
+                    "rebound_pct": 12.6,
+                    "vol_ratio": 0.48,
+                    "inst_streak": 0,
+                    "for_streak": 0,
+                    "mktcap": 2103,
+                    "silence_ratio": 0.29,
+                    "green_days": 61,
+                    "obv_cross": false,
+                    "signal": 54.4,
+                    "max_spike": 4.7,
+                    "rs": 0,
+                    "trade": {
+                        "entry": 8840,
+                        "stop_loss": 8342,
+                        "target_1": 9834,
+                        "target_2": 10497,
+                        "risk_pct": 5.6,
+                        "reward_pct": 11.2,
+                        "rr_ratio": 2.0,
+                        "atr": 331.4
+                    },
+                    "regime": "NEUTRAL"
+                }
+            },
+            {
+                "rank": 5,
+                "name": "KISCO홀딩스",
+                "code": "001940",
+                "company_summary": "KISCO홀딩스",
+                "supply": "정보없음",
+                "cur_price": 27050,
+                "score": "★★☆☆☆ (73점/170)",
+                "tags": "세력전환 30점 / 세력매집 20점 / 매매신호 13점",
+                "expected_return": "11.4%",
+                "score_detail": {
+                    "세력전환": 30,
+                    "세력매집": 20,
+                    "매매신호": 13,
+                    "거래량스파이크": 10,
+                    "고가돌파": 0,
+                    "수급강도": 0
+                },
+                "meta": {
+                    "rsi": 59.9,
+                    "bb_compress": 0,
+                    "rebound_pct": 19.4,
+                    "vol_ratio": 0.59,
+                    "inst_streak": 0,
+                    "for_streak": 0,
+                    "mktcap": 3834,
+                    "silence_ratio": 0.45,
+                    "green_days": 60,
+                    "obv_cross": false,
+                    "signal": 66.9,
+                    "max_spike": 2.2,
+                    "rs": 0,
+                    "trade": {
+                        "entry": 27050,
+                        "stop_loss": 25764,
+                        "target_1": 29621,
+                        "target_2": 31335,
+                        "risk_pct": 4.8,
+                        "reward_pct": 9.5,
+                        "rr_ratio": 2.0,
+                        "atr": 857.1
+                    },
+                    "regime": "NEUTRAL"
+                }
+            }
+        ]
     }
 ]

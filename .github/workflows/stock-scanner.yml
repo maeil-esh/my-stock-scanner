@@ -2,7 +2,10 @@ name: Stock Scanner
 
 on:
   schedule:
-    - cron: '0 * * * *'  # 매시간 실행 (필요 시 수정)
+    - cron: '30 0 * * 1-5'   # 09:30 KST  (KR 장 시작)
+    - cron: '0 4  * * 1-5'   # 13:00 KST  (KR 장 중간)
+    - cron: '0 7  * * 1-5'   # 16:00 KST  (KR 장 마감)
+    - cron: '30 22 * * 0-4'  # 07:30 KST  (US 프리마켓)
   workflow_dispatch:
 
 jobs:

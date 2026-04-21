@@ -677,7 +677,7 @@ if __name__ == "__main__":
             "━" * 24,
         ]
         for p in picks:
-            chart_url = f"https://finance.naver.com/item/fchart.naver?code={p['code']}"
+            chart_url = f"https://m.stock.naver.com/domestic/stock/{p['code']}/total"
             trade  = p['meta'].get('trade')
             rs_val = p['meta'].get('rs', 0)
             sd     = p.get('score_detail', {})

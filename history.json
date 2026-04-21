@@ -262,5 +262,237 @@
         "label": "🌙 미장 스캔",
         "regime": "NEUTRAL",
         "picks": []
+    },
+    {
+        "date": "20260421",
+        "label": "🌙 미장 스캔",
+        "regime": "NEUTRAL",
+        "picks": [
+            {
+                "rank": 1,
+                "name": "성신양회",
+                "code": "004980",
+                "company_summary": "성신양회",
+                "supply": "정보없음",
+                "cur_price": 11820,
+                "score": "★★★☆☆ (116점/170)",
+                "tags": "거래량스파이크 40점 / 세력전환 30점 / 매매신호 19점",
+                "expected_return": "15.2%",
+                "score_detail": {
+                    "세력전환": 30,
+                    "세력매집": 12,
+                    "매매신호": 19,
+                    "거래량스파이크": 40,
+                    "고가돌파": 15,
+                    "수급강도": 0
+                },
+                "meta": {
+                    "rsi": 60.5,
+                    "bb_compress": 0,
+                    "rebound_pct": 35.7,
+                    "vol_ratio": 4.28,
+                    "inst_streak": 0,
+                    "for_streak": 0,
+                    "mktcap": 2897,
+                    "silence_ratio": 0.0,
+                    "green_days": 58,
+                    "obv_cross": false,
+                    "signal": 51.0,
+                    "max_spike": 15.1,
+                    "rs": 0,
+                    "trade": {
+                        "entry": 11820,
+                        "stop_loss": 10401,
+                        "target_1": 14657,
+                        "target_2": 16548,
+                        "risk_pct": 12.0,
+                        "reward_pct": 24.0,
+                        "rr_ratio": 2.0,
+                        "atr": 945.7
+                    },
+                    "regime": "NEUTRAL"
+                }
+            },
+            {
+                "rank": 2,
+                "name": "쏘카",
+                "code": "403550",
+                "company_summary": "쏘카",
+                "supply": "정보없음",
+                "cur_price": 11910,
+                "score": "★★☆☆☆ (100점/170)",
+                "tags": "거래량스파이크 30점 / 세력전환 29점 / 고가돌파 15점",
+                "expected_return": "13.8%",
+                "score_detail": {
+                    "세력전환": 29,
+                    "세력매집": 12,
+                    "매매신호": 14,
+                    "거래량스파이크": 30,
+                    "고가돌파": 15,
+                    "수급강도": 0
+                },
+                "meta": {
+                    "rsi": 57.6,
+                    "bb_compress": 0,
+                    "rebound_pct": 13.0,
+                    "vol_ratio": 2.91,
+                    "inst_streak": 0,
+                    "for_streak": 0,
+                    "mktcap": 3911,
+                    "silence_ratio": 0.0,
+                    "green_days": 54,
+                    "obv_cross": false,
+                    "signal": 64.0,
+                    "max_spike": 5.1,
+                    "rs": 0,
+                    "trade": {
+                        "entry": 11910,
+                        "stop_loss": 11016,
+                        "target_1": 13697,
+                        "target_2": 14888,
+                        "risk_pct": 7.5,
+                        "reward_pct": 15.0,
+                        "rr_ratio": 2.0,
+                        "atr": 595.7
+                    },
+                    "regime": "NEUTRAL"
+                }
+            },
+            {
+                "rank": 3,
+                "name": "태영건설",
+                "code": "009410",
+                "company_summary": "태영건설",
+                "supply": "정보없음",
+                "cur_price": 2125,
+                "score": "★★☆☆☆ (99점/170)",
+                "tags": "세력전환 30점 / 거래량스파이크 30점 / 고가돌파 15점",
+                "expected_return": "13.7%",
+                "score_detail": {
+                    "세력전환": 30,
+                    "세력매집": 12,
+                    "매매신호": 12,
+                    "거래량스파이크": 30,
+                    "고가돌파": 15,
+                    "수급강도": 0
+                },
+                "meta": {
+                    "rsi": 60.9,
+                    "bb_compress": 0,
+                    "rebound_pct": 40.7,
+                    "vol_ratio": 2.5,
+                    "inst_streak": 0,
+                    "for_streak": 0,
+                    "mktcap": 6323,
+                    "silence_ratio": 0.0,
+                    "green_days": 54,
+                    "obv_cross": false,
+                    "signal": 67.7,
+                    "max_spike": 6.4,
+                    "rs": 0,
+                    "trade": {
+                        "entry": 2125,
+                        "stop_loss": 1872,
+                        "target_1": 2630,
+                        "target_2": 2967,
+                        "risk_pct": 11.9,
+                        "reward_pct": 23.8,
+                        "rr_ratio": 2.0,
+                        "atr": 168.5
+                    },
+                    "regime": "NEUTRAL"
+                }
+            },
+            {
+                "rank": 4,
+                "name": "코오롱글로벌",
+                "code": "003070",
+                "company_summary": "코오롱글로벌",
+                "supply": "정보없음",
+                "cur_price": 11860,
+                "score": "★★☆☆☆ (99점/170)",
+                "tags": "세력전환 30점 / 거래량스파이크 30점 / 세력매집 20점",
+                "expected_return": "13.7%",
+                "score_detail": {
+                    "세력전환": 30,
+                    "세력매집": 20,
+                    "매매신호": 19,
+                    "거래량스파이크": 30,
+                    "고가돌파": 0,
+                    "수급강도": 0
+                },
+                "meta": {
+                    "rsi": 56.1,
+                    "bb_compress": 0,
+                    "rebound_pct": 38.6,
+                    "vol_ratio": 1.01,
+                    "inst_streak": 0,
+                    "for_streak": 0,
+                    "mktcap": 3015,
+                    "silence_ratio": 0.15,
+                    "green_days": 61,
+                    "obv_cross": false,
+                    "signal": 49.0,
+                    "max_spike": 7.2,
+                    "rs": 0,
+                    "trade": {
+                        "entry": 11860,
+                        "stop_loss": 10560,
+                        "target_1": 14459,
+                        "target_2": 16192,
+                        "risk_pct": 11.0,
+                        "reward_pct": 21.9,
+                        "rr_ratio": 2.0,
+                        "atr": 866.4
+                    },
+                    "regime": "NEUTRAL"
+                }
+            },
+            {
+                "rank": 5,
+                "name": "송원산업",
+                "code": "004430",
+                "company_summary": "송원산업",
+                "supply": "정보없음",
+                "cur_price": 10410,
+                "score": "★★☆☆☆ (97점/170)",
+                "tags": "세력전환 40점 / 거래량스파이크 30점 / 고가돌파 15점",
+                "expected_return": "13.6%",
+                "score_detail": {
+                    "세력전환": 40,
+                    "세력매집": 12,
+                    "매매신호": 0,
+                    "거래량스파이크": 30,
+                    "고가돌파": 15,
+                    "수급강도": 0
+                },
+                "meta": {
+                    "rsi": 72.2,
+                    "bb_compress": 0,
+                    "rebound_pct": 22.9,
+                    "vol_ratio": 7.01,
+                    "inst_streak": 0,
+                    "for_streak": 0,
+                    "mktcap": 2498,
+                    "silence_ratio": 0.0,
+                    "green_days": 55,
+                    "obv_cross": true,
+                    "signal": 74.2,
+                    "max_spike": 7.0,
+                    "rs": 0,
+                    "trade": {
+                        "entry": 10410,
+                        "stop_loss": 9898,
+                        "target_1": 11432,
+                        "target_2": 12113,
+                        "risk_pct": 4.9,
+                        "reward_pct": 9.8,
+                        "rr_ratio": 2.0,
+                        "atr": 340.7
+                    },
+                    "regime": "NEUTRAL"
+                }
+            }
+        ]
     }
 ]

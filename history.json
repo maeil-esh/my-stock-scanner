@@ -1422,5 +1422,237 @@
                 }
             }
         ]
+    },
+    {
+        "date": "20260422",
+        "label": "📊 장 중간 스캔",
+        "regime": "NEUTRAL",
+        "picks": [
+            {
+                "rank": 1,
+                "name": "하림",
+                "code": "136480",
+                "company_summary": "하림",
+                "supply": "정보없음",
+                "cur_price": 3325,
+                "score": "★★★☆☆ (106점/170)",
+                "tags": "세력전환 30점 / 거래량스파이크 30점 / 매매신호 19점",
+                "expected_return": "14.4%",
+                "score_detail": {
+                    "세력전환": 30,
+                    "세력매집": 12,
+                    "매매신호": 19,
+                    "거래량스파이크": 30,
+                    "고가돌파": 15,
+                    "수급강도": 0
+                },
+                "meta": {
+                    "rsi": 65.8,
+                    "bb_compress": 0,
+                    "rebound_pct": 17.5,
+                    "vol_ratio": 5.76,
+                    "inst_streak": 0,
+                    "for_streak": 0,
+                    "mktcap": 3558,
+                    "silence_ratio": 0.0,
+                    "green_days": 57,
+                    "obv_cross": false,
+                    "signal": 51.6,
+                    "max_spike": 9.6,
+                    "rs": 0,
+                    "trade": {
+                        "entry": 3325,
+                        "stop_loss": 3213,
+                        "target_1": 3547,
+                        "target_2": 3696,
+                        "risk_pct": 3.4,
+                        "reward_pct": 6.7,
+                        "rr_ratio": 2.0,
+                        "atr": 74.3
+                    },
+                    "regime": "NEUTRAL"
+                }
+            },
+            {
+                "rank": 2,
+                "name": "시노펙스",
+                "code": "025320",
+                "company_summary": "시노펙스",
+                "supply": "정보없음",
+                "cur_price": 6200,
+                "score": "★★☆☆☆ (87점/170)",
+                "tags": "세력전환 30점 / 거래량스파이크 30점 / 매매신호 15점",
+                "expected_return": "12.7%",
+                "score_detail": {
+                    "세력전환": 30,
+                    "세력매집": 12,
+                    "매매신호": 15,
+                    "거래량스파이크": 30,
+                    "고가돌파": 0,
+                    "수급강도": 0
+                },
+                "meta": {
+                    "rsi": 54.2,
+                    "bb_compress": 0,
+                    "rebound_pct": 17.6,
+                    "vol_ratio": 0.61,
+                    "inst_streak": 0,
+                    "for_streak": 0,
+                    "mktcap": 5704,
+                    "silence_ratio": 0.12,
+                    "green_days": 52,
+                    "obv_cross": false,
+                    "signal": 60.7,
+                    "max_spike": 6.1,
+                    "rs": 0,
+                    "trade": {
+                        "entry": 6200,
+                        "stop_loss": 5901,
+                        "target_1": 6797,
+                        "target_2": 7196,
+                        "risk_pct": 4.8,
+                        "reward_pct": 9.6,
+                        "rr_ratio": 2.0,
+                        "atr": 199.3
+                    },
+                    "regime": "NEUTRAL"
+                }
+            },
+            {
+                "rank": 3,
+                "name": "미원상사",
+                "code": "002840",
+                "company_summary": "미원상사",
+                "supply": "정보없음",
+                "cur_price": 138600,
+                "score": "★★☆☆☆ (84점/170)",
+                "tags": "세력전환 30점 / 세력매집 20점 / 거래량스파이크 20점",
+                "expected_return": "12.4%",
+                "score_detail": {
+                    "세력전환": 30,
+                    "세력매집": 20,
+                    "매매신호": 14,
+                    "거래량스파이크": 20,
+                    "고가돌파": 0,
+                    "수급강도": 0
+                },
+                "meta": {
+                    "rsi": 51.8,
+                    "bb_compress": 0,
+                    "rebound_pct": 6.6,
+                    "vol_ratio": 0.73,
+                    "inst_streak": 0,
+                    "for_streak": 0,
+                    "mktcap": 6555,
+                    "silence_ratio": 0.5,
+                    "green_days": 63,
+                    "obv_cross": false,
+                    "signal": 63.1,
+                    "max_spike": 3.4,
+                    "rs": 0,
+                    "trade": {
+                        "entry": 138600,
+                        "stop_loss": 132900,
+                        "target_1": 150000,
+                        "target_2": 157600,
+                        "risk_pct": 4.1,
+                        "reward_pct": 8.2,
+                        "rr_ratio": 2.0,
+                        "atr": 3800.0
+                    },
+                    "regime": "NEUTRAL"
+                }
+            },
+            {
+                "rank": 4,
+                "name": "더블유게임즈",
+                "code": "192080",
+                "company_summary": "더블유게임즈",
+                "supply": "정보없음",
+                "cur_price": 51300,
+                "score": "★★☆☆☆ (83점/170)",
+                "tags": "세력전환 30점 / 세력매집 20점 / 거래량스파이크 20점",
+                "expected_return": "12.3%",
+                "score_detail": {
+                    "세력전환": 30,
+                    "세력매집": 20,
+                    "매매신호": 13,
+                    "거래량스파이크": 20,
+                    "고가돌파": 0,
+                    "수급강도": 0
+                },
+                "meta": {
+                    "rsi": 54.3,
+                    "bb_compress": 0,
+                    "rebound_pct": 9.1,
+                    "vol_ratio": 0.31,
+                    "inst_streak": 0,
+                    "for_streak": 0,
+                    "mktcap": 10840,
+                    "silence_ratio": 0.31,
+                    "green_days": 60,
+                    "obv_cross": false,
+                    "signal": 65.4,
+                    "max_spike": 3.3,
+                    "rs": 0,
+                    "trade": {
+                        "entry": 51300,
+                        "stop_loss": 49285,
+                        "target_1": 55328,
+                        "target_2": 58014,
+                        "risk_pct": 3.9,
+                        "reward_pct": 7.9,
+                        "rr_ratio": 2.0,
+                        "atr": 1342.9
+                    },
+                    "regime": "NEUTRAL"
+                }
+            },
+            {
+                "rank": 5,
+                "name": "현대퓨처넷",
+                "code": "126560",
+                "company_summary": "현대퓨처넷",
+                "supply": "정보없음",
+                "cur_price": 3450,
+                "score": "★★☆☆☆ (82점/170)",
+                "tags": "거래량스파이크 30점 / 세력전환 28점 / 세력매집 12점",
+                "expected_return": "12.2%",
+                "score_detail": {
+                    "세력전환": 28,
+                    "세력매집": 12,
+                    "매매신호": 12,
+                    "거래량스파이크": 30,
+                    "고가돌파": 0,
+                    "수급강도": 0
+                },
+                "meta": {
+                    "rsi": 60.4,
+                    "bb_compress": 0,
+                    "rebound_pct": 13.7,
+                    "vol_ratio": 0.24,
+                    "inst_streak": 0,
+                    "for_streak": 0,
+                    "mktcap": 3802,
+                    "silence_ratio": 0.37,
+                    "green_days": 58,
+                    "obv_cross": false,
+                    "signal": 69.1,
+                    "max_spike": 8.2,
+                    "rs": 0,
+                    "trade": {
+                        "entry": 3450,
+                        "stop_loss": 3343,
+                        "target_1": 3663,
+                        "target_2": 3805,
+                        "risk_pct": 3.1,
+                        "reward_pct": 6.2,
+                        "rr_ratio": 2.0,
+                        "atr": 71.1
+                    },
+                    "regime": "NEUTRAL"
+                }
+            }
+        ]
     }
 ]

@@ -12,6 +12,7 @@ engine_kr.py — 국장 바닥반등+거래량 스캐너 (PRO v2)
 """
 import os, json, datetime, time
 import threading
+import numpy as np
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import pandas as pd
 import requests

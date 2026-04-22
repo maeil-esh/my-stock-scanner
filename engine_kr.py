@@ -34,8 +34,30 @@ MAX_SCORE    = 170
 MKTCAP_MIN   = 2000
 MKTCAP_MAX   = 30000
 
-# fdr.StockListing() 에서 수집한 업종·제품 정보 캐시 (ticker → 설명 문자열)
-_sector_cache: dict = {}
+# 네이버 모바일 API 응답 캐시 (ticker → dict) — 가격/업종 공용
+_naver_basic_cache: dict = {}
+
+
+def _fetch_naver_basic(ticker: str) -> dict:
+    """
+    네이버 모바일 주식 기본 API
+    주요 필드: closePrice, industryGroupKorName, stockName, marketType
+    """
+    if ticker in _naver_basic_cache:
+        return _naver_basic_cache[ticker]
+    try:
+        url = f"https://m.stock.naver.com/api/stock/{ticker}/basic"
+        headers = {
+            'User-Agent': 'Mozilla/5.0',
+            'Referer':    'https://m.stock.naver.com/'
+        }
+        r    = requests.get(url, headers=headers, timeout=5)
+        data = r.json()
+        _naver_basic_cache[ticker] = data
+        return data
+    except Exception:
+        _naver_basic_cache[ticker] = {}
+        return {}
 
 
 # ══════════════════════════════════════════════════════════════
@@ -62,28 +84,33 @@ def grade_emoji(score_100):
 
 def get_realtime_price(ticker):
     """
-    네이버 금융 내부 API — 장중 실시간, 장외 최종가
-    실패 시 None 반환 → 호출부에서 전일 종가로 fallback
+    실시간 현재가 — 네이버 모바일 API 1순위, PC 스크랩 2순위
+    실패 시 None → 호출부에서 전일 종가 fallback
     """
+    # 1순위: 네이버 모바일 JSON API (캐시 공용)
     try:
-        url = (
-            f"https://polling.finance.naver.com/api/realtime"
-            f"?query=SERVICE_ITEM:ITEM:{ticker}"
-        )
-        headers = {
-            'User-Agent': 'Mozilla/5.0',
-            'Referer': f'https://finance.naver.com/item/main.naver?code={ticker}'
-        }
+        data      = _fetch_naver_basic(ticker)
+        price_str = data.get('closePrice', '')
+        if price_str:
+            return int(str(price_str).replace(',', ''))
+    except Exception:
+        pass
+
+    # 2순위: 네이버 PC 시세 페이지 스크랩
+    try:
+        url = f"https://finance.naver.com/item/main.naver?code={ticker}"
+        headers = {'User-Agent': 'Mozilla/5.0', 'Accept-Language': 'ko-KR'}
         r = requests.get(url, headers=headers, timeout=5)
-        data = r.json()
-        price = (
-            data['result']['areas'][0]['datas'][0].get('nv')
-            or data['result']['areas'][0]['datas'][0].get('sv')
-        )
-        return int(price) if price else None
-    except Exception as e:
-        print(f"  ⚠️  실시간가 실패({ticker}): {e}")
-        return None
+        r.encoding = 'euc-kr'
+        soup  = BeautifulSoup(r.text, 'html.parser')
+        tag   = soup.select_one('p.no_today strong')
+        if tag:
+            return int(tag.text.strip().replace(',', ''))
+    except Exception:
+        pass
+
+    print(f"  ⚠️  실시간가 실패({ticker}): 전일 종가 사용")
+    return None
 
 
 # ══════════════════════════════════════════════════════════════
@@ -91,10 +118,21 @@ def get_realtime_price(ticker):
 # ══════════════════════════════════════════════════════════════
 
 def detect_market_regime(start, end):
+    kospi = None
+    for sym in ['KS11', '^KS11', 'KOSPI']:
+        try:
+            df = fdr.DataReader(sym, start, end)
+            if df is not None and len(df) >= 60:
+                kospi = df
+                break
+        except Exception:
+            continue
+
+    if kospi is None or len(kospi) < 60:
+        print("  ⚠️  KOSPI 데이터 부족 → NEUTRAL")
+        return "NEUTRAL", None
+
     try:
-        kospi = fdr.DataReader('KS11', start, end)
-        if len(kospi) < 200:
-            return "NEUTRAL", None
         ma200 = kospi['Close'].rolling(200).mean().iloc[-1]
         cur   = kospi['Close'].iloc[-1]
         ratio = cur / ma200
@@ -105,8 +143,8 @@ def detect_market_regime(start, end):
         else:
             return "NEUTRAL", kospi
     except Exception as e:
-        print(f"  ⚠️  레짐 감지 실패: {e}")
-        return "NEUTRAL", None
+        print(f"  ⚠️  레짐 계산 실패: {e}")
+        return "NEUTRAL", kospi
 
 
 def regime_config(regime):
@@ -189,25 +227,28 @@ def _find_cap_col(df):
 
 
 def get_company_summary(ticker, name):
-    # 1순위: fdr StockListing에서 수집한 업종·제품 (가장 안정적)
-    cached = _sector_cache.get(ticker)
-    if cached:
-        return cached
+    # 1순위: 네이버 모바일 JSON API (캐시 공용, 가장 안정적)
+    try:
+        data     = _fetch_naver_basic(ticker)
+        industry = data.get('industryGroupKorName', '').strip()
+        mkt      = data.get('marketType', '').strip()      # KOSPI / KOSDAQ
+        parts    = []
+        if mkt:
+            parts.append(f"[{mkt}]")
+        if industry:
+            parts.append(industry)
+        if parts:
+            return ' '.join(parts)
+    except Exception:
+        pass
 
-    # 2순위: 네이버 금융 기업정보 페이지 스크랩
+    # 2순위: 네이버 PC 기업정보 페이지 스크랩
     try:
         url = f"https://finance.naver.com/item/coinfo.naver?code={ticker}"
         headers = {'User-Agent': 'Mozilla/5.0', 'Accept-Language': 'ko-KR,ko;q=0.9'}
         r = requests.get(url, headers=headers, timeout=6)
         r.encoding = 'euc-kr'
         soup = BeautifulSoup(r.text, 'html.parser')
-
-        for sel in ['.coinfo_point_txt p', '.summary_txt']:
-            tag = soup.select_one(sel)
-            if tag and tag.text.strip():
-                text = tag.text.strip().replace('\n', ' ')
-                return (text[:120] + '...') if len(text) > 120 else text
-
         rows  = soup.select('.coinfo_table tr')
         parts = {}
         for row in rows:
@@ -220,14 +261,13 @@ def get_company_summary(ticker, name):
                         parts[key] = val[:40]
         if parts:
             desc = []
-            if '업종'    in parts: desc.append(f"[{parts['업종']}]")
-            if '주요제품' in parts: desc.append(parts['주요제품'])
+            if '업종'     in parts: desc.append(f"[{parts['업종']}]")
+            if '주요제품'  in parts: desc.append(parts['주요제품'])
             elif '주요사업' in parts: desc.append(parts['주요사업'])
             return ' '.join(desc)
     except Exception:
         pass
 
-    # 3순위: 종목명만 반환
     return name
 
 
@@ -418,15 +458,6 @@ def run_kr_scan():
                     continue
                 cap = int(cap_raw / 1e8) if cap_raw > 1e6 else int(cap_raw)
                 mktcap_cache[ticker_s] = cap
-
-                # 업종/제품 캐시
-                parts = []
-                if sector_col and str(row.get(sector_col, '')).strip():
-                    parts.append(f"[{str(row[sector_col]).strip()}]")
-                if product_col and str(row.get(product_col, '')).strip():
-                    parts.append(str(row[product_col]).strip()[:50])
-                if parts:
-                    _sector_cache[ticker_s] = ' '.join(parts)
 
                 if MKTCAP_MIN <= cap <= MKTCAP_MAX:
                     all_tickers.append(ticker_s)

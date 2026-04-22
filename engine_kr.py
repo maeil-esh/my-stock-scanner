@@ -34,6 +34,9 @@ MAX_SCORE    = 170
 MKTCAP_MIN   = 2000
 MKTCAP_MAX   = 30000
 
+# fdr.StockListing() 에서 수집한 업종·제품 정보 캐시 (ticker → 설명 문자열)
+_sector_cache: dict = {}
+
 
 # ══════════════════════════════════════════════════════════════
 #  100점 환산 + 등급 이모티콘
@@ -186,6 +189,12 @@ def _find_cap_col(df):
 
 
 def get_company_summary(ticker, name):
+    # 1순위: fdr StockListing에서 수집한 업종·제품 (가장 안정적)
+    cached = _sector_cache.get(ticker)
+    if cached:
+        return cached
+
+    # 2순위: 네이버 금융 기업정보 페이지 스크랩
     try:
         url = f"https://finance.naver.com/item/coinfo.naver?code={ticker}"
         headers = {'User-Agent': 'Mozilla/5.0', 'Accept-Language': 'ko-KR,ko;q=0.9'}
@@ -193,14 +202,12 @@ def get_company_summary(ticker, name):
         r.encoding = 'euc-kr'
         soup = BeautifulSoup(r.text, 'html.parser')
 
-        # 1순위: 기업 설명 텍스트
         for sel in ['.coinfo_point_txt p', '.summary_txt']:
             tag = soup.select_one(sel)
             if tag and tag.text.strip():
                 text = tag.text.strip().replace('\n', ' ')
                 return (text[:120] + '...') if len(text) > 120 else text
 
-        # 2순위: 업종 + 주요제품 조합
         rows  = soup.select('.coinfo_table tr')
         parts = {}
         for row in rows:
@@ -213,12 +220,14 @@ def get_company_summary(ticker, name):
                         parts[key] = val[:40]
         if parts:
             desc = []
-            if '업종'   in parts: desc.append(f"[{parts['업종']}]")
+            if '업종'    in parts: desc.append(f"[{parts['업종']}]")
             if '주요제품' in parts: desc.append(parts['주요제품'])
             elif '주요사업' in parts: desc.append(parts['주요사업'])
             return ' '.join(desc)
     except Exception:
         pass
+
+    # 3순위: 종목명만 반환
     return name
 
 
@@ -398,15 +407,29 @@ def run_kr_scan():
             cap_col  = _find_cap_col(df_cap)
             if not cap_col:
                 raise ValueError(f"{market} 시총 컬럼 없음")
-            for _, row in df_cap.iterrows():
-                ticker_s = str(row[code_col]).zfill(6)
-                cap_raw  = row[cap_col]
-                if not cap_raw or cap_raw != cap_raw:
-                    continue
-                cap = int(cap_raw / 1e8) if cap_raw > 1e6 else int(cap_raw)
-                mktcap_cache[ticker_s] = cap
-                if MKTCAP_MIN <= cap <= MKTCAP_MAX:
-                    all_tickers.append(ticker_s)
+            # 업종·제품 컬럼 탐색
+                sector_col  = next((c for c in ['Sector','sector','업종'] if c in df_cap.columns), None)
+                product_col = next((c for c in ['Industry','industry','주요제품'] if c in df_cap.columns), None)
+
+                for _, row in df_cap.iterrows():
+                    ticker_s = str(row[code_col]).zfill(6)
+                    cap_raw  = row[cap_col]
+                    if not cap_raw or cap_raw != cap_raw:
+                        continue
+                    cap = int(cap_raw / 1e8) if cap_raw > 1e6 else int(cap_raw)
+                    mktcap_cache[ticker_s] = cap
+
+                    # 업종/제품 캐시 — 네이버 스크랩 fallback 대비
+                    parts = []
+                    if sector_col and str(row.get(sector_col, '')).strip():
+                        parts.append(f"[{str(row[sector_col]).strip()}]")
+                    if product_col and str(row.get(product_col, '')).strip():
+                        parts.append(str(row[product_col]).strip()[:50])
+                    if parts:
+                        _sector_cache[ticker_s] = ' '.join(parts)
+
+                    if MKTCAP_MIN <= cap <= MKTCAP_MAX:
+                        all_tickers.append(ticker_s)
         print(f"  → 필터 통과: {len(all_tickers)}종목")
     except Exception as e:
         print(f"  ❌ 시총 필터 실패: {e} → 스캔 중단")

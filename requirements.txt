@@ -1,8 +1,8 @@
-pykrx
-pandas
-finance-datareader
-yfinance
-requests
-beautifulsoup4
-numpy
-lxml
+pykrx>=1.0.47
+pandas>=2.0.0,<3.0.0
+finance-datareader>=0.9.50
+yfinance>=0.2.40
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+numpy>=1.26.0,<2.0.0
+lxml>=5.0.0

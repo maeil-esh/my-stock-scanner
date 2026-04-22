@@ -25,7 +25,7 @@
                 "vol_ratio": 6.42,
                 "inst_streak": 0,
                 "for_streak": 0,
-                "mktcap": 3515,
+                "mktcap": 3531,
                 "silence_ratio": 0.0,
                 "green_days": 57,
                 "obv_cross": false,
@@ -42,7 +42,8 @@
                     "rr_ratio": 2.0,
                     "atr": 74.3
                 },
-                "regime": "NEUTRAL"
+                "regime": "NEUTRAL",
+                "rt_price_used": false
             }
         },
         {
@@ -70,7 +71,7 @@
                 "vol_ratio": 1.0,
                 "inst_streak": 0,
                 "for_streak": 0,
-                "mktcap": 11283,
+                "mktcap": 11320,
                 "silence_ratio": 0.47,
                 "green_days": 63,
                 "obv_cross": false,
@@ -87,7 +88,8 @@
                     "rr_ratio": 2.0,
                     "atr": 106.4
                 },
-                "regime": "NEUTRAL"
+                "regime": "NEUTRAL",
+                "rt_price_used": false
             }
         },
         {
@@ -132,97 +134,8 @@
                     "rr_ratio": 2.0,
                     "atr": 199.3
                 },
-                "regime": "NEUTRAL"
-            }
-        },
-        {
-            "rank": 4,
-            "name": "미원상사",
-            "code": "002840",
-            "company_summary": "미원상사",
-            "supply": "정보없음",
-            "cur_price": 139600,
-            "score": "★★☆☆☆ (82점/170)",
-            "tags": "세력전환 30점 / 세력매집 20점 / 거래량스파이크 20점",
-            "expected_return": "12.2%",
-            "score_detail": {
-                "세력전환": 30,
-                "세력매집": 20,
-                "매매신호": 12,
-                "거래량스파이크": 20,
-                "고가돌파": 0,
-                "수급강도": 0
-            },
-            "meta": {
-                "rsi": 53.6,
-                "bb_compress": 0,
-                "rebound_pct": 7.4,
-                "vol_ratio": 0.99,
-                "inst_streak": 0,
-                "for_streak": 0,
-                "mktcap": 6612,
-                "silence_ratio": 0.53,
-                "green_days": 63,
-                "obv_cross": false,
-                "signal": 68.8,
-                "max_spike": 3.4,
-                "rs": 0,
-                "trade": {
-                    "entry": 139600,
-                    "stop_loss": 133900,
-                    "target_1": 151000,
-                    "target_2": 158600,
-                    "risk_pct": 4.1,
-                    "reward_pct": 8.2,
-                    "rr_ratio": 2.0,
-                    "atr": 3800.0
-                },
-                "regime": "NEUTRAL"
-            }
-        },
-        {
-            "rank": 5,
-            "name": "현대퓨처넷",
-            "code": "126560",
-            "company_summary": "현대퓨처넷",
-            "supply": "정보없음",
-            "cur_price": 3450,
-            "score": "★★☆☆☆ (82점/170)",
-            "tags": "거래량스파이크 30점 / 세력전환 28점 / 세력매집 12점",
-            "expected_return": "12.2%",
-            "score_detail": {
-                "세력전환": 28,
-                "세력매집": 12,
-                "매매신호": 12,
-                "거래량스파이크": 30,
-                "고가돌파": 0,
-                "수급강도": 0
-            },
-            "meta": {
-                "rsi": 60.4,
-                "bb_compress": 0,
-                "rebound_pct": 13.7,
-                "vol_ratio": 0.56,
-                "inst_streak": 0,
-                "for_streak": 0,
-                "mktcap": 3802,
-                "silence_ratio": 0.38,
-                "green_days": 58,
-                "obv_cross": false,
-                "signal": 69.1,
-                "max_spike": 8.2,
-                "rs": 0,
-                "trade": {
-                    "entry": 3450,
-                    "stop_loss": 3339,
-                    "target_1": 3670,
-                    "target_2": 3817,
-                    "risk_pct": 3.2,
-                    "reward_pct": 6.4,
-                    "rr_ratio": 2.0,
-                    "atr": 73.6
-                },
-                "regime": "NEUTRAL"
+                "regime": "NEUTRAL",
+                "rt_price_used": false
             }
         }
     ],
@@ -230,13 +143,13 @@
     "regime": "NEUTRAL",
     "regime_desc": "중립 모드",
     "total_candidates": 9,
-    "total_screened": 1086,
+    "total_screened": 902,
     "filter_log": {
-        "total": 1086,
-        "penny": 1056,
-        "mktcap": 873,
-        "bottom": 281,
-        "uptrend": 126,
+        "total": 902,
+        "penny": 874,
+        "mktcap": 902,
+        "bottom": 282,
+        "uptrend": 127,
         "vol_spike": 88,
         "rs_pass": 88,
         "obv_ok": 64,

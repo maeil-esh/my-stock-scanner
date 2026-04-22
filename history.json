@@ -1886,5 +1886,150 @@
                 }
             }
         ]
+    },
+    {
+        "date": "20260422",
+        "label": "🏁 장 마감 스캔",
+        "regime": "NEUTRAL",
+        "picks": [
+            {
+                "rank": 1,
+                "name": "하림",
+                "code": "136480",
+                "company_summary": "하림",
+                "supply": "정보없음",
+                "cur_price": 3325,
+                "score": "★★★☆☆ (106점/170)",
+                "tags": "세력전환 30점 / 거래량스파이크 30점 / 매매신호 19점",
+                "expected_return": "14.4%",
+                "score_detail": {
+                    "세력전환": 30,
+                    "세력매집": 12,
+                    "매매신호": 19,
+                    "거래량스파이크": 30,
+                    "고가돌파": 15,
+                    "수급강도": 0
+                },
+                "meta": {
+                    "rsi": 65.8,
+                    "bb_compress": 0,
+                    "rebound_pct": 17.5,
+                    "vol_ratio": 6.42,
+                    "inst_streak": 0,
+                    "for_streak": 0,
+                    "mktcap": 3531,
+                    "silence_ratio": 0.0,
+                    "green_days": 57,
+                    "obv_cross": false,
+                    "signal": 51.6,
+                    "max_spike": 9.6,
+                    "rs": 0,
+                    "trade": {
+                        "entry": 3325,
+                        "stop_loss": 3213,
+                        "target_1": 3547,
+                        "target_2": 3696,
+                        "risk_pct": 3.4,
+                        "reward_pct": 6.7,
+                        "rr_ratio": 2.0,
+                        "atr": 74.3
+                    },
+                    "regime": "NEUTRAL",
+                    "rt_price_used": false
+                }
+            },
+            {
+                "rank": 2,
+                "name": "ESR켄달스퀘어리츠",
+                "code": "365550",
+                "company_summary": "ESR켄달스퀘어리츠",
+                "supply": "정보없음",
+                "cur_price": 4600,
+                "score": "★★☆☆☆ (88점/170)",
+                "tags": "세력전환 30점 / 세력매집 20점 / 고가돌파 15점",
+                "expected_return": "12.8%",
+                "score_detail": {
+                    "세력전환": 30,
+                    "세력매집": 20,
+                    "매매신호": 13,
+                    "거래량스파이크": 10,
+                    "고가돌파": 15,
+                    "수급강도": 0
+                },
+                "meta": {
+                    "rsi": 61.8,
+                    "bb_compress": 0,
+                    "rebound_pct": 14.1,
+                    "vol_ratio": 1.0,
+                    "inst_streak": 0,
+                    "for_streak": 0,
+                    "mktcap": 11320,
+                    "silence_ratio": 0.47,
+                    "green_days": 63,
+                    "obv_cross": false,
+                    "signal": 66.7,
+                    "max_spike": 2.1,
+                    "rs": 0,
+                    "trade": {
+                        "entry": 4600,
+                        "stop_loss": 4440,
+                        "target_1": 4919,
+                        "target_2": 5132,
+                        "risk_pct": 3.5,
+                        "reward_pct": 6.9,
+                        "rr_ratio": 2.0,
+                        "atr": 106.4
+                    },
+                    "regime": "NEUTRAL",
+                    "rt_price_used": false
+                }
+            },
+            {
+                "rank": 3,
+                "name": "시노펙스",
+                "code": "025320",
+                "company_summary": "시노펙스",
+                "supply": "정보없음",
+                "cur_price": 6220,
+                "score": "★★☆☆☆ (86점/170)",
+                "tags": "세력전환 30점 / 거래량스파이크 30점 / 매매신호 14점",
+                "expected_return": "12.6%",
+                "score_detail": {
+                    "세력전환": 30,
+                    "세력매집": 12,
+                    "매매신호": 14,
+                    "거래량스파이크": 30,
+                    "고가돌파": 0,
+                    "수급강도": 0
+                },
+                "meta": {
+                    "rsi": 54.9,
+                    "bb_compress": 0,
+                    "rebound_pct": 18.0,
+                    "vol_ratio": 0.91,
+                    "inst_streak": 0,
+                    "for_streak": 0,
+                    "mktcap": 5732,
+                    "silence_ratio": 0.12,
+                    "green_days": 52,
+                    "obv_cross": false,
+                    "signal": 62.9,
+                    "max_spike": 6.1,
+                    "rs": 0,
+                    "trade": {
+                        "entry": 6220,
+                        "stop_loss": 5921,
+                        "target_1": 6817,
+                        "target_2": 7216,
+                        "risk_pct": 4.8,
+                        "reward_pct": 9.6,
+                        "rr_ratio": 2.0,
+                        "atr": 199.3
+                    },
+                    "regime": "NEUTRAL",
+                    "rt_price_used": false
+                }
+            }
+        ]
     }
 ]

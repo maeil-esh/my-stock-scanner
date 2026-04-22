@@ -2188,5 +2188,11 @@
         "label": "🏁 장 마감 스캔",
         "regime": "NEUTRAL",
         "picks": []
+    },
+    {
+        "date": "20260422",
+        "label": "🌙 미장 스캔",
+        "regime": "NEUTRAL",
+        "picks": []
     }
 ]

@@ -1,16 +1,14 @@
-name: KR Scanner
+name: KR Backtest
 
 on:
   schedule:
-    - cron: '30 0 * * 1-5'   # 09:30 KST (월~금)
-    - cron: '0 4  * * 1-5'   # 13:00 KST (월~금)
-    - cron: '0 7  * * 1-5'   # 16:00 KST (월~금)
+    - cron: '0 4 * * 6'   # 13:00 KST (토요일)
   workflow_dispatch:
 
 jobs:
-  kr-scan:
+  kr-backtest:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 30
     permissions:
       contents: write
     steps:
@@ -30,19 +28,17 @@ jobs:
       - name: Install libraries
         run: pip install -r requirements.txt
 
-      - name: Run KR Scanner
+      - name: Run Backtest
         env:
-          DART_API_KEY:     ${{ secrets.DART_API_KEY }}
           TELEGRAM_TOKEN:   ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: python engine_kr.py
+        run: python backtest_kr.py
 
-      - name: Save Results
+      - name: Save Updated History
         run: |
           git config --global user.name 'GitHub Action'
           git config --global user.email 'action@github.com'
-          grep -qxF '__pycache__/' .gitignore || echo '__pycache__/' >> .gitignore
           git pull origin main --rebase --autostash
-          git add stock_data.json history.json .gitignore
-          git diff --staged --quiet || git commit -m "KR scan [$(date +'%Y-%m-%d %H:%M KST')]"
+          git add history.json
+          git diff --staged --quiet || git commit -m "Backtest update [$(date +'%Y-%m-%d')]"
           git push

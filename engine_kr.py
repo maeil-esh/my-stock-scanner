@@ -10,7 +10,7 @@ engine_kr.py — 국장 바닥반등+거래량 스캐너 (PRO v2)
 ④ DART 코드 로딩 제거 (스캔 로직 미사용)
 ⑤ 시총 필터 실패 시 조기 종료
 """
-import os, json, datetime, time
+import os, json, datetime
 import threading
 import numpy as np
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -381,7 +381,6 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
 # ══════════════════════════════════════════════════════════════
 
 def run_kr_scan():
-    now        = datetime.datetime.now()
     today_str  = get_market_date()
     start_260d = get_start_date(today_str, 180)
     start_10d  = get_start_date(today_str, 10)
@@ -407,29 +406,30 @@ def run_kr_scan():
             cap_col  = _find_cap_col(df_cap)
             if not cap_col:
                 raise ValueError(f"{market} 시총 컬럼 없음")
+
             # 업종·제품 컬럼 탐색
-                sector_col  = next((c for c in ['Sector','sector','업종'] if c in df_cap.columns), None)
-                product_col = next((c for c in ['Industry','industry','주요제품'] if c in df_cap.columns), None)
+            sector_col  = next((c for c in ['Sector','sector','업종'] if c in df_cap.columns), None)
+            product_col = next((c for c in ['Industry','industry','주요제품'] if c in df_cap.columns), None)
 
-                for _, row in df_cap.iterrows():
-                    ticker_s = str(row[code_col]).zfill(6)
-                    cap_raw  = row[cap_col]
-                    if not cap_raw or cap_raw != cap_raw:
-                        continue
-                    cap = int(cap_raw / 1e8) if cap_raw > 1e6 else int(cap_raw)
-                    mktcap_cache[ticker_s] = cap
+            for _, row in df_cap.iterrows():
+                ticker_s = str(row[code_col]).zfill(6)
+                cap_raw  = row[cap_col]
+                if not cap_raw or cap_raw != cap_raw:
+                    continue
+                cap = int(cap_raw / 1e8) if cap_raw > 1e6 else int(cap_raw)
+                mktcap_cache[ticker_s] = cap
 
-                    # 업종/제품 캐시 — 네이버 스크랩 fallback 대비
-                    parts = []
-                    if sector_col and str(row.get(sector_col, '')).strip():
-                        parts.append(f"[{str(row[sector_col]).strip()}]")
-                    if product_col and str(row.get(product_col, '')).strip():
-                        parts.append(str(row[product_col]).strip()[:50])
-                    if parts:
-                        _sector_cache[ticker_s] = ' '.join(parts)
+                # 업종/제품 캐시
+                parts = []
+                if sector_col and str(row.get(sector_col, '')).strip():
+                    parts.append(f"[{str(row[sector_col]).strip()}]")
+                if product_col and str(row.get(product_col, '')).strip():
+                    parts.append(str(row[product_col]).strip()[:50])
+                if parts:
+                    _sector_cache[ticker_s] = ' '.join(parts)
 
-                    if MKTCAP_MIN <= cap <= MKTCAP_MAX:
-                        all_tickers.append(ticker_s)
+                if MKTCAP_MIN <= cap <= MKTCAP_MAX:
+                    all_tickers.append(ticker_s)
         print(f"  → 필터 통과: {len(all_tickers)}종목")
     except Exception as e:
         print(f"  ❌ 시총 필터 실패: {e} → 스캔 중단")

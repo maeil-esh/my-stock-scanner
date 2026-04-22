@@ -79,31 +79,6 @@ def send_telegram(message: str):
             print(f"⚠️  텔레그램 오류: {e}")
 
 
-# ── 국내 지수 실시간 (네이버 polling API) ──────────────────────
-
-def _fetch_naver_index(query: str) -> tuple[float | None, float | None]:
-    """
-    네이버 실시간 지수 조회
-    query 예: 'SERVICE_INDEX:KOSPI', 'SERVICE_INDEX:KOSDAQ'
-    반환: (현재값, 전일종가) — 실패 시 (None, None)
-    """
-    try:
-        url = f"https://polling.finance.naver.com/api/realtime?query={query}"
-        headers = {
-            'User-Agent': 'Mozilla/5.0',
-            'Referer':    'https://finance.naver.com/'
-        }
-        r    = requests.get(url, headers=headers, timeout=5)
-        data = r.json()
-        item = data['result']['areas'][0]['datas'][0]
-        # nv: 현재값, rf: 전일대비 등락률(%), cv: 전일대비 변동폭
-        cur  = float(item.get('nv') or item.get('sv') or 0)
-        prev = float(item.get('pv') or 0)   # 전일종가
-        return (cur, prev) if cur else (None, None)
-    except Exception:
-        return None, None
-
-
 # ── 매크로 브리핑 ──────────────────────────────────────────────
 
 def fetch_macro_summary() -> str:
@@ -114,46 +89,44 @@ def fetch_macro_summary() -> str:
     label = now_label()
     lines = [f"📊 <b>시황 브리핑 — {today} {label}</b>", "━" * 24]
 
-    # ① 국내 지수 — 네이버 실시간
-    kr_indices = [
-        ("KOSPI",  "SERVICE_INDEX:KOSPI",  lambda v: f"{v:,.2f}"),
-        ("KOSDAQ", "SERVICE_INDEX:KOSDAQ", lambda v: f"{v:,.2f}"),
-    ]
-    for name, query, fmt in kr_indices:
-        cur, prev = _fetch_naver_index(query)
-        if cur:
-            chg   = (cur - prev) / prev * 100 if prev else 0
-            arrow = "▲" if chg >= 0 else "▼"
-            sign  = "+" if chg >= 0 else ""
-            lines.append(f"{name:<8} {fmt(cur)}   {arrow} {sign}{chg:.2f}%  📡")
-        else:
-            lines.append(f"{name:<8} 조회 실패")
-
-    # ② 글로벌 지표 — yfinance (15~20분 지연)
-    global_symbols = {
+    symbols = {
+        "KOSPI":   ("^KS11",  lambda v: f"{v:,.2f}"),
+        "KOSDAQ":  ("^KQ11",  lambda v: f"{v:,.2f}"),
         "USD/KRW": ("KRW=X",  lambda v: f"{v:,.0f}원"),
         "WTI":     ("CL=F",   lambda v: f"${v:.1f}"),
         "Gold":    ("GC=F",   lambda v: f"${v:,.0f}"),
         "VIX":     ("^VIX",   lambda v: f"{v:.2f}"),
         "US 10Y":  ("^TNX",   lambda v: f"{v:.2f}%"),
     }
-    for name, (sym, fmt) in global_symbols.items():
+
+    for name, (sym, fmt) in symbols.items():
         try:
-            info  = yf.Ticker(sym).fast_info
-            price = (getattr(info, 'last_price', None)
-                     or getattr(info, 'regularMarketPrice', None))
-            prev  = (getattr(info, 'previous_close', None)
-                     or getattr(info, 'regularMarketPreviousClose', None))
+            ticker = yf.Ticker(sym)
+            info   = ticker.fast_info
+            price  = (getattr(info, 'last_price', None)
+                      or getattr(info, 'regularMarketPrice', None))
+            prev   = (getattr(info, 'previous_close', None)
+                      or getattr(info, 'regularMarketPreviousClose', None))
+            if not price:
+                # fast_info 실패 시 history로 fallback
+                hist  = ticker.history(period='2d')
+                if len(hist) >= 2:
+                    price = float(hist['Close'].iloc[-1])
+                    prev  = float(hist['Close'].iloc[-2])
+                elif len(hist) == 1:
+                    price = float(hist['Close'].iloc[-1])
+                    prev  = price
             if not price:
                 raise ValueError("price 없음")
             chg   = (price - prev) / prev * 100 if prev else 0
             arrow = "▲" if chg >= 0 else "▼"
             sign  = "+" if chg >= 0 else ""
             lines.append(f"{name:<8} {fmt(price)}   {arrow} {sign}{chg:.2f}%")
-        except Exception:
+        except Exception as e:
+            print(f"  ⚠️  {name} 조회 실패: {e}")
             lines.append(f"{name:<8} 조회 실패")
 
-    lines += ["━" * 24, "💡 <i>📡 실시간 | 글로벌 지표 15~20분 지연</i>"]
+    lines += ["━" * 24, "💡 <i>UK2 Investment · AI 브리핑</i>"]
     return "\n".join(lines)
 
 

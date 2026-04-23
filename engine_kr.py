@@ -29,12 +29,122 @@ from engine_common import (
 DATA_FILE    = 'stock_data.json'
 HISTORY_FILE = 'history.json'
 TOP_N        = 5
-MAX_SCORE    = 245  # A(50)+B(50)+C(30)+D(40)+E(15)+F(15)+G(20)+H(15)+I(10)
+MAX_SCORE    = 305  # A(50)+B(50)+C(30)+D(40)+F(15)+H(15)+I(10)+J(35)+L(20)+M(20)+N(20)
 MKTCAP_MIN   = 1000
 MKTCAP_MAX   = 30000
 
 # 네이버 모바일 API 응답 캐시 (ticker → dict) — 가격/업종 공용
 _naver_basic_cache: dict = {}
+
+# 스캔 1회당 1번만 조회하는 상승 테마 캐시
+_rising_themes_cache: list = []
+
+
+def fetch_spike_news(ticker: str, spike_date_strs: list) -> list:
+    """
+    스파이크 발생 시점 전후 3일 뉴스 수집 (정보용, 점수 없음)
+    반환: [{'date': '2024-03-15', 'title': '...', 'spike': '1차'}, ...]
+    """
+    results = []
+    try:
+        headers = {'User-Agent': 'Mozilla/5.0', 'Accept-Language': 'ko-KR,ko;q=0.9'}
+        for idx, date_str in enumerate(spike_date_strs[-3:], 1):
+            label = f"{idx}차 스파이크({date_str})"
+            url   = f"https://finance.naver.com/item/news_news.naver?code={ticker}&page=1"
+            r     = requests.get(url, headers=headers, timeout=5)
+            r.encoding = 'euc-kr'
+            soup  = BeautifulSoup(r.text, 'html.parser')
+            for a in soup.select('.tb_cont .title a, dl dt a')[:3]:
+                title = a.get_text(strip=True)
+                if title:
+                    results.append({'spike': label, 'title': title})
+                    break
+    except Exception:
+        pass
+    return results
+
+
+def fetch_rising_themes() -> list:
+    """
+    네이버 테마 시세 → 당일 상승 테마 TOP10
+    반환: [{'name': '방산', 'chg': 4.2}, ...]
+    """
+    global _rising_themes_cache
+    if _rising_themes_cache:
+        return _rising_themes_cache
+    try:
+        r = requests.get(
+            "https://finance.naver.com/sise/theme.naver",
+            headers={'User-Agent': 'Mozilla/5.0', 'Accept-Language': 'ko-KR,ko;q=0.9'},
+            timeout=8
+        )
+        r.encoding = 'euc-kr'
+        soup   = BeautifulSoup(r.text, 'html.parser')
+        themes = []
+        for row in soup.select('table.type_1 tr'):
+            cols     = row.select('td')
+            name_tag = row.select_one('td a')
+            if not name_tag or len(cols) < 2:
+                continue
+            try:
+                chg = float(cols[1].get_text(strip=True).replace('+','').replace('%','').replace(',',''))
+                if chg > 0:
+                    themes.append({'name': name_tag.get_text(strip=True), 'chg': chg})
+            except Exception:
+                continue
+        themes.sort(key=lambda x: x['chg'], reverse=True)
+        _rising_themes_cache = themes[:10]
+        print(f"  📌 상승 테마: {', '.join([t['name'] for t in _rising_themes_cache[:5]])}")
+        return _rising_themes_cache
+    except Exception as e:
+        print(f"  ⚠️  테마 조회 실패: {e}")
+        return []
+
+
+def score_theme_match(ticker: str, rising_themes: list) -> tuple:
+    """
+    종목 뉴스 제목 + 업종 설명 vs 현재 상승 테마 키워드 매칭
+    반환: (점수, 매칭된 테마명 문자열)
+    MAX: 15점
+    """
+    if not rising_themes:
+        return 0, ''
+    try:
+        # 1. 종목 뉴스 제목 수집 (최근 20건)
+        url = f"https://finance.naver.com/item/news_news.naver?code={ticker}&page=1"
+        r   = requests.get(
+            url,
+            headers={'User-Agent': 'Mozilla/5.0', 'Accept-Language': 'ko-KR,ko;q=0.9'},
+            timeout=6
+        )
+        r.encoding = 'euc-kr'
+        soup        = BeautifulSoup(r.text, 'html.parser')
+        news_titles = [a.get_text(strip=True) for a in soup.select('.tb_cont .title a, dl dt a') if a.get_text(strip=True)]
+
+        # 2. 업종/설명 (naver basic API에서 캐시된 값)
+        basic       = _fetch_naver_basic(ticker)
+        description = basic.get('_industry', '')
+
+        all_text = ' '.join(news_titles[:20]) + ' ' + description
+
+        # 3. 테마 키워드 매칭
+        matched = []
+        for theme in rising_themes:
+            tname = theme['name']
+            # 테마명 자체 + 앞 2글자 + 공백 분리 단어로 매칭
+            keywords = [tname, tname[:2]] + [w for w in tname.split() if len(w) >= 2]
+            if any(kw in all_text for kw in keywords):
+                matched.append(f"{tname}({theme['chg']:+.1f}%)")
+
+        if   len(matched) >= 2: score = 15
+        elif len(matched) == 1: score = 8
+        else:                   score = 0
+
+        return score, ', '.join(matched[:3])
+
+    except Exception as e:
+        print(f"  ⚠️  테마 매칭 실패({ticker}): {e}")
+        return 0, ''
 
 
 def _fetch_naver_basic(ticker: str) -> dict:
@@ -133,50 +243,13 @@ def get_realtime_price(ticker):
 #  시장 레짐 감지
 # ══════════════════════════════════════════════════════════════
 
-def detect_market_regime(start, end):
-    kospi = None
-    for sym in ['KS11', '^KS11', 'KOSPI']:
-        try:
-            df = fdr.DataReader(sym, start, end)
-            if df is not None and len(df) >= 60:
-                kospi = df
-                break
-        except Exception:
-            continue
-
-    if kospi is None or len(kospi) < 60:
-        print("  ⚠️  KOSPI 데이터 부족 → NEUTRAL")
-        return "NEUTRAL", None
-
-    try:
-        ma200 = kospi['Close'].rolling(200).mean().iloc[-1]
-        cur   = kospi['Close'].iloc[-1]
-        ratio = cur / ma200
-        if ratio > 1.02:
-            return "BULL", kospi
-        elif ratio < 0.98:
-            return "BEAR", kospi
-        else:
-            return "NEUTRAL", kospi
-    except Exception as e:
-        print(f"  ⚠️  레짐 계산 실패: {e}")
-        return "NEUTRAL", kospi
-
-
-def regime_config(regime):
-    if regime == "BULL":
-        return {"threshold": 60, "rs_threshold": 5,   "emoji": "🚀", "desc": "공격 모드"}
-    elif regime == "BEAR":
-        return {"threshold": 90, "rs_threshold": -10, "emoji": "🛡️", "desc": "방어 모드"}
-    else:
-        return {"threshold": 70, "rs_threshold": -3,  "emoji": "⚖️", "desc": "중립 모드"}
-
-
 # ══════════════════════════════════════════════════════════════
 #  상대강도(RS)
 # ══════════════════════════════════════════════════════════════
 
 def calc_relative_strength(stock_df, index_df, period=63):
+    if index_df is None:
+        return 0.0
     try:
         if len(stock_df) < period or len(index_df) < period:
             return 0.0
@@ -427,11 +500,7 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
     meta['max_spike'] = round(float(max_spike), 1)
     meta['vol_ratio'] = round(float(cur_ratio), 2)
 
-    # [E] 전일 고가 돌파 (최대 15점, 유지)
-    e = 15 if cur > prev_hi else 0
-    bd['고가돌파'] = e
-
-    # [F] 수급 강도 (최대 15점, 유지)
+    # [F] 수급 강도 (최대 15점)
     f = 0
     supply_text = "정보없음"
     if inv_df is not None and cols:
@@ -453,21 +522,7 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
     meta['rsi']         = round(float(rsi), 1)
     meta['bb_compress'] = 0
 
-    # ── DS단석 패턴 가산점 ─────────────────────────────────────
-
-    # [G] VWAP 매물대 돌파 임박 (최대 20점)
-    g = 0
-    vwap_ratio = 1.0
-    try:
-        vwap_60    = (df['Close'] * df['Volume']).iloc[-60:].sum() / (df['Volume'].iloc[-60:].sum() + 1)
-        vwap_ratio = cur / vwap_60 if vwap_60 > 0 else 1.0
-        if   0.98 <= vwap_ratio <= 1.02: g = 20
-        elif 0.95 <= vwap_ratio <= 1.05: g = 12
-        elif 0.90 <= vwap_ratio <= 1.08: g = 6
-    except Exception:
-        pass
-    bd['매물대근접'] = g
-    meta['vwap_ratio'] = round(float(vwap_ratio), 3)
+    # ── 대상승 사전 패턴 ───────────────────────────────────────
 
     # [H] 스파이크 30일 이내 (최대 15점)
     h = 0
@@ -503,6 +558,128 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
     bd['OBV0선직전'] = i
     meta['obv_pct'] = round(float(obv_pct), 1)
 
+    # ── 대시세 사전 패턴 ───────────────────────────────────────
+
+    # [J] 스파이크 반복 + 바닥 수렴 패턴 (최대 35점 — 70%)
+    # 180일 내 2회 이상 스파이크 발생 후 현재 바닥 수렴 중
+    j = 0
+    spike_count  = 0
+    last_spikes  = []
+    try:
+        vol_ma20_full = df['Volume'].rolling(20).mean()
+        spike_mask_full = df['Volume'] >= vol_ma20_full * 2.0
+
+        # 스파이크 날짜 추출 (연속된 스파이크는 1회로 묶음)
+        spike_dates = df.index[spike_mask_full].tolist()
+        grouped = []
+        for d in spike_dates:
+            if not grouped or (d - grouped[-1][-1]).days > 5:
+                grouped.append([d])
+            else:
+                grouped[-1].append(d)
+        spike_count = len(grouped)
+        last_spikes = [g[-1] for g in grouped[-3:]]  # 최근 3회
+
+        if spike_count >= 2:
+            # 마지막 스파이크 이후 가격 수렴 확인
+            # 현재가가 마지막 스파이크 종가 대비 -15%~+10% = 바닥 수렴 구간
+            last_spike_close = float(df.loc[last_spikes[-1], 'Close'])
+            price_since = (cur - last_spike_close) / last_spike_close * 100
+            converging  = -15 <= price_since <= 10
+
+            # 스파이크 간 간격 — 2회 사이 가격이 다시 내려왔는지
+            retest = False
+            if len(last_spikes) >= 2:
+                idx1 = df.index.get_loc(last_spikes[-2])
+                idx2 = df.index.get_loc(last_spikes[-1])
+                between = df.iloc[idx1:idx2]['Close']
+                spike1_close = float(df.loc[last_spikes[-2], 'Close'])
+                if len(between) > 0:
+                    min_between = float(between.min())
+                    retest = (min_between / spike1_close) < 0.95  # 5% 이상 눌림
+
+            if spike_count >= 3 and converging and retest:
+                j = 35
+            elif spike_count >= 2 and converging and retest:
+                j = 28
+            elif spike_count >= 2 and converging:
+                j = 18
+            elif spike_count >= 2:
+                j = 8
+    except Exception:
+        pass
+    bd['반복스파이크'] = j
+    meta['spike_count']  = spike_count
+    meta['last_spikes']  = [str(d.date()) for d in last_spikes] if last_spikes else []
+
+    # [L] 이격도 — MA20/MA60 대비 현재가 위치 (최대 20점)
+    # 바닥에 가까울수록 고점수 — 민혁님 컨셉 핵심
+    l = 0
+    disp20 = disp60 = 0.0
+    try:
+        ma20_v = float(df['Close'].rolling(20).mean().iloc[-1])
+        ma60_v = float(df['Close'].rolling(60).mean().iloc[-1]) if len(df) >= 60 else ma20_v
+        disp20 = round((cur / ma20_v - 1) * 100, 1) if ma20_v > 0 else 0.0
+        disp60 = round((cur / ma60_v - 1) * 100, 1) if ma60_v > 0 else 0.0
+
+        # MA20 이격도 기준 채점
+        # -3~+3%  : MA20에 붙어있음 = 바닥 수렴 최적 → 20점
+        # +3~+8%  : 약간 올라온 상태 → 12점
+        # -8~-3%  : MA20 아래 눌림 → 10점
+        # +8~+15% : 어느정도 오름 → 5점
+        # 나머지   : 0점
+        if   -3 <= disp20 <= 3:   l = 20
+        elif  3 <  disp20 <= 8:   l = 12
+        elif -8 <= disp20 < -3:   l = 10
+        elif  8 <  disp20 <= 15:  l = 5
+    except Exception:
+        pass
+    bd['이격도'] = l
+    meta['disp20'] = disp20
+    meta['disp60'] = disp60
+
+    # [M] 횡보 기간 — 박스권이 길수록 에너지 축적 (최대 20점)
+    # 최근 N일간 고저 변동폭이 20% 이내인 구간 길이 측정
+    m = 0
+    sideways_days = 0
+    try:
+        for window in [120, 90, 60, 40]:
+            if len(df) < window:
+                continue
+            seg       = df.iloc[-window:]
+            hi        = float(seg['High'].max())
+            lo        = float(seg['Low'].min())
+            rng_pct   = (hi - lo) / lo * 100 if lo > 0 else 999
+            if rng_pct <= 25:          # 25% 이내 박스권 유지
+                sideways_days = window
+                break                  # 가장 긴 구간 우선
+
+        if   sideways_days >= 120: m = 20
+        elif sideways_days >= 90:  m = 15
+        elif sideways_days >= 60:  m = 10
+        elif sideways_days >= 40:  m = 5
+    except Exception:
+        pass
+    bd['횡보기간'] = m
+    meta['sideways_days'] = sideways_days
+
+    # [N] 52주 고점 괴리율 — 고점과 멀수록 상승 여력 큼 (최대 20점)
+    n = 0
+    high52_gap = 0.0
+    try:
+        high52     = float(df['High'].iloc[-252:].max()) if len(df) >= 252 else float(df['High'].max())
+        high52_gap = round((high52 - cur) / high52 * 100, 1)  # 양수 = 고점 대비 하락률
+
+        if   high52_gap >= 60: n = 20   # 60% 이상 하락 — 극바닥
+        elif high52_gap >= 45: n = 17
+        elif high52_gap >= 35: n = 13
+        elif high52_gap >= 25: n = 8
+        elif high52_gap >= 15: n = 4
+    except Exception:
+        pass
+    bd['고점괴리'] = n
+    meta['high52_gap'] = high52_gap
+
     return sum(bd.values()), bd, meta
 
 
@@ -511,19 +688,20 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
 # ══════════════════════════════════════════════════════════════
 
 def run_kr_scan():
+    global _rising_themes_cache
+    _rising_themes_cache = []  # 스캔마다 테마 새로 조회
+
     today_str  = get_market_date()
     start_260d = get_start_date(today_str, 180)
     start_10d  = get_start_date(today_str, 10)
     label      = now_label()
 
-    regime, kospi_df = detect_market_regime(start_260d, today_str)
-    cfg = regime_config(regime)
-    SCORE_THRESHOLD = cfg['threshold']
-    RS_THRESHOLD    = cfg['rs_threshold']
+    # 레짐 제거 — 고정 설정
+    SCORE_THRESHOLD = 70
+    RS_THRESHOLD    = 0
 
     print(f"📅 기준일: {today_str} | {label}")
-    print(f"{cfg['emoji']} 시장 레짐: {regime} ({cfg['desc']}) | TOP {TOP_N}, 임계값 {SCORE_THRESHOLD}점 | RS ≥ {RS_THRESHOLD:+d}%")
-    print(f"🎯 전략: 선행매집 스캔 (OBV↑ / 가격↔ / 변동성수축 / 스파이크 직후)\n")
+    print(f"🎯 전략: 선행매집 스캔 | TOP {TOP_N} | 임계 {SCORE_THRESHOLD}점 | RS ≥ {RS_THRESHOLD:+d}%\n")
 
     # ── 시총 사전 필터링 ────────────────────────────────────────
     print(f"⚡ 시총 사전 필터링 ({MKTCAP_MIN}억↑ ~ {MKTCAP_MAX}억↓)...")
@@ -554,7 +732,10 @@ def run_kr_scan():
         print(f"  → 필터 통과: {len(all_tickers)}종목")
     except Exception as e:
         print(f"  ❌ 시총 필터 실패: {e} → 스캔 중단")
-        return [], regime, cfg
+        return []
+
+    # 상승 테마 사전 조회 (1회)
+    rising_themes = fetch_rising_themes()
 
     candidates = []
     log = dict(total=len(all_tickers), penny=0, mktcap=len(all_tickers),
@@ -619,7 +800,7 @@ def run_kr_scan():
             with lock:
                 log['vol_spike'] += 1
 
-            rs = calc_relative_strength(df, kospi_df) if kospi_df is not None else 0
+            rs = calc_relative_strength(df, None)
             if rs < RS_THRESHOLD:
                 return
             with lock:
@@ -661,27 +842,6 @@ def run_kr_scan():
             with lock:
                 log['trend_ok'] += 1
 
-            # [F4] 안정 박스권 — 최근 10일 고점 대비 -15% 이내 (기존 -10%)
-            recent_high_10d = float(df['High'].iloc[-10:].max())
-            if recent_high_10d <= 0:
-                return
-            pullback_pct = (cur - recent_high_10d) / recent_high_10d * 100
-            if pullback_pct < -15:                  # -10→-15%
-                return
-            with lock:
-                log['pullback_ok'] += 1
-
-            # [F5] 변동성 수축 ≤ 35% (기존 25%)
-            high_20  = float(df['High'].iloc[-20:].max())
-            low_20   = float(df['Low'].iloc[-20:].min())
-            if low_20 <= 0:
-                return
-            range_pct = (high_20 - low_20) / low_20 * 100
-            if range_pct > 35:                      # 25→35%
-                return
-            with lock:
-                log['vol_contract_ok'] += 1
-
             with lock:
                 passed_stage1.append((
                     ticker, df, vol_ma20, mktcap, rebound_pct, cur,
@@ -721,6 +881,8 @@ def run_kr_scan():
             meta['silence_ratio'] = silence_ratio
             meta['rs']            = rs
             meta['trade']         = calc_trade_levels(df, cur)
+            # 스파이크 뉴스는 TOP5 확정 후 수집 (속도 최적화)
+            meta['spike_news']    = []
 
             if total_score >= SCORE_THRESHOLD:
                 candidates.append((total_score, ticker, breakdown, meta, df))
@@ -784,19 +946,25 @@ def run_kr_scan():
         else:
             print(f"  #{rank} {name}({ticker}) | 실시간가 조회 실패 → 전일 종가 사용: {meta['cur_close']:,}원")
 
+        # ── 스파이크 시점 뉴스 수집 (정보용) ───────────────────
+        spike_date_strs = meta.get('last_spikes', [])
+        meta['spike_news'] = fetch_spike_news(ticker, spike_date_strs)
+
         summary      = get_company_summary(ticker, name)
-        star_count   = min(total_score // 34, 5)
+        score_100    = int(round(total_score / MAX_SCORE * 100))  # 100점 환산
+        star_count   = min(score_100 // 20, 5)
         stars        = "★" * star_count + "☆" * (5 - star_count)
         supply_text  = meta.get('supply_text', '정보없음')
-        expected_ret = round(5.0 + (total_score / MAX_SCORE) * 15.0, 1)
+        expected_ret = round(5.0 + (score_100 / 100) * 15.0, 1)
         top_f        = sorted(breakdown.items(), key=lambda x: x[1], reverse=True)
-        tag_str      = " / ".join([f"{k} {v}점" for k, v in top_f[:3]])
+        tag_str      = " / ".join([f"{k}" for k, v in top_f[:3] if v > 0])
 
         final_picks.append({
             "rank": rank, "name": name, "code": ticker,
             "company_summary": summary, "supply": supply_text,
             "cur_price": meta.get('cur_close', 0),
-            "score": f"{stars} ({total_score}점/{MAX_SCORE})",
+            "score_100": score_100,
+            "score": f"{stars} {score_100}점",
             "tags": tag_str, "expected_return": f"{expected_ret}%",
             "score_detail": breakdown,
             "meta": {
@@ -815,7 +983,14 @@ def run_kr_scan():
                 "rs":            meta.get('rs', 0),
                 "trade":         meta.get('trade', None),
                 "regime":        regime,
-                "rt_price_used": rt_price is not None,   # 실시간가 사용 여부
+                "rt_price_used": rt_price is not None,
+                "spike_count":   meta.get('spike_count', 0),
+                "disp20":        meta.get('disp20', 0.0),
+                "disp60":        meta.get('disp60', 0.0),
+                "last_spikes":   meta.get('last_spikes', []),
+                "spike_news":    meta.get('spike_news', []),
+                "sideways_days": meta.get('sideways_days', 0),
+                "high52_gap":    meta.get('high52_gap', 0.0),
             }
         })
 
@@ -829,14 +1004,13 @@ def run_kr_scan():
                 history_data = []
     history_data.append({
         "date": today_str, "label": label,
-        "regime": regime, "picks": final_picks
+        "picks": final_picks
     })
     with open(HISTORY_FILE, 'w', encoding='utf-8') as f:
         json.dump(history_data, f, ensure_ascii=False, indent=4, default=json_safe)
 
     final_output = {
         "today_picks": final_picks, "scan_label": label,
-        "regime": regime, "regime_desc": cfg['desc'],
         "total_candidates": log['final'], "total_screened": log['total'],
         "filter_log": log, "base_date": today_str,
     }
@@ -844,26 +1018,22 @@ def run_kr_scan():
         json.dump(final_output, f, ensure_ascii=False, indent=4, default=json_safe)
 
     print(f"\n🏁 완료! TOP {len(final_picks)}종목")
-    return final_picks, regime, cfg
+    return final_picks
 
 
 # ══════════════════════════════════════════════════════════════
 #  텔레그램 메시지 조립
 # ══════════════════════════════════════════════════════════════
 
-def build_telegram_message(picks, regime, cfg):
+def build_telegram_message(picks):
     today_str = get_market_date()
     label     = now_label()
 
     if not picks:
-        return (
-            f"{cfg['emoji']} 시장 레짐: <b>{regime}</b> ({cfg['desc']})\n"
-            f"⚠️ 오늘 조건 충족 종목 없음"
-        )
+        return "⚠️ 오늘 조건 충족 종목 없음"
 
     lines = [
         f"🏆 <b>KR 선행매집 TOP {len(picks)} — {ko_date(today_str)} {label}</b>",
-        f"{cfg['emoji']} 시장 레짐: <b>{regime}</b> ({cfg['desc']})",
         "━" * 24,
     ]
 
@@ -873,21 +1043,38 @@ def build_telegram_message(picks, regime, cfg):
         rs_val     = p['meta'].get('rs', 0)
         rt_flag    = "📡 실시간" if p['meta'].get('rt_price_used') else "📋 전일종가"
         sd         = p.get('score_detail', {})
+        score_100  = p.get('score_100', 0)
 
-        gather_100  = normalize_score(sd.get('세력매집',     0), 30)
-        spike_100   = normalize_score(sd.get('거래량스파이크', 0), 40)
-        signal_100  = normalize_score(sd.get('매매신호',      0), 30)
-        vwap_100    = normalize_score(sd.get('매물대근접',    0), 20)
-        near_100    = normalize_score(sd.get('근거리스파이크', 0), 15)
-        obv0_100    = normalize_score(sd.get('OBV0선직전',    0), 10)
+        # 시각화 바 (10칸 = 10점)
+        filled = int(score_100 / 10)
+        bar    = '█' * filled + '░' * (10 - filled)
 
-        # DS단석 패턴 여부 판단 (3개 가산점 합계 25점 이상)
-        ds_score = sd.get('매물대근접', 0) + sd.get('근거리스파이크', 0) + sd.get('OBV0선직전', 0)
-        ds_flag  = "🔥 <b>DS패턴 감지</b>" if ds_score >= 25 else ""
+        gather_100   = normalize_score(sd.get('세력매집',     0), 50)
+        spike_100    = normalize_score(sd.get('거래량스파이크', 0), 40)
+        signal_100   = normalize_score(sd.get('매매신호',      0), 30)
+        near_100     = normalize_score(sd.get('근거리스파이크', 0), 15)
+        obv0_100     = normalize_score(sd.get('OBV0선직전',    0), 10)
+        repeat_100   = normalize_score(sd.get('반복스파이크',  0), 35)
+        disp_100     = normalize_score(sd.get('이격도',        0), 20)
+        side_100     = normalize_score(sd.get('횡보기간',      0), 20)
+        gap_100      = normalize_score(sd.get('고점괴리',      0), 20)
+
+        spike_cnt     = p['meta'].get('spike_count', 0)
+        disp20_val    = p['meta'].get('disp20', 0.0)
+        disp60_val    = p['meta'].get('disp60', 0.0)
+        sideways_days = p['meta'].get('sideways_days', 0)
+        high52_gap    = p['meta'].get('high52_gap', 0.0)
+        spike_news    = p['meta'].get('spike_news', [])
+
+        ds_score    = sd.get('근거리스파이크', 0) + sd.get('OBV0선직전', 0)
+        ds_flag     = "🔥 <b>DS패턴 감지</b>" if ds_score >= 20 else ""
+        repeat_flag = "🔁 <b>반복패턴 감지</b>" if sd.get('반복스파이크', 0) >= 28 else ""
 
         lines += [
-            f"#{p['rank']} <b><a href='{chart_url}'>{p['name']}</a></b> ({p['code']}) {p['score']}",
+            f"#{p['rank']} <b><a href='{chart_url}'>{p['name']}</a></b> ({p['code']})",
             f"  🏢 {p['company_summary']}",
+            f"",
+            f"  <code>{bar}</code> <b>{score_100}점</b> {p['score'].split(' ')[0]}",
             f"",
             f"  💰 현재가: {p['cur_price']:,}원 {rt_flag} | RS: {rs_val:+}%",
             f"  📈 기대수익: {p['expected_return']}",
@@ -897,13 +1084,24 @@ def build_telegram_message(picks, regime, cfg):
             f"    {grade_emoji(spike_100)} 거래량스파이크   {spike_100}점",
             f"    {grade_emoji(signal_100)} 매매신호        {signal_100}점",
             f"",
+            f"  📐 <b>이격도</b>  MA20 {disp20_val:+.1f}% | MA60 {disp60_val:+.1f}%",
+            f"    {grade_emoji(disp_100)} 바닥 근접도      {disp_100}점",
+            f"    {grade_emoji(side_100)} 횡보 {sideways_days}일      {side_100}점",
+            f"    {grade_emoji(gap_100)} 고점대비 -{high52_gap:.1f}%  {gap_100}점",
+            f"",
             f"  💎 <b>대상승 패턴</b>{('  ' + ds_flag) if ds_flag else ''}",
-            f"    {grade_emoji(vwap_100)} 매물대근접      {vwap_100}점",
             f"    {grade_emoji(near_100)} 근거리스파이크  {near_100}점",
             f"    {grade_emoji(obv0_100)} OBV 0선직전     {obv0_100}점",
+            f"    {grade_emoji(repeat_100)} 스파이크 {spike_cnt}회 반복  {repeat_100}점{('  ' + repeat_flag) if repeat_flag else ''}",
             f"",
             f"  🏦 수급: {p['supply']}",
         ]
+
+        if spike_news:
+            lines.append(f"")
+            lines.append(f"  🗞 <b>스파이크 시점 뉴스</b> (잠재 테마 힌트)")
+            for sn in spike_news:
+                lines.append(f"    📌 [{sn['spike']}] {sn['title']}")
 
         if trade:
             risk_won   = int(trade['risk_pct']   * 10000)
@@ -934,5 +1132,5 @@ if __name__ == "__main__":
     send_telegram(fetch_macro_summary())
     send_telegram(build_news_briefing())
 
-    picks, regime, cfg = run_kr_scan()
-    send_telegram(build_telegram_message(picks, regime, cfg))
+    picks = run_kr_scan()
+    send_telegram(build_telegram_message(picks))

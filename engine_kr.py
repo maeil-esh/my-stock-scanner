@@ -30,7 +30,7 @@ from engine_common import (
 DATA_FILE    = 'stock_data.json'
 HISTORY_FILE = 'history.json'
 TOP_N        = 3
-MAX_SCORE    = 170
+MAX_SCORE    = 215  # 기존 170 + G(20) + H(15) + I(10)
 MKTCAP_MIN   = 2000
 MKTCAP_MAX   = 30000
 
@@ -413,6 +413,57 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
     meta['rsi']         = round(float(rsi), 1)
     meta['bb_compress'] = 0
 
+    # ── DS단석 패턴 가산점 ─────────────────────────────────────
+
+    # [G] VWAP 매물대 돌파 임박 (최대 20점)
+    # 60일 거래량가중평균 대비 현재가 95~105% = 매물대 상단 직전 에너지 축적
+    g = 0
+    try:
+        vwap_60   = (df['Close'] * df['Volume']).iloc[-60:].sum() / (df['Volume'].iloc[-60:].sum() + 1)
+        vwap_ratio = cur / vwap_60 if vwap_60 > 0 else 1.0
+        if   0.98 <= vwap_ratio <= 1.02: g = 20  # 매물대 정중앙 — 돌파 직전 최적
+        elif 0.95 <= vwap_ratio <= 1.05: g = 12  # 매물대 근접
+        elif 0.90 <= vwap_ratio <= 1.08: g = 6   # 매물대 인근
+    except Exception:
+        pass
+    bd['매물대근접'] = g
+    meta['vwap_ratio'] = round(float(vwap_ratio) if 'vwap_ratio' in dir() else 1.0, 3)
+
+    # [H] 스파이크 30일 이내 (최대 15점)
+    # 60일→30일 이내 스파이크 = 대상승 직전 텀이 짧음
+    h = 0
+    try:
+        vol_ma20_ser2 = df['Volume'].rolling(20).mean()
+        recent_30     = df.iloc[-30:]
+        spike_mask_30 = recent_30['Volume'] >= vol_ma20_ser2.iloc[-30:] * 2.0
+        if spike_mask_30.any():
+            last_spike_30 = recent_30[spike_mask_30].iloc[-1]
+            days_since    = len(df) - df.index.get_loc(last_spike_30.name) - 1
+            if   days_since <= 5:  h = 15  # 5일 이내 — 직후
+            elif days_since <= 10: h = 12  # 10일 이내
+            elif days_since <= 20: h = 8   # 20일 이내
+            elif days_since <= 30: h = 4   # 30일 이내
+    except Exception:
+        pass
+    bd['근거리스파이크'] = h
+    meta['days_since_spike'] = days_since if 'days_since' in dir() else -1
+
+    # [I] OBV 0선 직전 구간 (최대 10점)
+    # OBV가 음수지만 0선 수렴 중 = DS단석 매수 타이밍 직전 구간
+    i = 0
+    try:
+        obv_abs   = abs(obv_now)
+        obv_range = abs(df['OBV'].iloc[-60:].max() - df['OBV'].iloc[-60:].min()) + 1
+        obv_pct   = obv_now / obv_range * 100  # -100~+100 범위 정규화
+        if obv_now < 0 and -15 <= obv_pct <= 0:
+            i = 10  # 음수지만 0선 5~15% 이내 — 직전 구간
+        elif obv_now < 0 and -30 <= obv_pct < -15:
+            i = 5   # 0선 수렴 중
+    except Exception:
+        pass
+    bd['OBV0선직전'] = i
+    meta['obv_pct'] = round(float(obv_pct) if 'obv_pct' in dir() else 0.0, 1)
+
     return sum(bd.values()), bd, meta
 
 
@@ -496,7 +547,7 @@ def run_kr_scan():
             if low52 <= 0:
                 return
             rebound_pct = (cur - low52) / low52 * 100
-            if not (0 <= rebound_pct <= 30):
+            if not (0 <= rebound_pct <= 50):   # 30→50%
                 return
             with lock:
                 log['bottom'] += 1
@@ -504,15 +555,15 @@ def run_kr_scan():
             vol_ma20   = vol.rolling(20).mean()
             ma20_s     = close.rolling(20).mean()
             ma20_slope = ma20_s.iloc[-1] / ma20_s.iloc[-20] if ma20_s.iloc[-20] > 0 else 1
-            if not (0.98 <= ma20_slope <= 1.15):
+            if not (0.95 <= ma20_slope <= 1.20):   # 0.98~1.15 → 0.95~1.20
                 return
-            if cur < ma20_s.iloc[-1] * 0.97:
+            if cur < ma20_s.iloc[-1] * 0.95:       # 0.97 → 0.95
                 return
             with lock:
                 log['uptrend'] += 1
 
             recent_60  = df.iloc[-60:]
-            spike_mask = recent_60['Volume'] >= vol_ma20.iloc[-60:] * 2.0
+            spike_mask = recent_60['Volume'] >= vol_ma20.iloc[-60:] * 1.5   # 2.0→1.5배
             if not spike_mask.any():
                 return
             last_spike    = recent_60[spike_mask].iloc[-1]
@@ -524,7 +575,7 @@ def run_kr_scan():
             if len(af) >= 3:
                 sil = af['Volume'].mean() / (last_spike['Volume'] + 1)
                 silence_ratio = round(float(sil), 2)
-                if sil > 0.85:
+                if sil > 1.2:                  # 0.85→1.2
                     return
             with lock:
                 log['vol_spike'] += 1
@@ -542,12 +593,12 @@ def run_kr_scan():
             obv_change  = (obv_now - obv_20ago) / (abs(obv_20ago) + 1) * 100
             price_20ago = close.iloc[-20] if len(close) >= 20 else close.iloc[0]
             price_change = (cur - price_20ago) / price_20ago * 100 if price_20ago > 0 else 0
-            if obv_change <= 0 or price_change > 15:
+            if obv_change <= 0 or price_change > 25:   # 15→25%
                 return
             with lock:
                 log['obv_ok'] += 1
 
-            # [F2] 매매신호 30~70
+            # [F2] 매매신호 25~80 (기존 30~70)
             rsi_ser   = calc_rsi(close)
             rsi_cur   = float(rsi_ser.iloc[-1])
             low_14    = df['Low'].rolling(14).min().iloc[-1]
@@ -555,7 +606,7 @@ def run_kr_scan():
             denom     = high_14 - low_14
             stoch_cur = (cur - low_14) / denom * 100 if denom > 0 else 50.0
             signal_cur = stoch_cur * 0.6 + rsi_cur * 0.4
-            if not (30 <= signal_cur <= 70):
+            if not (25 <= signal_cur <= 80):           # 30~70→25~80
                 return
             with lock:
                 log['signal_ok'] += 1
@@ -566,28 +617,28 @@ def run_kr_scan():
             if spike_close <= 0:
                 return
             post_return = post_high / spike_close
-            if not (1.00 <= post_return <= 1.15):
+            if not (1.00 <= post_return <= 1.35):   # 1.15→1.35
                 return
             with lock:
                 log['trend_ok'] += 1
 
-            # [F4] 안정 박스권 — 최근 10일 고점 대비 -10% 이내
+            # [F4] 안정 박스권 — 최근 10일 고점 대비 -15% 이내 (기존 -10%)
             recent_high_10d = float(df['High'].iloc[-10:].max())
             if recent_high_10d <= 0:
                 return
             pullback_pct = (cur - recent_high_10d) / recent_high_10d * 100
-            if pullback_pct < -10:
+            if pullback_pct < -15:                  # -10→-15%
                 return
             with lock:
                 log['pullback_ok'] += 1
 
-            # [F5] 변동성 수축 ≤ 25%
+            # [F5] 변동성 수축 ≤ 35% (기존 25%)
             high_20  = float(df['High'].iloc[-20:].max())
             low_20   = float(df['Low'].iloc[-20:].min())
             if low_20 <= 0:
                 return
             range_pct = (high_20 - low_20) / low_20 * 100
-            if range_pct > 25:
+            if range_pct > 35:                      # 25→35%
                 return
             with lock:
                 log['vol_contract_ok'] += 1
@@ -781,21 +832,33 @@ def build_telegram_message(picks, regime, cfg):
         rt_flag    = "📡 실시간" if p['meta'].get('rt_price_used') else "📋 전일종가"
         sd         = p.get('score_detail', {})
 
-        gather_100 = normalize_score(sd.get('세력매집', 0),       30)
-        spike_100  = normalize_score(sd.get('거래량스파이크', 0), 40)
-        signal_100 = normalize_score(sd.get('매매신호', 0),       30)
+        gather_100  = normalize_score(sd.get('세력매집',     0), 30)
+        spike_100   = normalize_score(sd.get('거래량스파이크', 0), 40)
+        signal_100  = normalize_score(sd.get('매매신호',      0), 30)
+        vwap_100    = normalize_score(sd.get('매물대근접',    0), 20)
+        near_100    = normalize_score(sd.get('근거리스파이크', 0), 15)
+        obv0_100    = normalize_score(sd.get('OBV0선직전',    0), 10)
+
+        # DS단석 패턴 여부 판단 (3개 가산점 합계 25점 이상)
+        ds_score = sd.get('매물대근접', 0) + sd.get('근거리스파이크', 0) + sd.get('OBV0선직전', 0)
+        ds_flag  = "🔥 <b>DS패턴 감지</b>" if ds_score >= 25 else ""
 
         lines += [
             f"#{p['rank']} <b><a href='{chart_url}'>{p['name']}</a></b> ({p['code']}) {p['score']}",
-            f"  🏢 {p['company_summary']}",   # ← 종목명 바로 아래
+            f"  🏢 {p['company_summary']}",
             f"",
             f"  💰 현재가: {p['cur_price']:,}원 {rt_flag} | RS: {rs_val:+}%",
             f"  📈 기대수익: {p['expected_return']}",
             f"",
             f"  📊 <b>핵심 지표</b>",
-            f"    {grade_emoji(gather_100)} 세력매집       {gather_100}점",
-            f"    {grade_emoji(spike_100)} 거래량스파이크  {spike_100}점",
-            f"    {grade_emoji(signal_100)} 매매신호       {signal_100}점",
+            f"    {grade_emoji(gather_100)} 세력매집        {gather_100}점",
+            f"    {grade_emoji(spike_100)} 거래량스파이크   {spike_100}점",
+            f"    {grade_emoji(signal_100)} 매매신호        {signal_100}점",
+            f"",
+            f"  💎 <b>대상승 패턴</b>{('  ' + ds_flag) if ds_flag else ''}",
+            f"    {grade_emoji(vwap_100)} 매물대근접      {vwap_100}점",
+            f"    {grade_emoji(near_100)} 근거리스파이크  {near_100}점",
+            f"    {grade_emoji(obv0_100)} OBV 0선직전     {obv0_100}점",
             f"",
             f"  🏦 수급: {p['supply']}",
         ]

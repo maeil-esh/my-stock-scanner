@@ -40,7 +40,7 @@ _naver_basic_cache: dict = {}
 def _fetch_naver_basic(ticker: str) -> dict:
     """
     네이버 모바일 주식 기본 API
-    주요 필드: closePrice, industryGroupKorName, stockName, marketType
+    실제 필드: stockName, sosok(0=KOSPI,1=KOSDAQ), closePrice 등
     """
     if ticker in _naver_basic_cache:
         return _naver_basic_cache[ticker]
@@ -52,9 +52,27 @@ def _fetch_naver_basic(ticker: str) -> dict:
         }
         r    = requests.get(url, headers=headers, timeout=5)
         data = r.json()
-        # 첫 종목만 필드 확인 출력 (디버깅용)
-        if not _naver_basic_cache:
-            print(f"  [Naver API fields] {list(data.keys())[:10]}")
+
+        # sosok → 시장 구분 문자열 변환
+        sosok = str(data.get('sosok', ''))
+        data['_market'] = 'KOSPI' if sosok == '0' else 'KOSDAQ' if sosok == '1' else ''
+
+        # 업종 — integration API 추가 조회
+        try:
+            r2   = requests.get(
+                f"https://m.stock.naver.com/api/stock/{ticker}/integration",
+                headers=headers, timeout=5
+            )
+            d2   = r2.json()
+            data['_industry'] = (
+                d2.get('industryGroupKorName') or
+                d2.get('indutyNm') or
+                d2.get('wicsSectorName') or
+                d2.get('sectorName') or ''
+            ).strip()
+        except Exception:
+            data['_industry'] = ''
+
         _naver_basic_cache[ticker] = data
         return data
     except Exception:
@@ -89,7 +107,7 @@ def get_realtime_price(ticker):
     실시간 현재가 — 네이버 모바일 API 1순위, PC 스크랩 2순위
     실패 시 None → 호출부에서 전일 종가 fallback
     """
-    # 1순위: 네이버 모바일 JSON API (캐시 공용)
+    # 1순위: 네이버 모바일 JSON API (확인된 필드: closePrice)
     try:
         data      = _fetch_naver_basic(ticker)
         price_str = data.get('closePrice', '')
@@ -229,51 +247,19 @@ def _find_cap_col(df):
 
 
 def get_company_summary(ticker, name):
-    # 1순위: 네이버 모바일 JSON API — 다중 필드명 시도
+    # 1순위: 네이버 모바일 API (_market, _industry 전처리 필드)
     try:
-        data = _fetch_naver_basic(ticker)
-        # 업종 필드명 후보 (API 버전별 상이)
-        industry = (
-            data.get('industryGroupKorName') or
-            data.get('indutyNm') or
-            data.get('industryName') or
-            data.get('sectorName') or
-            data.get('wicsSectorName') or
-            ''
-        ).strip()
-        mkt = (
-            data.get('marketType') or
-            data.get('market') or
-            data.get('stockExchangeType', {}).get('name') if isinstance(data.get('stockExchangeType'), dict) else '' or
-            ''
-        ).strip()
-        if industry or mkt:
-            parts = []
-            if mkt:      parts.append(f"[{mkt}]")
-            if industry: parts.append(industry)
-            return ' '.join(parts)
+        data     = _fetch_naver_basic(ticker)
+        mkt      = data.get('_market', '')
+        industry = data.get('_industry', '')
+        parts    = []
+        if mkt:      parts.append(f"[{mkt}]")
+        if industry: parts.append(industry)
+        if parts:    return ' '.join(parts)
     except Exception:
         pass
 
-    # 2순위: 네이버 증권 종목 검색 API
-    try:
-        url = f"https://m.stock.naver.com/api/search/all?query={ticker}&page=1&pageSize=1"
-        headers = {'User-Agent': 'Mozilla/5.0', 'Referer': 'https://m.stock.naver.com/'}
-        r    = requests.get(url, headers=headers, timeout=5)
-        data = r.json()
-        items = data.get('result', {}).get('stock', {}).get('items', [])
-        if items:
-            item     = items[0]
-            industry = (item.get('industryGroupKorName') or item.get('indutyNm') or '').strip()
-            mkt      = (item.get('marketType') or '').strip()
-            parts    = []
-            if mkt:      parts.append(f"[{mkt}]")
-            if industry: parts.append(industry)
-            if parts:    return ' '.join(parts)
-    except Exception:
-        pass
-
-    # 3순위: 네이버 PC 기업정보 스크랩
+    # 2순위: 네이버 PC 기업정보 스크랩
     try:
         url = f"https://finance.naver.com/item/coinfo.naver?code={ticker}"
         headers = {'User-Agent': 'Mozilla/5.0', 'Accept-Language': 'ko-KR,ko;q=0.9'}
@@ -303,11 +289,10 @@ def get_company_summary(ticker, name):
 
 def get_investor_detail(ticker, start, end):
     """
-    외인·기관 수급 조회 — 네이버 모바일 investor API
-    pykrx 완전 제거 (KRX 인증 오류 방지)
+    외인·기관 수급 조회 — 네이버 모바일 investorPurchase API
     """
     try:
-        url = f"https://m.stock.naver.com/api/stock/{ticker}/investor"
+        url = f"https://m.stock.naver.com/api/stock/{ticker}/investorPurchase"
         headers = {
             'User-Agent': 'Mozilla/5.0',
             'Referer':    'https://m.stock.naver.com/'
@@ -315,17 +300,15 @@ def get_investor_detail(ticker, start, end):
         r    = requests.get(url, headers=headers, timeout=6)
         data = r.json()
 
-        # 최근 5일 외인·기관 순매수 추출
         items = data.get('list', [])
         if not items:
             return None, None, 0, 0
 
-        import pandas as pd
         rows = []
         for item in items[-5:]:
             try:
-                foreign = int(str(item.get('foreignerPureBuyQuant', 0)).replace(',', '').replace('-', '-') or 0)
-                inst    = int(str(item.get('organPureBuyQuant',    0)).replace(',', '').replace('-', '-') or 0)
+                foreign = int(str(item.get('foreignerPureBuyQuant', 0) or 0).replace(',', ''))
+                inst    = int(str(item.get('organPureBuyQuant',    0) or 0).replace(',', ''))
                 rows.append({'외국인': foreign, '기관': inst})
             except Exception:
                 continue

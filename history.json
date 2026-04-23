@@ -2200,5 +2200,159 @@
         "label": "🔔 장 시작 스캔",
         "regime": "NEUTRAL",
         "picks": []
+    },
+    {
+        "date": "20260423",
+        "label": "🔔 장 시작 스캔",
+        "regime": "NEUTRAL",
+        "picks": [
+            {
+                "rank": 1,
+                "name": "인터로조",
+                "code": "119610",
+                "company_summary": "인터로조",
+                "supply": "정보없음",
+                "cur_price": 20500,
+                "score": "★★☆☆☆ (94점/215)",
+                "tags": "세력전환 30점 / 거래량스파이크 20점 / 매매신호 17점",
+                "expected_return": "11.6%",
+                "score_detail": {
+                    "세력전환": 30,
+                    "세력매집": 12,
+                    "매매신호": 17,
+                    "거래량스파이크": 20,
+                    "고가돌파": 0,
+                    "수급강도": 0,
+                    "매물대근접": 0,
+                    "근거리스파이크": 15,
+                    "OBV0선직전": 0
+                },
+                "meta": {
+                    "rsi": 56.4,
+                    "bb_compress": 0,
+                    "rebound_pct": 36.8,
+                    "vol_ratio": 0.82,
+                    "inst_streak": 0,
+                    "for_streak": 0,
+                    "mktcap": 2311,
+                    "silence_ratio": 0.34,
+                    "green_days": 54,
+                    "obv_cross": false,
+                    "signal": 44.4,
+                    "max_spike": 4.4,
+                    "rs": 2.1,
+                    "trade": {
+                        "entry": 20500,
+                        "stop_loss": 18900,
+                        "target_1": 23699,
+                        "target_2": 25832,
+                        "risk_pct": 7.8,
+                        "reward_pct": 15.6,
+                        "rr_ratio": 2.0,
+                        "atr": 1066.4
+                    },
+                    "regime": "NEUTRAL",
+                    "rt_price_used": true
+                }
+            },
+            {
+                "rank": 2,
+                "name": "성우",
+                "code": "458650",
+                "company_summary": "성우",
+                "supply": "정보없음",
+                "cur_price": 13570,
+                "score": "★★☆☆☆ (90점/215)",
+                "tags": "거래량스파이크 30점 / 매매신호 15점 / 근거리스파이크 15점",
+                "expected_return": "11.3%",
+                "score_detail": {
+                    "세력전환": 6,
+                    "세력매집": 12,
+                    "매매신호": 15,
+                    "거래량스파이크": 30,
+                    "고가돌파": 0,
+                    "수급강도": 0,
+                    "매물대근접": 12,
+                    "근거리스파이크": 15,
+                    "OBV0선직전": 0
+                },
+                "meta": {
+                    "rsi": 58.6,
+                    "bb_compress": 0,
+                    "rebound_pct": 42.8,
+                    "vol_ratio": 0.56,
+                    "inst_streak": 0,
+                    "for_streak": 0,
+                    "mktcap": 2045,
+                    "silence_ratio": 0.0,
+                    "green_days": 50,
+                    "obv_cross": false,
+                    "signal": 60.4,
+                    "max_spike": 5.5,
+                    "rs": -2.8,
+                    "trade": {
+                        "entry": 13570,
+                        "stop_loss": 12821,
+                        "target_1": 15067,
+                        "target_2": 16066,
+                        "risk_pct": 5.5,
+                        "reward_pct": 11.0,
+                        "rr_ratio": 2.0,
+                        "atr": 499.3
+                    },
+                    "regime": "NEUTRAL",
+                    "rt_price_used": true
+                }
+            },
+            {
+                "rank": 3,
+                "name": "현대코퍼레이션",
+                "code": "011760",
+                "company_summary": "현대코퍼레이션",
+                "supply": "정보없음",
+                "cur_price": 29350,
+                "score": "★★☆☆☆ (82점/215)",
+                "tags": "세력전환 30점 / 거래량스파이크 20점 / 근거리스파이크 15점",
+                "expected_return": "10.7%",
+                "score_detail": {
+                    "세력전환": 30,
+                    "세력매집": 12,
+                    "매매신호": 0,
+                    "거래량스파이크": 20,
+                    "고가돌파": 0,
+                    "수급강도": 0,
+                    "매물대근접": 0,
+                    "근거리스파이크": 15,
+                    "OBV0선직전": 5
+                },
+                "meta": {
+                    "rsi": 64.1,
+                    "bb_compress": 0,
+                    "rebound_pct": 46.4,
+                    "vol_ratio": 0.38,
+                    "inst_streak": 0,
+                    "for_streak": 0,
+                    "mktcap": 3915,
+                    "silence_ratio": 0.0,
+                    "green_days": 57,
+                    "obv_cross": false,
+                    "signal": 74.5,
+                    "max_spike": 4.0,
+                    "rs": 3.6,
+                    "trade": {
+                        "entry": 29350,
+                        "stop_loss": 27646,
+                        "target_1": 32757,
+                        "target_2": 35028,
+                        "risk_pct": 5.8,
+                        "reward_pct": 11.6,
+                        "rr_ratio": 2.0,
+                        "atr": 1135.7
+                    },
+                    "regime": "NEUTRAL",
+                    "rt_price_used": true
+                }
+            }
+        ]
     }
 ]

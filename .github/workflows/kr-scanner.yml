@@ -2,9 +2,9 @@ name: KR Scanner
 
 on:
   schedule:
-    - cron: '30 0 * * 1-5'   # 09:30 KST (월~금)
-    - cron: '0 4  * * 1-5'   # 13:00 KST (월~금)
-    - cron: '0 7  * * 1-5'   # 16:00 KST (월~금)
+    - cron: '33 0 * * 1-5'   # 09:33 KST (월~금)
+    - cron: '7 4  * * 1-5'   # 13:07 KST (월~금)
+    - cron: '17 7 * * 1-5'   # 16:17 KST (월~금)
   workflow_dispatch:
 
 jobs:

@@ -36,10 +36,6 @@ MKTCAP_MAX   = 30000
 # 네이버 모바일 API 응답 캐시 (ticker → dict) — 가격/업종 공용
 _naver_basic_cache: dict = {}
 
-# 스캔 1회당 1번만 조회하는 상승 테마 캐시
-_rising_themes_cache: list = []
-
-
 def fetch_spike_news(ticker: str, spike_date_strs: list) -> list:
     """
     스파이크 발생 시점 전후 3일 뉴스 수집 (정보용, 점수 없음)
@@ -62,89 +58,6 @@ def fetch_spike_news(ticker: str, spike_date_strs: list) -> list:
     except Exception:
         pass
     return results
-
-
-def fetch_rising_themes() -> list:
-    """
-    네이버 테마 시세 → 당일 상승 테마 TOP10
-    반환: [{'name': '방산', 'chg': 4.2}, ...]
-    """
-    global _rising_themes_cache
-    if _rising_themes_cache:
-        return _rising_themes_cache
-    try:
-        r = requests.get(
-            "https://finance.naver.com/sise/theme.naver",
-            headers={'User-Agent': 'Mozilla/5.0', 'Accept-Language': 'ko-KR,ko;q=0.9'},
-            timeout=8
-        )
-        r.encoding = 'euc-kr'
-        soup   = BeautifulSoup(r.text, 'html.parser')
-        themes = []
-        for row in soup.select('table.type_1 tr'):
-            cols     = row.select('td')
-            name_tag = row.select_one('td a')
-            if not name_tag or len(cols) < 2:
-                continue
-            try:
-                chg = float(cols[1].get_text(strip=True).replace('+','').replace('%','').replace(',',''))
-                if chg > 0:
-                    themes.append({'name': name_tag.get_text(strip=True), 'chg': chg})
-            except Exception:
-                continue
-        themes.sort(key=lambda x: x['chg'], reverse=True)
-        _rising_themes_cache = themes[:10]
-        print(f"  📌 상승 테마: {', '.join([t['name'] for t in _rising_themes_cache[:5]])}")
-        return _rising_themes_cache
-    except Exception as e:
-        print(f"  ⚠️  테마 조회 실패: {e}")
-        return []
-
-
-def score_theme_match(ticker: str, rising_themes: list) -> tuple:
-    """
-    종목 뉴스 제목 + 업종 설명 vs 현재 상승 테마 키워드 매칭
-    반환: (점수, 매칭된 테마명 문자열)
-    MAX: 15점
-    """
-    if not rising_themes:
-        return 0, ''
-    try:
-        # 1. 종목 뉴스 제목 수집 (최근 20건)
-        url = f"https://finance.naver.com/item/news_news.naver?code={ticker}&page=1"
-        r   = requests.get(
-            url,
-            headers={'User-Agent': 'Mozilla/5.0', 'Accept-Language': 'ko-KR,ko;q=0.9'},
-            timeout=6
-        )
-        r.encoding = 'euc-kr'
-        soup        = BeautifulSoup(r.text, 'html.parser')
-        news_titles = [a.get_text(strip=True) for a in soup.select('.tb_cont .title a, dl dt a') if a.get_text(strip=True)]
-
-        # 2. 업종/설명 (naver basic API에서 캐시된 값)
-        basic       = _fetch_naver_basic(ticker)
-        description = basic.get('_industry', '')
-
-        all_text = ' '.join(news_titles[:20]) + ' ' + description
-
-        # 3. 테마 키워드 매칭
-        matched = []
-        for theme in rising_themes:
-            tname = theme['name']
-            # 테마명 자체 + 앞 2글자 + 공백 분리 단어로 매칭
-            keywords = [tname, tname[:2]] + [w for w in tname.split() if len(w) >= 2]
-            if any(kw in all_text for kw in keywords):
-                matched.append(f"{tname}({theme['chg']:+.1f}%)")
-
-        if   len(matched) >= 2: score = 15
-        elif len(matched) == 1: score = 8
-        else:                   score = 0
-
-        return score, ', '.join(matched[:3])
-
-    except Exception as e:
-        print(f"  ⚠️  테마 매칭 실패({ticker}): {e}")
-        return 0, ''
 
 
 def _fetch_naver_basic(ticker: str) -> dict:
@@ -688,9 +601,6 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
 # ══════════════════════════════════════════════════════════════
 
 def run_kr_scan():
-    global _rising_themes_cache
-    _rising_themes_cache = []  # 스캔마다 테마 새로 조회
-
     today_str  = get_market_date()
     start_260d = get_start_date(today_str, 180)
     start_10d  = get_start_date(today_str, 10)
@@ -733,9 +643,6 @@ def run_kr_scan():
     except Exception as e:
         print(f"  ❌ 시총 필터 실패: {e} → 스캔 중단")
         return []
-
-    # 상승 테마 사전 조회 (1회)
-    rising_themes = fetch_rising_themes()
 
     candidates = []
     log = dict(total=len(all_tickers), penny=0, mktcap=len(all_tickers),
@@ -980,7 +887,6 @@ def run_kr_scan():
                 "max_spike":     meta.get('max_spike', 0),
                 "rs":            meta.get('rs', 0),
                 "trade":         meta.get('trade', None),
-                "regime":        regime,
                 "rt_price_used": rt_price is not None,
                 "spike_count":   meta.get('spike_count', 0),
                 "disp20":        meta.get('disp20', 0.0),

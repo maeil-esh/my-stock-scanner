@@ -64,13 +64,21 @@ def _fetch_naver_basic(ticker: str) -> dict:
                 headers=headers, timeout=5
             )
             d2   = r2.json()
+            # 디버그: 첫 종목만 필드 출력
+            if len(_naver_basic_cache) == 0:
+                print(f"  [integration fields] {list(d2.keys())[:15]}")
             data['_industry'] = (
                 d2.get('industryGroupKorName') or
                 d2.get('indutyNm') or
                 d2.get('wicsSectorName') or
-                d2.get('sectorName') or ''
+                d2.get('sectorName') or
+                d2.get('category') or
+                d2.get('industryCodeType', {}).get('name', '') if isinstance(d2.get('industryCodeType'), dict) else '' or
+                ''
             ).strip()
-        except Exception:
+        except Exception as e:
+            if len(_naver_basic_cache) == 0:
+                print(f"  [integration error] {e}")
             data['_industry'] = ''
 
         _naver_basic_cache[ticker] = data
@@ -300,7 +308,14 @@ def get_investor_detail(ticker, start, end):
         r    = requests.get(url, headers=headers, timeout=6)
         data = r.json()
 
-        items = data.get('list', [])
+        # 디버그: 첫 종목만 구조 출력
+        if isinstance(data, dict):
+            print(f"  [investor keys] {list(data.keys())[:8]}")
+            items_sample = data.get('list', data.get('stocks', data.get('data', [])))
+            if items_sample and len(items_sample) > 0:
+                print(f"  [investor item] {list(items_sample[0].keys())[:10]}")
+
+        items = data.get('list', data.get('stocks', data.get('data', [])))
         if not items:
             return None, None, 0, 0
 

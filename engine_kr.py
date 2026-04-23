@@ -29,7 +29,7 @@ from engine_common import (
 
 DATA_FILE    = 'stock_data.json'
 HISTORY_FILE = 'history.json'
-TOP_N        = 3
+TOP_N        = 5
 MAX_SCORE    = 245  # A(50)+B(50)+C(30)+D(40)+E(15)+F(15)+G(20)+H(15)+I(10)
 MKTCAP_MIN   = 1000
 MKTCAP_MAX   = 30000
@@ -53,6 +53,9 @@ def _fetch_naver_basic(ticker: str) -> dict:
         }
         r    = requests.get(url, headers=headers, timeout=5)
         data = r.json()
+        # 첫 종목만 필드 확인 출력 (디버깅용)
+        if not _naver_basic_cache:
+            print(f"  [Naver API fields] {list(data.keys())[:10]}")
         _naver_basic_cache[ticker] = data
         return data
     except Exception:
@@ -227,28 +230,57 @@ def _find_cap_col(df):
 
 
 def get_company_summary(ticker, name):
-    # 1순위: 네이버 모바일 JSON API (캐시 공용, 가장 안정적)
+    # 1순위: 네이버 모바일 JSON API — 다중 필드명 시도
     try:
-        data     = _fetch_naver_basic(ticker)
-        industry = data.get('industryGroupKorName', '').strip()
-        mkt      = data.get('marketType', '').strip()      # KOSPI / KOSDAQ
-        parts    = []
-        if mkt:
-            parts.append(f"[{mkt}]")
-        if industry:
-            parts.append(industry)
-        if parts:
+        data = _fetch_naver_basic(ticker)
+        # 업종 필드명 후보 (API 버전별 상이)
+        industry = (
+            data.get('industryGroupKorName') or
+            data.get('indutyNm') or
+            data.get('industryName') or
+            data.get('sectorName') or
+            data.get('wicsSectorName') or
+            ''
+        ).strip()
+        mkt = (
+            data.get('marketType') or
+            data.get('market') or
+            data.get('stockExchangeType', {}).get('name') if isinstance(data.get('stockExchangeType'), dict) else '' or
+            ''
+        ).strip()
+        if industry or mkt:
+            parts = []
+            if mkt:      parts.append(f"[{mkt}]")
+            if industry: parts.append(industry)
             return ' '.join(parts)
     except Exception:
         pass
 
-    # 2순위: 네이버 PC 기업정보 페이지 스크랩
+    # 2순위: 네이버 증권 종목 검색 API
+    try:
+        url = f"https://m.stock.naver.com/api/search/all?query={ticker}&page=1&pageSize=1"
+        headers = {'User-Agent': 'Mozilla/5.0', 'Referer': 'https://m.stock.naver.com/'}
+        r    = requests.get(url, headers=headers, timeout=5)
+        data = r.json()
+        items = data.get('result', {}).get('stock', {}).get('items', [])
+        if items:
+            item     = items[0]
+            industry = (item.get('industryGroupKorName') or item.get('indutyNm') or '').strip()
+            mkt      = (item.get('marketType') or '').strip()
+            parts    = []
+            if mkt:      parts.append(f"[{mkt}]")
+            if industry: parts.append(industry)
+            if parts:    return ' '.join(parts)
+    except Exception:
+        pass
+
+    # 3순위: 네이버 PC 기업정보 스크랩
     try:
         url = f"https://finance.naver.com/item/coinfo.naver?code={ticker}"
         headers = {'User-Agent': 'Mozilla/5.0', 'Accept-Language': 'ko-KR,ko;q=0.9'}
         r = requests.get(url, headers=headers, timeout=6)
         r.encoding = 'euc-kr'
-        soup = BeautifulSoup(r.text, 'html.parser')
+        soup  = BeautifulSoup(r.text, 'html.parser')
         rows  = soup.select('.coinfo_table tr')
         parts = {}
         for row in rows:
@@ -257,8 +289,7 @@ def get_company_summary(ticker, name):
                 key = th.text.strip()
                 if key in ['업종', '주요제품', '주요사업']:
                     val = td.text.strip().replace('\n', ' ')
-                    if val:
-                        parts[key] = val[:40]
+                    if val: parts[key] = val[:40]
         if parts:
             desc = []
             if '업종'     in parts: desc.append(f"[{parts['업종']}]")

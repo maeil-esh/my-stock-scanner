@@ -57,28 +57,16 @@ def _fetch_naver_basic(ticker: str) -> dict:
         sosok = str(data.get('sosok', ''))
         data['_market'] = 'KOSPI' if sosok == '0' else 'KOSDAQ' if sosok == '1' else ''
 
-        # 업종 — integration API 추가 조회
+        # 업종/설명 — integration API description 필드 사용
         try:
             r2   = requests.get(
                 f"https://m.stock.naver.com/api/stock/{ticker}/integration",
                 headers=headers, timeout=5
             )
-            d2   = r2.json()
-            # 디버그: 첫 종목만 필드 출력
-            if len(_naver_basic_cache) == 0:
-                print(f"  [integration fields] {list(d2.keys())[:15]}")
-            data['_industry'] = (
-                d2.get('industryGroupKorName') or
-                d2.get('indutyNm') or
-                d2.get('wicsSectorName') or
-                d2.get('sectorName') or
-                d2.get('category') or
-                d2.get('industryCodeType', {}).get('name', '') if isinstance(d2.get('industryCodeType'), dict) else '' or
-                ''
-            ).strip()
-        except Exception as e:
-            if len(_naver_basic_cache) == 0:
-                print(f"  [integration error] {e}")
+            d2            = r2.json()
+            desc          = (d2.get('description') or '').strip()
+            data['_industry'] = (desc[:60] + '...') if len(desc) > 60 else desc
+        except Exception:
             data['_industry'] = ''
 
         _naver_basic_cache[ticker] = data
@@ -297,48 +285,49 @@ def get_company_summary(ticker, name):
 
 def get_investor_detail(ticker, start, end):
     """
-    외인·기관 수급 조회 — 네이버 모바일 investorPurchase API
+    외인·기관 수급 — 네이버 금융 PC 페이지 스크랩
     """
     try:
-        url = f"https://m.stock.naver.com/api/stock/{ticker}/investorPurchase"
+        url = f"https://finance.naver.com/item/frgn.naver?code={ticker}"
         headers = {
             'User-Agent': 'Mozilla/5.0',
-            'Referer':    'https://m.stock.naver.com/'
+            'Accept-Language': 'ko-KR,ko;q=0.9'
         }
-        r    = requests.get(url, headers=headers, timeout=6)
-        data = r.json()
+        r = requests.get(url, headers=headers, timeout=8)
+        r.encoding = 'euc-kr'
+        soup = BeautifulSoup(r.text, 'html.parser')
 
-        # 디버그: 첫 종목만 구조 출력
-        if isinstance(data, dict):
-            print(f"  [investor keys] {list(data.keys())[:8]}")
-            items_sample = data.get('list', data.get('stocks', data.get('data', [])))
-            if items_sample and len(items_sample) > 0:
-                print(f"  [investor item] {list(items_sample[0].keys())[:10]}")
+        rows = soup.select('table.type2 tr')
+        foreign_vals = []
+        inst_vals    = []
 
-        items = data.get('list', data.get('stocks', data.get('data', [])))
-        if not items:
-            return None, None, 0, 0
-
-        rows = []
-        for item in items[-5:]:
+        for row in rows[1:]:
+            tds = row.select('td')
+            if len(tds) < 5:
+                continue
             try:
-                foreign = int(str(item.get('foreignerPureBuyQuant', 0) or 0).replace(',', ''))
-                inst    = int(str(item.get('organPureBuyQuant',    0) or 0).replace(',', ''))
-                rows.append({'외국인': foreign, '기관': inst})
+                # 외국인 순매수: td[2], 기관 순매수: td[4]
+                f_txt = tds[2].get_text(strip=True).replace(',', '').replace('+', '')
+                i_txt = tds[4].get_text(strip=True).replace(',', '').replace('+', '')
+                if f_txt and i_txt and f_txt != '-' and i_txt != '-':
+                    foreign_vals.append(int(f_txt))
+                    inst_vals.append(int(i_txt))
             except Exception:
                 continue
+            if len(foreign_vals) >= 5:
+                break
 
-        if not rows:
+        if not foreign_vals:
             return None, None, 0, 0
 
-        inv_df = pd.DataFrame(rows)
+        inv_df = pd.DataFrame({'외국인': foreign_vals, '기관': inst_vals})
         cols   = ('외국인', '기관')
 
         inst_streak = for_streak = 0
-        for val in reversed(inv_df['기관'].values):
+        for val in inst_vals:
             if val > 0: inst_streak += 1
             else: break
-        for val in reversed(inv_df['외국인'].values):
+        for val in foreign_vals:
             if val > 0: for_streak += 1
             else: break
 

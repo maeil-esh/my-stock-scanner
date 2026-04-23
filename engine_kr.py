@@ -17,7 +17,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
-from pykrx import stock
 import FinanceDataReader as fdr
 
 from engine_common import (
@@ -303,38 +302,53 @@ def get_company_summary(ticker, name):
 
 
 def get_investor_detail(ticker, start, end):
-    df = None
+    """
+    외인·기관 수급 조회 — 네이버 모바일 investor API
+    pykrx 완전 제거 (KRX 인증 오류 방지)
+    """
     try:
-        df = stock.get_market_trading_value_by_date(start, end, ticker)
-        if df is None or df.empty:
-            raise ValueError("pykrx 빈 결과")
-    except Exception:
-        try:
-            raw = fdr.DataReader(f"KRX:{ticker}", start, end)
-            if raw is not None and not raw.empty:
-                df = raw
-        except Exception:
+        url = f"https://m.stock.naver.com/api/stock/{ticker}/investor"
+        headers = {
+            'User-Agent': 'Mozilla/5.0',
+            'Referer':    'https://m.stock.naver.com/'
+        }
+        r    = requests.get(url, headers=headers, timeout=6)
+        data = r.json()
+
+        # 최근 5일 외인·기관 순매수 추출
+        items = data.get('list', [])
+        if not items:
             return None, None, 0, 0
 
-    if df is None or df.empty:
-        return None, None, 0, 0
+        import pandas as pd
+        rows = []
+        for item in items[-5:]:
+            try:
+                foreign = int(str(item.get('foreignerPureBuyQuant', 0)).replace(',', '').replace('-', '-') or 0)
+                inst    = int(str(item.get('organPureBuyQuant',    0)).replace(',', '').replace('-', '-') or 0)
+                rows.append({'외국인': foreign, '기관': inst})
+            except Exception:
+                continue
 
-    fc = ic = None
-    for col in df.columns:
-        if '외국인' in col: fc = col
-        if '기관'   in col: ic = col
-    if not fc or not ic:
-        return None, None, 0, 0
+        if not rows:
+            return None, None, 0, 0
 
-    recent = df[[fc, ic]].tail(5)
-    inst_streak = for_streak = 0
-    for val in reversed(recent[ic].values):
-        if val > 0: inst_streak += 1
-        else: break
-    for val in reversed(recent[fc].values):
-        if val > 0: for_streak += 1
-        else: break
-    return recent, (fc, ic), inst_streak, for_streak
+        inv_df = pd.DataFrame(rows)
+        cols   = ('외국인', '기관')
+
+        inst_streak = for_streak = 0
+        for val in reversed(inv_df['기관'].values):
+            if val > 0: inst_streak += 1
+            else: break
+        for val in reversed(inv_df['외국인'].values):
+            if val > 0: for_streak += 1
+            else: break
+
+        return inv_df, cols, inst_streak, for_streak
+
+    except Exception as e:
+        print(f"  ⚠️  수급 조회 실패({ticker}): {e}")
+        return None, None, 0, 0
 
 
 # ══════════════════════════════════════════════════════════════
@@ -434,7 +448,7 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
     f = 0
     supply_text = "정보없음"
     if inv_df is not None and cols:
-        fc_col, ic_col = cols
+        fc_col, ic_col = cols  # '외국인', '기관'
         fd        = int((inv_df[fc_col] > 0).sum())
         id_       = int((inv_df[ic_col] > 0).sum())
         both_days = int(((inv_df[fc_col] > 0) & (inv_df[ic_col] > 0)).sum())
@@ -755,10 +769,13 @@ def run_kr_scan():
     print(f"\n🏆 [TOP {TOP_N}] — 실시간 가격 조회 중...")
     for rank, (total_score, ticker, breakdown, meta, df) in enumerate(top_raw, 1):
         # ── 종목명 ──────────────────────────────────────────────
+        name = ticker
         try:
-            name = stock.get_market_ticker_name(ticker)
+            data = _fetch_naver_basic(ticker)
+            name = data.get('stockName') or data.get('name') or ticker
         except Exception:
-            name = ticker
+            pass
+        if name == ticker:
             try:
                 for mkt in ["KOSPI", "KOSDAQ"]:
                     df_lst  = fdr.StockListing(mkt)

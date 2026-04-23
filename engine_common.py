@@ -160,26 +160,65 @@ def fetch_naver_news(max_items: int = 10) -> list:
 
 
 def fetch_theme_news(max_items: int = 5) -> list:
+    """
+    네이버 금융 테마 시세 페이지에서 당일 상승률 TOP 테마 추출
+    https://finance.naver.com/sise/theme.naver
+    반환: ["2차전지 +4.23% (32/45)", ...] 형태의 리스트
+    """
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "Accept-Language": "ko-KR,ko;q=0.9"
     }
-    news = []
+    themes = []
     try:
         r = requests.get(
-            "https://finance.naver.com/news/news_list.naver?mode=LSS2D&section_id=101&section_id2=260",
+            "https://finance.naver.com/sise/theme.naver",
             headers=headers, timeout=8
         )
         r.encoding = "euc-kr"
         soup = BeautifulSoup(r.text, "html.parser")
-        for item in soup.select("dl dd.articleSubject a"):
-            title = item.get_text(strip=True)
-            if title and len(title) > 5:
-                news.append(title)
-            if len(news) >= max_items:
-                break
-    except Exception:
-        pass
-    return news[:max_items]
+
+        # 테마 테이블 파싱
+        rows = soup.select("table.type_1 tr")
+        for row in rows:
+            cols = row.select("td")
+            if len(cols) < 3:
+                continue
+            name_tag = row.select_one("td a")
+            if not name_tag:
+                continue
+            theme_name = name_tag.get_text(strip=True)
+            if not theme_name:
+                continue
+
+            # 등락률 컬럼
+            chg_tag = cols[1].get_text(strip=True) if len(cols) > 1 else ''
+            # 상승/하락 종목수 컬럼
+            up_tag   = cols[3].get_text(strip=True) if len(cols) > 3 else ''
+            down_tag = cols[4].get_text(strip=True) if len(cols) > 4 else ''
+
+            try:
+                chg_val = float(chg_tag.replace('+', '').replace('%', '').replace(',', ''))
+            except Exception:
+                continue
+
+            # 상승 테마만 포함
+            if chg_val <= 0:
+                continue
+
+            sign = "+" if chg_val >= 0 else ""
+            entry = f"{theme_name} {sign}{chg_val:.2f}%"
+            if up_tag and down_tag:
+                entry += f" (↑{up_tag}/↓{down_tag})"
+            themes.append((chg_val, entry))
+
+        # 상승률 내림차순 정렬
+        themes.sort(key=lambda x: x[0], reverse=True)
+        return [t[1] for t in themes[:max_items]]
+
+    except Exception as e:
+        print(f"  ⚠️  테마 조회 실패: {e}")
+        return []
 
 
 def build_news_briefing() -> str:
@@ -199,13 +238,13 @@ def build_news_briefing() -> str:
 
     lines.append("")
 
-    theme_news = fetch_theme_news(max_items=5)
-    lines.append("🔥 <b>금일 유력 테마</b>")
-    if theme_news:
-        for i, title in enumerate(theme_news, 1):
-            lines.append(f"  {i}. {title}")
+    theme_list = fetch_theme_news(max_items=5)
+    lines.append("🔥 <b>금일 상승 테마 TOP5</b>")
+    if theme_list:
+        for i, entry in enumerate(theme_list, 1):
+            lines.append(f"  {i}. {entry}")
     else:
-        lines.append("  테마 수집 실패")
+        lines.append("  테마 수집 실패 (장 마감 후 또는 데이터 없음)")
 
     lines += ["━" * 24, "💡 <i>출처: 네이버 금융</i>"]
     return "\n".join(lines)

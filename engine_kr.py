@@ -740,8 +740,8 @@ def run_kr_scan():
     candidates = []
     log = dict(total=len(all_tickers), penny=0, mktcap=len(all_tickers),
                bottom=0, uptrend=0, vol_spike=0, rs_pass=0,
-               obv_ok=0, signal_ok=0, trend_ok=0, pullback_ok=0,
-               vol_contract_ok=0, seforce=0, final=0)
+               obv_ok=0, signal_ok=0, trend_ok=0,
+               seforce=0, final=0)
     lock = threading.Lock()
     passed_stage1 = []
 
@@ -891,19 +891,17 @@ def run_kr_scan():
             continue
 
     # ── 필터 현황 출력 ─────────────────────────────────────────
-    print(f"\n📊 [필터 현황 — {regime} 레짐]")
+    print(f"\n📊 [필터 현황]")
     rs_label = f"⑥ RS ≥ {RS_THRESHOLD:+d}%"
     for lbl, key in [
         ("전체", "total"), ("① 동전주 제외", "penny"),
-        ("② 시총 필터", "mktcap"), ("③ 저점대비 0~30%", "bottom"),
+        ("② 시총 필터", "mktcap"), ("③ 저점대비 0~50%", "bottom"),
         ("④ MA20 박스권", "uptrend"), ("⑤ 거래량 스파이크", "vol_spike"),
         (rs_label, "rs_pass"),
         ("⑦ 선행매집(OBV↑/가격↔)", "obv_ok"),
-        ("⑧ 매매신호 30~70", "signal_ok"),
-        ("⑨ 스파이크후 +0~15%", "trend_ok"),
-        ("⑩ 안정박스 -10%이내", "pullback_ok"),
-        ("⑪ 변동성수축 ≤25%", "vol_contract_ok"),
-        ("⑫ 수급 확인", "seforce"),
+        ("⑧ 매매신호 25~80", "signal_ok"),
+        ("⑨ 스파이크후 +0~35%", "trend_ok"),
+        ("⑩ 수급 확인", "seforce"),
         ("최종 통과", "final"),
     ]:
         print(f"  {lbl:<24} {log[key]:>5}건")

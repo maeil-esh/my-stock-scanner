@@ -30,7 +30,7 @@ from engine_common import (
 DATA_FILE    = 'stock_data.json'
 HISTORY_FILE = 'history.json'
 TOP_N        = 3
-MAX_SCORE    = 215  # 기존 170 + G(20) + H(15) + I(10)
+MAX_SCORE    = 245  # A(50)+B(50)+C(30)+D(40)+E(15)+F(15)+G(20)+H(15)+I(10)
 MKTCAP_MIN   = 1000
 MKTCAP_MAX   = 30000
 
@@ -326,34 +326,36 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
     bd = {}
     meta = {}
 
-    # [A] 세력값 0선 돌파
-    obv_now  = df['OBV'].iloc[-1]
-    obv_prev = df['OBV'].iloc[-2]
-    obv_5d   = df['OBV'].iloc[-6] if len(df) >= 6 else df['OBV'].iloc[0]
-    obv_chg  = (obv_now - obv_5d) / (abs(obv_5d) + 1) * 100
+    # [A] 세력전환 — OBV 0선 돌파 (최대 50점)
+    # 단기 OBV 상승만으론 높은 점수 안 나오게 기준 강화
+    obv_now   = df['OBV'].iloc[-1]
+    obv_prev  = df['OBV'].iloc[-2]
+    obv_5d    = df['OBV'].iloc[-6] if len(df) >= 6 else df['OBV'].iloc[0]
+    obv_chg   = (obv_now - obv_5d) / (abs(obv_5d) + 1) * 100
     obv_cross = bool(obv_now > 0 and obv_prev <= 0)
     a = 0
     if obv_cross:
-        a = 40
-    elif obv_chg > 0:
-        a = min(int(obv_chg * 2), 30)
+        a = 50                              # 0선 돌파 = 최고점
+    elif obv_chg > 10:
+        a = min(int(obv_chg * 1.0), 20)    # 상승률 10%↑ 부터만 점수, max 20점
     bd['세력전환'] = a
     meta['obv_chg']   = round(float(obv_chg), 2)
     meta['obv_cross'] = obv_cross
 
-    # [B] 녹색 매집 기간
+    # [B] 세력매집 기간 — DS단석 핵심 (최대 50점, 기존 30점에서 상향)
+    # 장기 매집일수록 대시세 확률↑ → 가중치 가장 높게
     obv_diff   = df['OBV'].diff().iloc[-120:]
     green_days = int((obv_diff > 0).sum())
     b = 0
-    if   green_days >= 120: b = 30
-    elif green_days >= 80:  b = 25
-    elif green_days >= 60:  b = 20
-    elif green_days >= 30:  b = 12
-    elif green_days >= 20:  b = 6
+    if   green_days >= 120: b = 50   # 6개월 매집 — 최강 신호
+    elif green_days >= 80:  b = 40   # 4개월
+    elif green_days >= 60:  b = 30   # 3개월 — DS단석 기준
+    elif green_days >= 40:  b = 18
+    elif green_days >= 20:  b = 8
     bd['세력매집'] = b
     meta['green_days'] = green_days
 
-    # [C] 매매신호 30 돌파
+    # [C] 매매신호 — 0점이면 페널티 (최대 30점, 0점 시 -20점)
     low_14  = df['Low'].rolling(14).min()
     high_14 = df['High'].rolling(14).max()
     denom   = (high_14 - low_14).iloc[-1]
@@ -366,13 +368,19 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
     signal_cross = bool(signal_now > 30 and signal_prev <= 30)
     if signal_cross:
         c = 30
-    elif 30 < signal_now <= 70:
-        c = int(20 - abs(signal_now - 50) * 0.4)
-    bd['매매신호']       = max(c, 0)
+    elif signal_now > 60:
+        c = 25                             # 강한 신호 구간
+    elif 40 <= signal_now <= 60:
+        c = 20                             # 중립 신호 구간
+    elif 25 <= signal_now < 40:
+        c = 10                             # 약한 신호
+    else:
+        c = -20                            # 신호 없음 = 페널티
+    bd['매매신호']       = c
     meta['signal']       = round(float(signal_now), 1)
     meta['signal_cross'] = signal_cross
 
-    # [D] 거래량 스파이크
+    # [D] 거래량 스파이크 (최대 40점, 유지)
     vol_ma20_ser = df['Volume'].rolling(20).mean()
     recent_60    = df.iloc[-60:]
     spike_ratios = recent_60['Volume'] / (vol_ma20_ser.iloc[-60:] + 1)
@@ -387,11 +395,11 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
     meta['max_spike'] = round(float(max_spike), 1)
     meta['vol_ratio'] = round(float(cur_ratio), 2)
 
-    # [E] 전일 고가 돌파
+    # [E] 전일 고가 돌파 (최대 15점, 유지)
     e = 15 if cur > prev_hi else 0
     bd['고가돌파'] = e
 
-    # [F] 수급 강도
+    # [F] 수급 강도 (최대 15점, 유지)
     f = 0
     supply_text = "정보없음"
     if inv_df is not None and cols:
@@ -416,22 +424,22 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
     # ── DS단석 패턴 가산점 ─────────────────────────────────────
 
     # [G] VWAP 매물대 돌파 임박 (최대 20점)
-    # 60일 거래량가중평균 대비 현재가 95~105% = 매물대 상단 직전 에너지 축적
     g = 0
+    vwap_ratio = 1.0
     try:
-        vwap_60   = (df['Close'] * df['Volume']).iloc[-60:].sum() / (df['Volume'].iloc[-60:].sum() + 1)
+        vwap_60    = (df['Close'] * df['Volume']).iloc[-60:].sum() / (df['Volume'].iloc[-60:].sum() + 1)
         vwap_ratio = cur / vwap_60 if vwap_60 > 0 else 1.0
-        if   0.98 <= vwap_ratio <= 1.02: g = 20  # 매물대 정중앙 — 돌파 직전 최적
-        elif 0.95 <= vwap_ratio <= 1.05: g = 12  # 매물대 근접
-        elif 0.90 <= vwap_ratio <= 1.08: g = 6   # 매물대 인근
+        if   0.98 <= vwap_ratio <= 1.02: g = 20
+        elif 0.95 <= vwap_ratio <= 1.05: g = 12
+        elif 0.90 <= vwap_ratio <= 1.08: g = 6
     except Exception:
         pass
     bd['매물대근접'] = g
-    meta['vwap_ratio'] = round(float(vwap_ratio) if 'vwap_ratio' in dir() else 1.0, 3)
+    meta['vwap_ratio'] = round(float(vwap_ratio), 3)
 
     # [H] 스파이크 30일 이내 (최대 15점)
-    # 60일→30일 이내 스파이크 = 대상승 직전 텀이 짧음
     h = 0
+    days_since = -1
     try:
         vol_ma20_ser2 = df['Volume'].rolling(20).mean()
         recent_30     = df.iloc[-30:]
@@ -439,30 +447,29 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
         if spike_mask_30.any():
             last_spike_30 = recent_30[spike_mask_30].iloc[-1]
             days_since    = len(df) - df.index.get_loc(last_spike_30.name) - 1
-            if   days_since <= 5:  h = 15  # 5일 이내 — 직후
-            elif days_since <= 10: h = 12  # 10일 이내
-            elif days_since <= 20: h = 8   # 20일 이내
-            elif days_since <= 30: h = 4   # 30일 이내
+            if   days_since <= 5:  h = 15
+            elif days_since <= 10: h = 12
+            elif days_since <= 20: h = 8
+            elif days_since <= 30: h = 4
     except Exception:
         pass
     bd['근거리스파이크'] = h
-    meta['days_since_spike'] = days_since if 'days_since' in dir() else -1
+    meta['days_since_spike'] = days_since
 
     # [I] OBV 0선 직전 구간 (최대 10점)
-    # OBV가 음수지만 0선 수렴 중 = DS단석 매수 타이밍 직전 구간
     i = 0
+    obv_pct = 0.0
     try:
-        obv_abs   = abs(obv_now)
         obv_range = abs(df['OBV'].iloc[-60:].max() - df['OBV'].iloc[-60:].min()) + 1
-        obv_pct   = obv_now / obv_range * 100  # -100~+100 범위 정규화
+        obv_pct   = obv_now / obv_range * 100
         if obv_now < 0 and -15 <= obv_pct <= 0:
-            i = 10  # 음수지만 0선 5~15% 이내 — 직전 구간
+            i = 10
         elif obv_now < 0 and -30 <= obv_pct < -15:
-            i = 5   # 0선 수렴 중
+            i = 5
     except Exception:
         pass
     bd['OBV0선직전'] = i
-    meta['obv_pct'] = round(float(obv_pct) if 'obv_pct' in dir() else 0.0, 1)
+    meta['obv_pct'] = round(float(obv_pct), 1)
 
     return sum(bd.values()), bd, meta
 

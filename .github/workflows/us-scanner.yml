@@ -2,25 +2,28 @@ name: US Scanner
 
 on:
   schedule:
-    - cron: '30 22 * * 0-4'  # 07:30 KST (US 프리마켓)
+    - cron: '30 22 * * 0-4'   # 07:30 KST 월~금 (일~목 UTC)
   workflow_dispatch:
 
 jobs:
   us-scan:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
-          python-version: '3.9'
+          python-version: '3.11'
 
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
       - name: Install libraries
         run: pip install -r requirements.txt
@@ -35,8 +38,8 @@ jobs:
         run: |
           git config --global user.name 'GitHub Action'
           git config --global user.email 'action@github.com'
+          grep -qxF '__pycache__/' .gitignore || echo '__pycache__/' >> .gitignore
           git pull origin main --rebase --autostash
-          echo "__pycache__/" >> .gitignore
           git add -A
-          git diff --staged --quiet || git commit -m "US scan [$(date +'%Y-%m-%d %H:%M UTC')]"
+          git diff --staged --quiet || git commit -m "US scan [$(date +'%Y-%m-%d %H:%M KST')]"
           git push

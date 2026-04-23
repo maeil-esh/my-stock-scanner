@@ -2,7 +2,7 @@ name: US Scanner
 
 on:
   schedule:
-    - cron: '30 22 * * 0-4'   # 07:30 KST 월~금 (일~목 UTC)
+    - cron: '43 22 * * 0-4'   # 07:43 KST 월~금 (일~목 UTC)
   workflow_dispatch:
 
 jobs:

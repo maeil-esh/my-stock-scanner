@@ -2,7 +2,7 @@ name: KR Backtest
 
 on:
   schedule:
-    - cron: '0 4 * * 6'   # 13:00 KST (토요일)
+    - cron: '7 4 * * 6'   # 13:07 KST (토요일)
   workflow_dispatch:
 
 jobs:

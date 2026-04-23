@@ -2354,5 +2354,159 @@
                 }
             }
         ]
+    },
+    {
+        "date": "20260423",
+        "label": "🔔 장 시작 스캔",
+        "regime": "NEUTRAL",
+        "picks": [
+            {
+                "rank": 1,
+                "name": "오파스넷",
+                "code": "173130",
+                "company_summary": "오파스넷",
+                "supply": "정보없음",
+                "cur_price": 8220,
+                "score": "★★★☆☆ (107점/245)",
+                "tags": "세력매집 30점 / 매매신호 25점 / 세력전환 20점",
+                "expected_return": "11.6%",
+                "score_detail": {
+                    "세력전환": 20,
+                    "세력매집": 30,
+                    "매매신호": 25,
+                    "거래량스파이크": 20,
+                    "고가돌파": 0,
+                    "수급강도": 0,
+                    "매물대근접": 0,
+                    "근거리스파이크": 12,
+                    "OBV0선직전": 0
+                },
+                "meta": {
+                    "rsi": 62.9,
+                    "bb_compress": 0,
+                    "rebound_pct": 35.6,
+                    "vol_ratio": 0.42,
+                    "inst_streak": 0,
+                    "for_streak": 0,
+                    "mktcap": 1065,
+                    "silence_ratio": 0.62,
+                    "green_days": 61,
+                    "obv_cross": false,
+                    "signal": 72.9,
+                    "max_spike": 4.7,
+                    "rs": -1.9,
+                    "trade": {
+                        "entry": 8220,
+                        "stop_loss": 7665,
+                        "target_1": 9330,
+                        "target_2": 10070,
+                        "risk_pct": 6.8,
+                        "reward_pct": 13.5,
+                        "rr_ratio": 2.0,
+                        "atr": 370.0
+                    },
+                    "regime": "NEUTRAL",
+                    "rt_price_used": true
+                }
+            },
+            {
+                "rank": 2,
+                "name": "현대코퍼레이션",
+                "code": "011760",
+                "company_summary": "현대코퍼레이션",
+                "supply": "정보없음",
+                "cur_price": 29350,
+                "score": "★★★☆☆ (103점/245)",
+                "tags": "매매신호 25점 / 세력전환 20점 / 거래량스파이크 20점",
+                "expected_return": "11.3%",
+                "score_detail": {
+                    "세력전환": 20,
+                    "세력매집": 18,
+                    "매매신호": 25,
+                    "거래량스파이크": 20,
+                    "고가돌파": 0,
+                    "수급강도": 0,
+                    "매물대근접": 0,
+                    "근거리스파이크": 15,
+                    "OBV0선직전": 5
+                },
+                "meta": {
+                    "rsi": 64.1,
+                    "bb_compress": 0,
+                    "rebound_pct": 46.4,
+                    "vol_ratio": 0.39,
+                    "inst_streak": 0,
+                    "for_streak": 0,
+                    "mktcap": 3915,
+                    "silence_ratio": 0.0,
+                    "green_days": 57,
+                    "obv_cross": false,
+                    "signal": 74.5,
+                    "max_spike": 4.0,
+                    "rs": 3.6,
+                    "trade": {
+                        "entry": 29350,
+                        "stop_loss": 27646,
+                        "target_1": 32757,
+                        "target_2": 35028,
+                        "risk_pct": 5.8,
+                        "reward_pct": 11.6,
+                        "rr_ratio": 2.0,
+                        "atr": 1135.7
+                    },
+                    "regime": "NEUTRAL",
+                    "rt_price_used": true
+                }
+            },
+            {
+                "rank": 3,
+                "name": "성우",
+                "code": "458650",
+                "company_summary": "성우",
+                "supply": "정보없음",
+                "cur_price": 13590,
+                "score": "★★☆☆☆ (100점/245)",
+                "tags": "거래량스파이크 30점 / 매매신호 25점 / 세력매집 18점",
+                "expected_return": "11.1%",
+                "score_detail": {
+                    "세력전환": 0,
+                    "세력매집": 18,
+                    "매매신호": 25,
+                    "거래량스파이크": 30,
+                    "고가돌파": 0,
+                    "수급강도": 0,
+                    "매물대근접": 12,
+                    "근거리스파이크": 15,
+                    "OBV0선직전": 0
+                },
+                "meta": {
+                    "rsi": 58.9,
+                    "bb_compress": 0,
+                    "rebound_pct": 43.1,
+                    "vol_ratio": 0.57,
+                    "inst_streak": 0,
+                    "for_streak": 0,
+                    "mktcap": 2045,
+                    "silence_ratio": 0.0,
+                    "green_days": 50,
+                    "obv_cross": false,
+                    "signal": 61.0,
+                    "max_spike": 5.5,
+                    "rs": -2.7,
+                    "trade": {
+                        "entry": 13590,
+                        "stop_loss": 12841,
+                        "target_1": 15087,
+                        "target_2": 16086,
+                        "risk_pct": 5.5,
+                        "reward_pct": 11.0,
+                        "rr_ratio": 2.0,
+                        "atr": 499.3
+                    },
+                    "regime": "NEUTRAL",
+                    "rt_price_used": true
+                }
+            }
+        ]
     }
 ]

@@ -4,124 +4,129 @@
             "rank": 1,
             "name": "Avis Budget Group, Inc.",
             "code": "CAR",
-            "company_summary": "Avis Budget Group, Inc., together with its subsidiaries, provides car and truck rentals, car sharing, and ancillary products and services to businesse...",
-            "supply": "공매도 93.0% | 🔥 EXTREME",
-            "cur_price": 443.94,
-            "score": "SQUEEZE 81점/100",
+            "company_summary": "Avis Budget Group, Inc., together with its subsidiaries, provides car and truck rentals, car sharing...",
+            "cur_price": 229.14,
+            "score_raw": 85,
+            "score_100": 85,
+            "squeeze_level": "🔥 EXTREME",
             "score_detail": {
                 "공매도강도": 40,
-                "거래량급증": 13,
+                "거래량급증": 17,
                 "유통주희소": 17,
                 "커버소요일": 10
             },
-            "tags": "유통주 10.1M · 숏비율 93.0% · RSI 59.6",
-            "expected_return": "HIGH RISK",
             "meta": {
                 "float_m": 10.1,
                 "short_pct": 93.0,
-                "vol_spike": 2.79,
-                "rsi": 59.6,
-                "short_ratio": 9.7
+                "vol_spike": 3.54,
+                "rsi": 45.1,
+                "short_ratio": 9.7,
+                "short_str": "93.0%",
+                "float_str": "10.1M"
             }
         },
         {
             "rank": 2,
             "name": "Groupon, Inc.",
             "code": "GRPN",
-            "company_summary": "Groupon, Inc. operates a marketplace that connects consumers to merchants by offering goods and services at a discount in North America and internatio...",
-            "supply": "공매도 50.0% | 🔥 EXTREME",
-            "cur_price": 15.93,
-            "score": "SQUEEZE 73점/100",
+            "company_summary": "Groupon, Inc. operates a marketplace that connects consumers to merchants by offering goods and serv...",
+            "cur_price": 14.62,
+            "score_raw": 72,
+            "score_100": 72,
+            "squeeze_level": "🔥 EXTREME",
             "score_detail": {
                 "공매도강도": 40,
                 "거래량급증": 8,
                 "유통주희소": 14,
                 "커버소요일": 10
             },
-            "tags": "유통주 29.0M · 숏비율 50.0% · RSI 66.3",
-            "expected_return": "HIGH RISK",
             "meta": {
                 "float_m": 29.0,
                 "short_pct": 50.0,
-                "vol_spike": 1.77,
-                "rsi": 66.3,
-                "short_ratio": 7.7
+                "vol_spike": 1.63,
+                "rsi": 57.9,
+                "short_ratio": 7.7,
+                "short_str": "50.0%",
+                "float_str": "29.0M"
             }
         },
         {
             "rank": 3,
             "name": "Hertz Global Holdings, Inc",
             "code": "HTZ",
-            "company_summary": "Hertz Global Holdings, Inc. operates as a vehicle rental company. It operates through two segments: Americas RAC and International RAC. The company of...",
-            "supply": "공매도 50.0% | ⚡ HIGH",
-            "cur_price": 6.6,
-            "score": "SQUEEZE 62점/100",
+            "company_summary": "Hertz Global Holdings, Inc. operates as a vehicle rental company. It operates through two segments: ...",
+            "cur_price": 5.9,
+            "score_raw": 60,
+            "score_100": 60,
+            "squeeze_level": "⚡ HIGH",
             "score_detail": {
                 "공매도강도": 40,
-                "거래량급증": 7,
+                "거래량급증": 5,
                 "유통주희소": 5,
                 "커버소요일": 10
             },
-            "tags": "유통주 126.1M · 숏비율 50.0% · RSI 58.2",
-            "expected_return": "HIGH RISK",
             "meta": {
-                "float_m": 126.1,
+                "float_m": 125.8,
                 "short_pct": 50.0,
-                "vol_spike": 1.41,
-                "rsi": 58.2,
-                "short_ratio": 10.2
+                "vol_spike": 1.08,
+                "rsi": 49.9,
+                "short_ratio": 10.2,
+                "short_str": "50.0%",
+                "float_str": "125.8M"
             }
         },
         {
             "rank": 4,
-            "name": "Tilray Brands, Inc.",
-            "code": "TLRY",
-            "company_summary": "Tilray Brands, Inc., a lifestyle consumer products company, engages in the research, cultivation, processing, and distribution of medical cannabis pro...",
-            "supply": "공매도 12.3% | ⚡ HIGH",
-            "cur_price": 7.87,
-            "score": "SQUEEZE 51점/100",
+            "name": "Hims & Hers Health, Inc.",
+            "code": "HIMS",
+            "company_summary": "Hims & Hers Health, Inc. operates as a consumer-first health and wellness platform that connects con...",
+            "cur_price": 28.15,
+            "score_raw": 53,
+            "score_100": 53,
+            "squeeze_level": "⚡ HIGH",
             "score_detail": {
-                "공매도강도": 7,
-                "거래량급증": 30,
+                "공매도강도": 38,
+                "거래량급증": 6,
                 "유통주희소": 5,
-                "커버소요일": 8
+                "커버소요일": 2
             },
-            "tags": "유통주 443.8M · 숏비율 12.3% · RSI 64.5",
-            "expected_return": "HIGH RISK",
             "meta": {
-                "float_m": 443.8,
-                "short_pct": 12.3,
-                "vol_spike": 8.79,
-                "rsi": 64.5,
-                "short_ratio": 5.6
+                "float_m": 207.4,
+                "short_pct": 38.7,
+                "vol_spike": 1.37,
+                "rsi": 63.9,
+                "short_ratio": 2.0,
+                "short_str": "38.7%",
+                "float_str": "207.4M"
             }
         },
         {
             "rank": 5,
-            "name": "Hims & Hers Health, Inc.",
-            "code": "HIMS",
-            "company_summary": "Hims & Hers Health, Inc. operates as a consumer-first health and wellness platform that connects consumers to licensed healthcare professionals in the...",
-            "supply": "공매도 38.7% | ⚡ HIGH",
-            "cur_price": 29.01,
-            "score": "SQUEEZE 46점/100",
+            "name": "C3.ai, Inc.",
+            "code": "AI",
+            "company_summary": "C3.ai, Inc. operates as an enterprise artificial intelligence application software company. The comp...",
+            "cur_price": 8.54,
+            "score_raw": 52,
+            "score_100": 52,
+            "squeeze_level": "⚡ HIGH",
             "score_detail": {
-                "공매도강도": 38,
-                "거래량급증": 0,
+                "공매도강도": 30,
+                "거래량급증": 7,
                 "유통주희소": 5,
-                "커버소요일": 2
+                "커버소요일": 10
             },
-            "tags": "유통주 207.4M · 숏비율 38.7% · RSI 67.4",
-            "expected_return": "HIGH RISK",
             "meta": {
-                "float_m": 207.4,
-                "short_pct": 38.7,
-                "vol_spike": 0.99,
-                "rsi": 67.4,
-                "short_ratio": 2.0
+                "float_m": 135.2,
+                "short_pct": 31.8,
+                "vol_spike": 1.48,
+                "rsi": 44.5,
+                "short_ratio": 7.5,
+                "short_str": "31.8%",
+                "float_str": "135.2M"
             }
         }
     ],
     "total_candidates": 30,
     "total_screened": 30,
-    "base_date": "20260423"
+    "base_date": "20260424"
 }

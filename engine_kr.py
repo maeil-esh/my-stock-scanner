@@ -1,7 +1,17 @@
 """
-engine_kr.py — 국장 바닥반등+거래량 스캐너 (PRO v2.1)
+engine_kr.py — 국장 바닥반등+거래량 스캐너 (PRO v2.3)
 실행: python engine_kr.py
 스케줄: 09:30 / 13:00 / 16:00 KST
+
+[변경 이력 v2.3] — 민혁님 전략 패턴 필수 필터화
+① 52주 고점 → 3년 고점 -35% 필터로 확장
+② 장기 횡보 60일 이상 필수 (이전: 채점에만 있었음)
+③ 반복 스파이크 2회 이상 필수 (이전: 1회만 있어도 통과)
+④ 스파이크 후 거래량 "죽음" 강화 (silence < 0.7)
+⑤ 최근 5일 거래량 "회복" 필수 (직전 20일 대비 5%↑)
+
+[변경 이력 v2.2]
+★ SCORE_THRESHOLD 원점수 → 100점 환산 50점 기준으로 변경
 
 [변경 이력 v2.1]
 ★ RS 필터 제거 — 바닥 매집 전략과 논리 충돌
@@ -593,11 +603,12 @@ def run_kr_scan():
         except Exception:
             continue
 
-    SCORE_THRESHOLD = 70
+    # ★ 100점 환산 기준 — 원점수 기준(70/285=24점)이 너무 관대했음 (v2.2)
+    SCORE_THRESHOLD_100 = 50   # 100점 환산: 50점 이상만 통과 (중상위 품질)
     # ★ RS_THRESHOLD 제거 — 바닥 매집 전략과 논리 충돌 (v2.1)
 
     print(f"📅 기준일: {today_str} | {label}")
-    print(f"🎯 전략: 선행매집 스캔 | TOP {TOP_N} | 임계 {SCORE_THRESHOLD}점\n")
+    print(f"🎯 전략: 선행매집 스캔 | TOP {TOP_N} | 임계 {SCORE_THRESHOLD_100}점 (100점 환산)\n")
 
     # ── 시총 사전 필터링 ────────────────────────────────────────
     print(f"⚡ 시총 사전 필터링 ({MKTCAP_MIN}억↑ ~ {MKTCAP_MAX}억↓)...")
@@ -630,9 +641,10 @@ def run_kr_scan():
         return []
 
     candidates = []
-    # ★ rs_pass 로그 키 제거 (v2.1)
+    # ★ v2.3: sideways, vol_recovery 로그 추가
     log = dict(total=len(all_tickers), penny=0, mktcap=len(all_tickers),
-               bottom=0, high_gap=0, uptrend=0, vol_spike=0,
+               bottom=0, high_gap=0, uptrend=0, sideways=0,
+               vol_spike=0, vol_recovery=0,
                obv_ok=0, signal_ok=0, trend_ok=0,
                seforce=0, final=0)
     lock = threading.Lock()
@@ -665,12 +677,14 @@ def run_kr_scan():
             with lock:
                 log['bottom'] += 1
 
-            # 52주 고점 대비 -25% 이상 하락
-            high52 = df['High'].iloc[-252:].max() if len(df) >= 252 else df['High'].max()
-            if high52 <= 0:
+            # ★ [v2.3] 1~3년 고점 대비 -35% 이상 하락 필수 ──────
+            # 민혁님 전략: "과거 1~3년 사이 고가였고 장기간 서서히 하락"
+            long_window = min(len(df), 756)   # 최대 3년 (504=2년, 756=3년)
+            high_long = df['High'].iloc[-long_window:].max()
+            if high_long <= 0:
                 return
-            high52_gap_pct = (high52 - cur) / high52 * 100
-            if high52_gap_pct < 25:
+            long_gap_pct = (high_long - cur) / high_long * 100
+            if long_gap_pct < 35:   # 3년 고점 대비 35% 미만 하락 = 제외
                 return
             with lock:
                 log['high_gap'] += 1
@@ -687,23 +701,66 @@ def run_kr_scan():
             with lock:
                 log['uptrend'] += 1
 
-            recent_60  = df.iloc[-60:]
-            spike_mask = recent_60['Volume'] >= vol_ma20.iloc[-60:] * 1.5
-            if not spike_mask.any():
+            # ★ [v2.3] 장기 횡보 60일 이상 필수 ──────
+            # 민혁님 전략: "장기 횡보 후 거래량 스파이크"
+            sideways_days_f = 0
+            for window_s in [200, 120, 90, 60]:
+                if len(df) < window_s:
+                    continue
+                seg_s   = df.iloc[-window_s:]
+                hi_s    = float(seg_s['High'].max())
+                lo_s    = float(seg_s['Low'].min())
+                rng_pct = (hi_s - lo_s) / lo_s * 100 if lo_s > 0 else 999
+                if rng_pct <= 30:
+                    sideways_days_f = window_s
+                    break
+            if sideways_days_f < 60:
                 return
-            last_spike    = recent_60[spike_mask].iloc[-1]
+            with lock:
+                log['sideways'] += 1
+
+            # ★ [v2.3] 반복 스파이크 ≥ 2회 + 거래량 죽음 필수 ──────
+            # 민혁님 전략: "스파이크가 2번정도 터졌는데 거래량이 죽다가"
+            vol_ma20_full   = vol.rolling(20).mean()
+            spike_mask_full = vol >= vol_ma20_full * 2.0
+            spike_dates_f   = df.index[spike_mask_full].tolist()
+            grouped_f = []
+            for sd in spike_dates_f:
+                if not grouped_f or (sd - grouped_f[-1][-1]).days > 5:
+                    grouped_f.append([sd])
+                else:
+                    grouped_f[-1].append(sd)
+            spike_count_f = len(grouped_f)
+            if spike_count_f < 2:               # 스파이크 2회 이상 필수
+                return
+            last_spike_date = grouped_f[-1][-1]
+            last_spike      = df.loc[last_spike_date]
             if cur <= last_spike['Low']:
                 return
-            si            = df.index.get_loc(last_spike.name)
-            af            = df.iloc[si + 1:]
-            silence_ratio = 0.0
-            if len(af) >= 3:
-                sil = af['Volume'].mean() / (last_spike['Volume'] + 1)
-                silence_ratio = round(float(sil), 2)
-                if sil > 1.2:
-                    return
+            si = df.index.get_loc(last_spike_date)
+            af = df.iloc[si + 1:]
+            # 스파이크 후 "거래량 죽음" 구간 필수 (최소 5일)
+            if len(af) < 5:
+                return
+            sil = af['Volume'].mean() / (last_spike['Volume'] + 1)
+            silence_ratio = round(float(sil), 2)
+            if sil > 0.7:                       # 스파이크 평균 70% 이하여야 "죽음"
+                return
             with lock:
                 log['vol_spike'] += 1
+
+            # ★ [v2.3] 최근 거래량 서서히 회복 필수 ──────
+            # 민혁님 전략: "거래량이 죽다가 서서히 반응이 보이는게 핵심"
+            if len(vol) >= 25:
+                recent_5_avg = float(vol.iloc[-5:].mean())
+                prior_20_avg = float(vol.iloc[-25:-5].mean())
+                if prior_20_avg <= 0:
+                    return
+                vol_recovery = recent_5_avg / prior_20_avg
+                if not (1.05 <= vol_recovery <= 3.0):   # 5%↑ 회복 ~ 3배 미만(과열 아님)
+                    return
+            with lock:
+                log['vol_recovery'] += 1
 
             # ★ RS는 표시용으로만 계산 (필터 아님) — v2.1
             rs = calc_relative_strength(df, kospi_df)
@@ -785,7 +842,9 @@ def run_kr_scan():
             meta['trade']         = calc_trade_levels(df, cur)
             meta['spike_news']    = []
 
-            if total_score >= SCORE_THRESHOLD:
+            # ★ 100점 환산 점수로 임계 비교 (v2.2)
+            score_100_check = int(round(total_score / MAX_SCORE * 100))
+            if score_100_check >= SCORE_THRESHOLD_100:
                 candidates.append((total_score, ticker, breakdown, meta, df))
                 log['final'] += 1
         except Exception:
@@ -797,12 +856,15 @@ def run_kr_scan():
     for lbl, key in [
         ("전체", "total"), ("① 동전주 제외", "penny"),
         ("② 시총 필터", "mktcap"), ("③ 저점대비 0~50%", "bottom"),
-        ("④ 고점대비 -25%↑", "high_gap"),
-        ("⑤ MA20 박스권", "uptrend"), ("⑥ 거래량 스파이크", "vol_spike"),
-        ("⑦ 선행매집(OBV↑/가격↔)", "obv_ok"),
-        ("⑧ 매매신호 25~80", "signal_ok"),
-        ("⑨ 스파이크후 +0~35%", "trend_ok"),
-        ("⑩ 수급 확인", "seforce"),
+        ("④ 3년고점 -35%↑ 하락", "high_gap"),
+        ("⑤ MA20 박스권", "uptrend"),
+        ("⑥ 장기 횡보 60일↑", "sideways"),
+        ("⑦ 반복 스파이크 2회↑", "vol_spike"),
+        ("⑧ 최근 거래량 회복", "vol_recovery"),
+        ("⑨ 선행매집(OBV↑/가격↔)", "obv_ok"),
+        ("⑩ 매매신호 25~80", "signal_ok"),
+        ("⑪ 스파이크후 +0~35%", "trend_ok"),
+        ("⑫ 수급 확인", "seforce"),
         ("최종 통과", "final"),
     ]:
         print(f"  {lbl:<24} {log[key]:>5}건")

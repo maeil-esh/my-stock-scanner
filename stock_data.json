@@ -1,6 +1,6 @@
 {
     "today_picks": [],
-    "scan_label": "🏁 장 마감 스캔",
+    "scan_label": "🌙 미장 스캔",
     "total_candidates": 0,
     "total_screened": 1410,
     "filter_log": {
@@ -9,9 +9,9 @@
         "mktcap": 1410,
         "bottom": 728,
         "high_gap": 125,
-        "uptrend": 7,
-        "sideways": 0,
-        "vol_spike": 0,
+        "uptrend": 60,
+        "sideways": 17,
+        "vol_spike": 10,
         "vol_recovery": 0,
         "obv_ok": 0,
         "signal_ok": 0,

@@ -1,7 +1,13 @@
 """
-engine_kr.py — 국장 바닥반등+거래량 스캐너 (PRO v2.3)
+engine_kr.py — 국장 바닥반등+거래량 스캐너 (PRO v2.4)
 실행: python engine_kr.py
 스케줄: 09:30 / 13:00 / 16:00 KST
+
+[변경 이력 v2.4] — 필터 병목 해소 (v2.3 실행 결과 0건 원인 제거)
+① MA20 박스권 완화: "cur > MA20 탈락" → "MA20 ±10% 범위"
+   (서서히 반응 시작된 종목이 MA20 살짝 위에 있을 수 있음)
+② 장기 횡보 범위 30% → 45% 완화
+   (스파이크 2회 요구와 30% 범위 요구는 물리적 충돌 — 1회 스파이크만으로도 20~30% 범위 발생)
 
 [변경 이력 v2.3] — 민혁님 전략 패턴 필수 필터화
 ① 52주 고점 → 3년 고점 -35% 필터로 확장
@@ -694,15 +700,18 @@ def run_kr_scan():
             ma20_slope = ma20_s.iloc[-1] / ma20_s.iloc[-20] if ma20_s.iloc[-20] > 0 else 1
             if not (0.95 <= ma20_slope <= 1.20):
                 return
-            if cur > ma20_s.iloc[-1]:
+            # ★ [v2.4] MA20 ±10% 범위로 완화 (이전: cur > MA20 탈락)
+            # 스파이크 후 "서서히 반응" 시작된 종목은 MA20 살짝 위에 있을 수 있음
+            if cur > ma20_s.iloc[-1] * 1.10:       # MA20 +10% 초과 = 과열
                 return
-            if cur < ma20_s.iloc[-1] * 0.90:
+            if cur < ma20_s.iloc[-1] * 0.90:       # MA20 -10% 미만 = 너무 깊은 하락
                 return
             with lock:
                 log['uptrend'] += 1
 
             # ★ [v2.3] 장기 횡보 60일 이상 필수 ──────
             # 민혁님 전략: "장기 횡보 후 거래량 스파이크"
+            # ★ [v2.4] 범위 30% → 45% 완화 — 스파이크 2회 요구와 물리적 충돌 해소
             sideways_days_f = 0
             for window_s in [200, 120, 90, 60]:
                 if len(df) < window_s:
@@ -711,7 +720,7 @@ def run_kr_scan():
                 hi_s    = float(seg_s['High'].max())
                 lo_s    = float(seg_s['Low'].min())
                 rng_pct = (hi_s - lo_s) / lo_s * 100 if lo_s > 0 else 999
-                if rng_pct <= 30:
+                if rng_pct <= 45:
                     sideways_days_f = window_s
                     break
             if sideways_days_f < 60:

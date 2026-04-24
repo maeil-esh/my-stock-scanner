@@ -1,7 +1,12 @@
 """
-engine_kr.py — 국장 바닥반등+거래량 스캐너 (PRO v2)
+engine_kr.py — 국장 바닥반등+거래량 스캐너 (PRO v2.1)
 실행: python engine_kr.py
 스케줄: 09:30 / 13:00 / 16:00 KST
+
+[변경 이력 v2.1]
+★ RS 필터 제거 — 바닥 매집 전략과 논리 충돌
+  (고점대비 -25%↑ 바닥주이므로 3개월 상대강도가 양수일 수 없음)
+  RS는 표시/참고용으로만 유지 (점수 산정·필터에 사용 안 함)
 
 [변경 이력 v2]
 ① TOP_N 3 고정
@@ -153,11 +158,7 @@ def get_realtime_price(ticker):
 
 
 # ══════════════════════════════════════════════════════════════
-#  시장 레짐 감지
-# ══════════════════════════════════════════════════════════════
-
-# ══════════════════════════════════════════════════════════════
-#  상대강도(RS)
+#  상대강도(RS) — 표시/참고용 (필터 아님)
 # ══════════════════════════════════════════════════════════════
 
 def calc_relative_strength(stock_df, index_df, period=63):
@@ -345,7 +346,6 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
     meta = {}
 
     # [A] 세력전환 — OBV 0선 돌파 (최대 50점)
-    # 단기 OBV 상승만으론 높은 점수 안 나오게 기준 강화
     obv_now   = df['OBV'].iloc[-1]
     obv_prev  = df['OBV'].iloc[-2]
     obv_5d    = df['OBV'].iloc[-6] if len(df) >= 6 else df['OBV'].iloc[0]
@@ -353,27 +353,26 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
     obv_cross = bool(obv_now > 0 and obv_prev <= 0)
     a = 0
     if obv_cross:
-        a = 50                              # 0선 돌파 = 최고점
+        a = 50
     elif obv_chg > 10:
-        a = min(int(obv_chg * 1.0), 20)    # 상승률 10%↑ 부터만 점수, max 20점
+        a = min(int(obv_chg * 1.0), 20)
     bd['세력전환'] = a
     meta['obv_chg']   = round(float(obv_chg), 2)
     meta['obv_cross'] = obv_cross
 
-    # [B] 세력매집 기간 — DS단석 핵심 (최대 50점, 기존 30점에서 상향)
-    # 장기 매집일수록 대시세 확률↑ → 가중치 가장 높게
+    # [B] 세력매집 기간 (최대 50점)
     obv_diff   = df['OBV'].diff().iloc[-120:]
     green_days = int((obv_diff > 0).sum())
     b = 0
-    if   green_days >= 120: b = 50   # 6개월 매집 — 최강 신호
-    elif green_days >= 80:  b = 40   # 4개월
-    elif green_days >= 60:  b = 30   # 3개월 — DS단석 기준
+    if   green_days >= 120: b = 50
+    elif green_days >= 80:  b = 40
+    elif green_days >= 60:  b = 30
     elif green_days >= 40:  b = 18
     elif green_days >= 20:  b = 8
     bd['세력매집'] = b
     meta['green_days'] = green_days
 
-    # [C] 매매신호 — 0점이면 페널티 (최대 30점, 0점 시 -20점)
+    # [C] 매매신호 (최대 30점, 0점 시 -20점)
     low_14  = df['Low'].rolling(14).min()
     high_14 = df['High'].rolling(14).max()
     denom   = (high_14 - low_14).iloc[-1]
@@ -387,18 +386,18 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
     if signal_cross:
         c = 30
     elif signal_now > 60:
-        c = 25                             # 강한 신호 구간
+        c = 25
     elif 40 <= signal_now <= 60:
-        c = 20                             # 중립 신호 구간
+        c = 20
     elif 25 <= signal_now < 40:
-        c = 10                             # 약한 신호
+        c = 10
     else:
-        c = -20                            # 신호 없음 = 페널티
+        c = -20
     bd['매매신호']       = c
     meta['signal']       = round(float(signal_now), 1)
     meta['signal_cross'] = signal_cross
 
-    # [D] 거래량 스파이크 (최대 40점, 유지)
+    # [D] 거래량 스파이크 (최대 40점)
     vol_ma20_ser = df['Volume'].rolling(20).mean()
     recent_60    = df.iloc[-60:]
     spike_ratios = recent_60['Volume'] / (vol_ma20_ser.iloc[-60:] + 1)
@@ -417,7 +416,7 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
     f = 0
     supply_text = "정보없음"
     if inv_df is not None and cols:
-        fc_col, ic_col = cols  # '외국인', '기관'
+        fc_col, ic_col = cols
         fd        = int((inv_df[fc_col] > 0).sum())
         id_       = int((inv_df[ic_col] > 0).sum())
         both_days = int(((inv_df[fc_col] > 0) & (inv_df[ic_col] > 0)).sum())
@@ -434,8 +433,6 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
     meta['for_streak']  = for_streak
     meta['rsi']         = round(float(rsi), 1)
     meta['bb_compress'] = 0
-
-    # ── 대상승 사전 패턴 ───────────────────────────────────────
 
     # [H] 스파이크 30일 이내 (최대 15점)
     h = 0
@@ -456,7 +453,7 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
     bd['근거리스파이크'] = h
     meta['days_since_spike'] = days_since
 
-    # [I] OBV 0선 직전 구간 (최대 10점)
+    # [I] OBV 0선 직전 (최대 10점)
     i = 0
     obv_pct = 0.0
     try:
@@ -471,10 +468,7 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
     bd['OBV0선직전'] = i
     meta['obv_pct'] = round(float(obv_pct), 1)
 
-    # ── 대시세 사전 패턴 ───────────────────────────────────────
-
-    # [J] 스파이크 반복 + 바닥 수렴 패턴 (최대 35점 — 70%)
-    # 180일 내 2회 이상 스파이크 발생 후 현재 바닥 수렴 중
+    # [J] 스파이크 반복 + 바닥 수렴 (최대 35점)
     j = 0
     spike_count  = 0
     last_spikes  = []
@@ -482,7 +476,6 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
         vol_ma20_full = df['Volume'].rolling(20).mean()
         spike_mask_full = df['Volume'] >= vol_ma20_full * 2.0
 
-        # 스파이크 날짜 추출 (연속된 스파이크는 1회로 묶음)
         spike_dates = df.index[spike_mask_full].tolist()
         grouped = []
         for d in spike_dates:
@@ -491,16 +484,13 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
             else:
                 grouped[-1].append(d)
         spike_count = len(grouped)
-        last_spikes = [g[-1] for g in grouped[-3:]]  # 최근 3회
+        last_spikes = [g[-1] for g in grouped[-3:]]
 
         if spike_count >= 2:
-            # 마지막 스파이크 이후 가격 수렴 확인
-            # 현재가가 마지막 스파이크 종가 대비 -15%~+10% = 바닥 수렴 구간
             last_spike_close = float(df.loc[last_spikes[-1], 'Close'])
             price_since = (cur - last_spike_close) / last_spike_close * 100
             converging  = -15 <= price_since <= 10
 
-            # 스파이크 간 간격 — 2회 사이 가격이 다시 내려왔는지
             retest = False
             if len(last_spikes) >= 2:
                 idx1 = df.index.get_loc(last_spikes[-2])
@@ -509,7 +499,7 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
                 spike1_close = float(df.loc[last_spikes[-2], 'Close'])
                 if len(between) > 0:
                     min_between = float(between.min())
-                    retest = (min_between / spike1_close) < 0.95  # 5% 이상 눌림
+                    retest = (min_between / spike1_close) < 0.95
 
             if spike_count >= 3 and converging and retest:
                 j = 35
@@ -525,8 +515,7 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
     meta['spike_count']  = spike_count
     meta['last_spikes']  = [str(d.date()) for d in last_spikes] if last_spikes else []
 
-    # [L] 이격도 — 필터에서 MA20 이하만 통과, 채점 불필요
-    # (이미 scan_ticker_stage1에서 cur <= MA20 보장됨)
+    # [L] 이격도
     disp20 = disp60 = 0.0
     try:
         ma20_v = float(df['Close'].rolling(20).mean().iloc[-1])
@@ -538,7 +527,7 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
     meta['disp20'] = disp20
     meta['disp60'] = disp60
 
-    # [M] 횡보 기간 — 박스권이 길수록 에너지 축적 (최대 20점)
+    # [M] 횡보 기간 (최대 20점)
     m = 0
     sideways_days = 0
     try:
@@ -553,24 +542,24 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
                 sideways_days = window
                 break
 
-        if   sideways_days >= 180: m = 20  # 6개월↑ — 엔켐 초월
-        elif sideways_days >= 120: m = 17  # 엔켐급
-        elif sideways_days >= 90:  m = 13  # DL이앤씨급
-        elif sideways_days >= 60:  m = 8   # 한컴위드급
-        elif sideways_days >= 40:  m = 4   # PI첨단소재급
+        if   sideways_days >= 180: m = 20
+        elif sideways_days >= 120: m = 17
+        elif sideways_days >= 90:  m = 13
+        elif sideways_days >= 60:  m = 8
+        elif sideways_days >= 40:  m = 4
     except Exception:
         pass
     bd['횡보기간'] = m
     meta['sideways_days'] = sideways_days
 
-    # [N] 52주 고점 괴리율 — 고점과 멀수록 상승 여력 큼 (최대 20점)
+    # [N] 52주 고점 괴리율 (최대 20점)
     n = 0
     high52_gap = 0.0
     try:
         high52     = float(df['High'].iloc[-252:].max()) if len(df) >= 252 else float(df['High'].max())
-        high52_gap = round((high52 - cur) / high52 * 100, 1)  # 양수 = 고점 대비 하락률
+        high52_gap = round((high52 - cur) / high52 * 100, 1)
 
-        if   high52_gap >= 60: n = 20   # 60% 이상 하락 — 극바닥
+        if   high52_gap >= 60: n = 20
         elif high52_gap >= 45: n = 17
         elif high52_gap >= 35: n = 13
         elif high52_gap >= 25: n = 8
@@ -593,7 +582,7 @@ def run_kr_scan():
     start_10d  = get_start_date(today_str, 10)
     label      = now_label()
 
-    # KOSPI 데이터 독립 조회 (RS 계산용)
+    # KOSPI 데이터 독립 조회 (RS 표시용)
     kospi_df = None
     for sym in ['KS11', '^KS11', 'KOSPI']:
         try:
@@ -605,10 +594,10 @@ def run_kr_scan():
             continue
 
     SCORE_THRESHOLD = 70
-    RS_THRESHOLD    = 0
+    # ★ RS_THRESHOLD 제거 — 바닥 매집 전략과 논리 충돌 (v2.1)
 
     print(f"📅 기준일: {today_str} | {label}")
-    print(f"🎯 전략: 선행매집 스캔 | TOP {TOP_N} | 임계 {SCORE_THRESHOLD}점 | RS ≥ {RS_THRESHOLD:+d}%\n")
+    print(f"🎯 전략: 선행매집 스캔 | TOP {TOP_N} | 임계 {SCORE_THRESHOLD}점\n")
 
     # ── 시총 사전 필터링 ────────────────────────────────────────
     print(f"⚡ 시총 사전 필터링 ({MKTCAP_MIN}억↑ ~ {MKTCAP_MAX}억↓)...")
@@ -622,7 +611,6 @@ def run_kr_scan():
             if not cap_col:
                 raise ValueError(f"{market} 시총 컬럼 없음")
 
-            # 업종·제품 컬럼 탐색
             sector_col  = next((c for c in ['Sector','sector','업종'] if c in df_cap.columns), None)
             product_col = next((c for c in ['Industry','industry','주요제품'] if c in df_cap.columns), None)
 
@@ -642,8 +630,9 @@ def run_kr_scan():
         return []
 
     candidates = []
+    # ★ rs_pass 로그 키 제거 (v2.1)
     log = dict(total=len(all_tickers), penny=0, mktcap=len(all_tickers),
-               bottom=0, high_gap=0, uptrend=0, vol_spike=0, rs_pass=0,
+               bottom=0, high_gap=0, uptrend=0, vol_spike=0,
                obv_ok=0, signal_ok=0, trend_ok=0,
                seforce=0, final=0)
     lock = threading.Lock()
@@ -676,12 +665,12 @@ def run_kr_scan():
             with lock:
                 log['bottom'] += 1
 
-            # 52주 고점 대비 -25% 이상 하락한 종목만 — 장기하락 후 바닥 수렴
+            # 52주 고점 대비 -25% 이상 하락
             high52 = df['High'].iloc[-252:].max() if len(df) >= 252 else df['High'].max()
             if high52 <= 0:
                 return
             high52_gap_pct = (high52 - cur) / high52 * 100
-            if high52_gap_pct < 25:   # 고점 대비 25% 미만 하락 = 제외
+            if high52_gap_pct < 25:
                 return
             with lock:
                 log['high_gap'] += 1
@@ -691,16 +680,15 @@ def run_kr_scan():
             ma20_slope = ma20_s.iloc[-1] / ma20_s.iloc[-20] if ma20_s.iloc[-20] > 0 else 1
             if not (0.95 <= ma20_slope <= 1.20):
                 return
-            # 현재가 MA20 이하만 — 매물대 아래 진입 확정
-            if cur > ma20_s.iloc[-1]:              # MA20 초과 = 즉시 탈락
+            if cur > ma20_s.iloc[-1]:
                 return
-            if cur < ma20_s.iloc[-1] * 0.90:       # MA20 -10% 이하 = 너무 깊은 하락 제외
+            if cur < ma20_s.iloc[-1] * 0.90:
                 return
             with lock:
                 log['uptrend'] += 1
 
             recent_60  = df.iloc[-60:]
-            spike_mask = recent_60['Volume'] >= vol_ma20.iloc[-60:] * 1.5   # 2.0→1.5배
+            spike_mask = recent_60['Volume'] >= vol_ma20.iloc[-60:] * 1.5
             if not spike_mask.any():
                 return
             last_spike    = recent_60[spike_mask].iloc[-1]
@@ -712,16 +700,13 @@ def run_kr_scan():
             if len(af) >= 3:
                 sil = af['Volume'].mean() / (last_spike['Volume'] + 1)
                 silence_ratio = round(float(sil), 2)
-                if sil > 1.2:                  # 0.85→1.2
+                if sil > 1.2:
                     return
             with lock:
                 log['vol_spike'] += 1
 
+            # ★ RS는 표시용으로만 계산 (필터 아님) — v2.1
             rs = calc_relative_strength(df, kospi_df)
-            if rs < RS_THRESHOLD:
-                return
-            with lock:
-                log['rs_pass'] += 1
 
             # [F1] 선행 매집 — OBV↑ / 가격 정체
             obv         = calc_obv(df)
@@ -730,12 +715,12 @@ def run_kr_scan():
             obv_change  = (obv_now - obv_20ago) / (abs(obv_20ago) + 1) * 100
             price_20ago = close.iloc[-20] if len(close) >= 20 else close.iloc[0]
             price_change = (cur - price_20ago) / price_20ago * 100 if price_20ago > 0 else 0
-            if obv_change <= 0 or price_change > 25:   # 15→25%
+            if obv_change <= 0 or price_change > 25:
                 return
             with lock:
                 log['obv_ok'] += 1
 
-            # [F2] 매매신호 25~80 (기존 30~70)
+            # [F2] 매매신호 25~80
             rsi_ser   = calc_rsi(close)
             rsi_cur   = float(rsi_ser.iloc[-1])
             low_14    = df['Low'].rolling(14).min().iloc[-1]
@@ -743,18 +728,18 @@ def run_kr_scan():
             denom     = high_14 - low_14
             stoch_cur = (cur - low_14) / denom * 100 if denom > 0 else 50.0
             signal_cur = stoch_cur * 0.6 + rsi_cur * 0.4
-            if not (25 <= signal_cur <= 80):           # 30~70→25~80
+            if not (25 <= signal_cur <= 80):
                 return
             with lock:
                 log['signal_ok'] += 1
 
-            # [F3] 스파이크 후 가격 반응 +0~15%
+            # [F3] 스파이크 후 가격 반응 +0~35%
             spike_close = float(last_spike['Close'])
             post_high   = float(af['High'].max()) if len(af) >= 1 else spike_close
             if spike_close <= 0:
                 return
             post_return = post_high / spike_close
-            if not (1.00 <= post_return <= 1.35):   # 1.15→1.35
+            if not (1.00 <= post_return <= 1.35):
                 return
             with lock:
                 log['trend_ok'] += 1
@@ -798,7 +783,6 @@ def run_kr_scan():
             meta['silence_ratio'] = silence_ratio
             meta['rs']            = rs
             meta['trade']         = calc_trade_levels(df, cur)
-            # 스파이크 뉴스는 TOP5 확정 후 수집 (속도 최적화)
             meta['spike_news']    = []
 
             if total_score >= SCORE_THRESHOLD:
@@ -808,18 +792,17 @@ def run_kr_scan():
             continue
 
     # ── 필터 현황 출력 ─────────────────────────────────────────
+    # ★ RS 라인 제거 (v2.1)
     print(f"\n📊 [필터 현황]")
-    rs_label = f"⑦ RS ≥ {RS_THRESHOLD:+d}%"
     for lbl, key in [
         ("전체", "total"), ("① 동전주 제외", "penny"),
         ("② 시총 필터", "mktcap"), ("③ 저점대비 0~50%", "bottom"),
         ("④ 고점대비 -25%↑", "high_gap"),
         ("⑤ MA20 박스권", "uptrend"), ("⑥ 거래량 스파이크", "vol_spike"),
-        (rs_label, "rs_pass"),
-        ("⑧ 선행매집(OBV↑/가격↔)", "obv_ok"),
-        ("⑨ 매매신호 25~80", "signal_ok"),
-        ("⑩ 스파이크후 +0~35%", "trend_ok"),
-        ("⑪ 수급 확인", "seforce"),
+        ("⑦ 선행매집(OBV↑/가격↔)", "obv_ok"),
+        ("⑧ 매매신호 25~80", "signal_ok"),
+        ("⑨ 스파이크후 +0~35%", "trend_ok"),
+        ("⑩ 수급 확인", "seforce"),
         ("최종 통과", "final"),
     ]:
         print(f"  {lbl:<24} {log[key]:>5}건")
@@ -862,12 +845,12 @@ def run_kr_scan():
         else:
             print(f"  #{rank} {name}({ticker}) | 실시간가 조회 실패 → 전일 종가 사용: {meta['cur_close']:,}원")
 
-        # ── 스파이크 시점 뉴스 수집 (정보용) ───────────────────
+        # ── 스파이크 시점 뉴스 수집 ──────────────────────────
         spike_date_strs = meta.get('last_spikes', [])
         meta['spike_news'] = fetch_spike_news(ticker, spike_date_strs)
 
         summary      = get_company_summary(ticker, name)
-        score_100    = int(round(total_score / MAX_SCORE * 100))  # 100점 환산
+        score_100    = int(round(total_score / MAX_SCORE * 100))
         star_count   = min(score_100 // 20, 5)
         stars        = "★" * star_count + "☆" * (5 - star_count)
         supply_text  = meta.get('supply_text', '정보없음')
@@ -960,7 +943,6 @@ def build_telegram_message(picks):
         sd         = p.get('score_detail', {})
         score_100  = p.get('score_100', 0)
 
-        # 시각화 바 (10칸 = 10점)
         filled = int(score_100 / 10)
         bar    = '█' * filled + '░' * (10 - filled)
 

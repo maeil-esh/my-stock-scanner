@@ -1,16 +1,16 @@
 {
     "today_picks": [],
-    "scan_label": "🌙 미장 스캔",
+    "scan_label": "📊 장 중간 스캔",
     "total_candidates": 0,
-    "total_screened": 1406,
+    "total_screened": 1411,
     "filter_log": {
-        "total": 1406,
-        "penny": 1361,
-        "mktcap": 1406,
-        "bottom": 755,
-        "high_gap": 317,
-        "uptrend": 36,
-        "vol_spike": 14,
+        "total": 1411,
+        "penny": 1365,
+        "mktcap": 1411,
+        "bottom": 736,
+        "high_gap": 298,
+        "uptrend": 32,
+        "vol_spike": 10,
         "rs_pass": 0,
         "obv_ok": 0,
         "signal_ok": 0,
@@ -18,5 +18,5 @@
         "seforce": 0,
         "final": 0
     },
-    "base_date": "20260423"
+    "base_date": "20260424"
 }

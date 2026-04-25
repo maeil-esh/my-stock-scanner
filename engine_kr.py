@@ -1,7 +1,12 @@
 """
-engine_kr.py — 국장 바닥반등+거래량 스캐너 (PRO v2.4)
+engine_kr.py — 국장 바닥반등+거래량 스캐너 (PRO v2.5.1)
 실행: python engine_kr.py
 스케줄: 09:30 / 13:00 / 16:00 KST
+
+[변경 이력 v2.5.1] — 거래량 회복 필터 완화 (v2.4 실행 결과 10건→0건 병목)
+① 스파이크 이후 최소일수: 10일 → 5일
+② 회복 기준: late/early ≥ 1.10 → ≥ 1.00 (동일 이상)
+   "서서히 반응" = "거래량이 안 죽어있다" 수준으로 완화
 
 [변경 이력 v2.4] — 필터 병목 해소 (v2.3 실행 결과 0건 원인 제거)
 ① MA20 박스권 완화: "cur > MA20 탈락" → "MA20 ±10% 범위"
@@ -758,16 +763,20 @@ def run_kr_scan():
             with lock:
                 log['vol_spike'] += 1
 
-            # ★ [v2.3] 최근 거래량 서서히 회복 필수 ──────
-            # 민혁님 전략: "거래량이 죽다가 서서히 반응이 보이는게 핵심"
-            if len(vol) >= 25:
-                recent_5_avg = float(vol.iloc[-5:].mean())
-                prior_20_avg = float(vol.iloc[-25:-5].mean())
-                if prior_20_avg <= 0:
+            # ★ [v2.5.1] 거래량 회복 로직 — 추가 완화
+            # 이전 1.10 조건이 너무 빡빡 → 10건 전멸
+            # 서서히 반응 = "안 죽어있다" 수준이면 OK (동일 이상)
+            if len(af) >= 5:
+                half = max(len(af) // 2, 1)
+                early_half_avg = float(af['Volume'].iloc[:half].mean())
+                late_half_avg  = float(af['Volume'].iloc[half:].mean())
+                if early_half_avg <= 0:
                     return
-                vol_recovery = recent_5_avg / prior_20_avg
-                if not (1.05 <= vol_recovery <= 3.0):   # 5%↑ 회복 ~ 3배 미만(과열 아님)
+                vol_recovery = late_half_avg / early_half_avg
+                if vol_recovery < 1.0:   # 최근 후반이 전반 대비 같거나 높아야 함
                     return
+            else:
+                return
             with lock:
                 log['vol_recovery'] += 1
 

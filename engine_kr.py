@@ -1,7 +1,14 @@
 """
-engine_kr.py — 국장 바닥반등+거래량 스캐너 (PRO v3.2)
+engine_kr.py — 국장 바닥반등+거래량 스캐너 (PRO v3.3)
 실행: python engine_kr.py
 스케줄: 09:33 / 13:07 / 16:17 KST
+
+[변경 이력 v3.3] — 회사 정보(업종) 안정화
+  네이버 모바일 API의 description 필드 미작동 문제 해결:
+  ① FinanceDataReader의 Sector/Industry 컬럼을 1순위 데이터 소스로
+  ② 시총 필터링 시 sector_cache에 함께 저장 (추가 API 호출 없음)
+  ③ 네이버 API는 fallback으로만 유지
+  ④ 외부 API 의존도 ↓ — GitHub Actions 안정성 ↑
 
 [변경 이력 v3.2] — 수급 데이터 하이브리드 소스
   ① 1순위: pykrx (KRX 공식 데이터)
@@ -756,6 +763,7 @@ def run_kr_scan():
     # ── 시총 사전 필터링 ────────────────────────────────────────
     print(f"⚡ 시총 사전 필터링 ({MKTCAP_MIN}억↑ ~ {MKTCAP_MAX}억↓)...")
     mktcap_cache = {}
+    sector_cache = {}   # ★ v3.3: 업종/산업 정보 캐시 (FDR 기반)
     all_tickers  = []
     try:
         for market in ["KOSPI", "KOSDAQ"]:
@@ -775,6 +783,14 @@ def run_kr_scan():
                     continue
                 cap = int(cap_raw / 1e8) if cap_raw > 1e6 else int(cap_raw)
                 mktcap_cache[ticker_s] = cap
+
+                # ★ v3.3: 업종/산업 정보 캐시
+                sector_info = {
+                    'market':   market,
+                    'sector':   str(row[sector_col]) if sector_col and pd.notna(row.get(sector_col)) else '',
+                    'industry': str(row[product_col]) if product_col and pd.notna(row.get(product_col)) else '',
+                }
+                sector_cache[ticker_s] = sector_info
 
                 if MKTCAP_MIN <= cap <= MKTCAP_MAX:
                     all_tickers.append(ticker_s)
@@ -1024,7 +1040,28 @@ def run_kr_scan():
         spike_date_strs = meta.get('last_spikes', [])
         meta['spike_news'] = fetch_spike_news(ticker, spike_date_strs)
 
-        summary      = get_company_summary(ticker, name)
+        # ── 회사 요약 (v3.3): FDR 캐시 1순위, 네이버 fallback ──
+        sector_info = sector_cache.get(ticker, {})
+        cached_market   = sector_info.get('market', '')
+        cached_sector   = sector_info.get('sector', '').strip()
+        cached_industry = sector_info.get('industry', '').strip()
+
+        summary_parts = []
+        if cached_market:
+            summary_parts.append(f"[{cached_market}]")
+        if cached_sector and cached_sector.lower() not in ['nan', 'none', '']:
+            summary_parts.append(cached_sector)
+        if (cached_industry and cached_industry.lower() not in ['nan', 'none', '']
+                and cached_industry != cached_sector):
+            summary_parts.append(cached_industry[:30])
+
+        if len(summary_parts) >= 2:
+            # FDR로 충분한 정보 확보 (시장 + 업종 이상)
+            summary = ' '.join(summary_parts)
+        else:
+            # FDR 정보 부족 시 네이버 fallback
+            summary = get_company_summary(ticker, name)
+
         score_100    = int(round(total_score / MAX_SCORE * 100))
         star_count   = min(score_100 // 20, 5)
         stars        = "★" * star_count + "☆" * (5 - star_count)

@@ -777,7 +777,9 @@ def run_kr_scan():
             product_col = next((c for c in ['Industry','industry','주요제품'] if c in df_cap.columns), None)
 
             # ★ v3.3 디버그: FDR 실제 컬럼/데이터 확인 (1회만)
-            print(f"  🔍 [{market}] FDR 컬럼: {list(df_cap.columns)[:10]}...")
+            print(f"  🔍 [{market}] FDR 전체 컬럼 ({len(df_cap.columns)}개):")
+            for i, col in enumerate(df_cap.columns):
+                print(f"       {i+1}. {col}")
             print(f"  🔍 [{market}] sector_col={sector_col}, product_col={product_col}")
             if sector_col or product_col:
                 # 첫 3개 종목의 실제 값 샘플

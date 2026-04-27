@@ -776,6 +776,18 @@ def run_kr_scan():
             sector_col  = next((c for c in ['Sector','sector','업종'] if c in df_cap.columns), None)
             product_col = next((c for c in ['Industry','industry','주요제품'] if c in df_cap.columns), None)
 
+            # ★ v3.3 디버그: FDR 실제 컬럼/데이터 확인 (1회만)
+            print(f"  🔍 [{market}] FDR 컬럼: {list(df_cap.columns)[:10]}...")
+            print(f"  🔍 [{market}] sector_col={sector_col}, product_col={product_col}")
+            if sector_col or product_col:
+                # 첫 3개 종목의 실제 값 샘플
+                sample = df_cap.head(3)
+                for _, r in sample.iterrows():
+                    tk = str(r.get(code_col, '?')).zfill(6)
+                    sv = r.get(sector_col, 'N/A') if sector_col else 'N/A'
+                    iv = r.get(product_col, 'N/A') if product_col else 'N/A'
+                    print(f"  🔍   {tk}: sector='{sv}', industry='{iv}'")
+
             for _, row in df_cap.iterrows():
                 ticker_s = str(row[code_col]).zfill(6)
                 cap_raw  = row[cap_col]

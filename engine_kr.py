@@ -1,13 +1,49 @@
 """
-engine_kr.py — 국장 바닥반등+거래량 스캐너 (PRO v2.5.1)
+engine_kr.py — 국장 바닥반등+거래량 스캐너 (PRO v3.0)
 실행: python engine_kr.py
 스케줄: 09:30 / 13:00 / 16:00 KST
 
-[변경 이력 v2.5.1] — 거래량 회복 필터 완화 (v2.4 실행 결과 10건→0건 병목)
-① 스파이크 이후 최소일수: 10일 → 5일
-② 회복 기준: late/early ≥ 1.10 → ≥ 1.00 (동일 이상)
-   "서서히 반응" = "거래량이 안 죽어있다" 수준으로 완화
+[변경 이력 v3.0] — 큰 흐름 매크로 모드 (전면 재설계)
+  방향: A.매우 관대 (10~30건) + 최근 신호 위주
 
+  ── 필터 재설계 ───────────────────────────────────
+  미시 비교 필터 전면 제거:
+   ✗ 어제vs오늘 단기 거래량 비교
+   ✗ 스파이크 직후 5일 평균 비교
+   ✗ MA20 ±10% 같은 일일 위치 체크
+   ✗ 반복 스파이크 2회 강제 (1회로 완화)
+   ✗ 스파이크후 +0~35% 가격 반응 체크
+
+  매크로 추세 필터로 전환:
+   ✓ 저점 대비 0~80% (반등 시작 종목 포함)
+   ✓ 1~3년 고점 -30%↑ 하락 (장기 흐름)
+   ✓ 60일↑ 횡보 (50% 범위 관대)
+   ✓ 거래량 살아있음: 최근30일 ≥ 직전90일 × 0.7 (큰 평균 비교)
+   ✓ 60일내 스파이크 1회↑ (최소 신호)
+   ✓ OBV 60일 누적 매집 추세↑ (큰 흐름 매집)
+   ✓ 매매신호 20~85 (바닥주 폭 확대)
+
+  ── 채점 시스템 재설계 (200점 만점) ────────────────
+  [큰 흐름 매크로] 130점
+    A. OBV 60일 매집 추세        30점
+    B. OBV 매집 일수 (120일)     25점
+    C. 거래량 살아있음 (30/90)   25점
+    D. 장기 횡보 기간             25점
+    E. 1~3년 고점 괴리율          25점
+  [신호 + 수급] 70점
+    F. 매매신호 위치              25점
+    G. 거래량 스파이크 강도        25점
+    H. 외인/기관 수급             20점
+
+  제거된 채점 항목:
+   ✗ 세력전환 (OBV 0선 돌파) — 바닥주 거의 0점
+   ✗ 근거리스파이크 (30일내) — 30일 지난 종목 0점
+   ✗ OBV 0선 직전 — 음수 OBV만 점수
+   ✗ 반복스파이크 — 너무 빡빡한 만점 조건
+
+  점수 임계: 50점 (200점→100환산), TOP_N: 5→15
+
+[변경 이력 v2.5.1] — 거래량 회복 필터 완화
 [변경 이력 v2.4] — 필터 병목 해소 (v2.3 실행 결과 0건 원인 제거)
 ① MA20 박스권 완화: "cur > MA20 탈락" → "MA20 ±10% 범위"
    (서서히 반응 시작된 종목이 MA20 살짝 위에 있을 수 있음)
@@ -54,8 +90,8 @@ from engine_common import (
 
 DATA_FILE    = 'stock_data.json'
 HISTORY_FILE = 'history.json'
-TOP_N        = 5
-MAX_SCORE    = 285  # A(50)+B(50)+C(30)+D(40)+F(15)+H(15)+I(10)+J(35)+M(20)+N(20)
+TOP_N        = 15  # v3.0 관대 모드: 5→15
+MAX_SCORE    = 200  # v3.0: A(30)+B(25)+C(25)+D(25)+E(25)+F(25)+G(25)+H(20)
 MKTCAP_MIN   = 1000
 MKTCAP_MAX   = 30000
 
@@ -231,16 +267,6 @@ def calc_trade_levels(df, cur_price):
 #  유틸
 # ══════════════════════════════════════════════════════════════
 
-def safe_get_market_ticker_list(market):
-    try:
-        df  = fdr.StockListing('KOSPI' if market == "KOSPI" else 'KOSDAQ')
-        col = 'Code' if 'Code' in df.columns else df.columns[0]
-        return list(df[col].dropna().astype(str).str.zfill(6))
-    except Exception as e:
-        print(f"  ❌ fdr {market} 실패: {e}")
-        return []
-
-
 def _find_cap_col(df):
     candidates = ['Marcap', 'MarCap', 'marcap', 'mktcap', 'MktCap', 'Market Cap']
     for c in candidates:
@@ -351,6 +377,22 @@ def get_investor_detail(ticker, start, end):
 # ══════════════════════════════════════════════════════════════
 
 def score_stock(df, inv_df, cols, inst_streak, for_streak):
+    """
+    v3.0 채점 시스템 — 큰 흐름 매크로 위주
+    총점 200점 만점 (8개 항목)
+
+    [큰 흐름 매크로] 130점
+      A. 장기 OBV 매집 추세 (60일)        30점
+      B. OBV 매집 일수 (120일)             25점
+      C. 거래량 살아있음/회복 (30/90)      25점
+      D. 장기 횡보 기간                    25점
+      E. 1~3년 고점 괴리율                 25점
+
+    [신호 + 수급] 70점
+      F. 매매신호 위치                     25점
+      G. 거래량 스파이크 강도               25점
+      H. 외인/기관 수급                    20점
+    """
     df = df.copy()
     df['MA20']     = df['Close'].rolling(20).mean()
     df['Vol_MA20'] = df['Volume'].rolling(20).mean()
@@ -358,185 +400,193 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
     df['OBV']      = calc_obv(df)
 
     cur      = df['Close'].iloc[-1]
-    prev_hi  = df['High'].iloc[-2]
     rsi      = df['RSI'].iloc[-1]
-    rsi_prev = df['RSI'].iloc[-2]
     vol_ma20 = df['Vol_MA20'].iloc[-1]
     cur_vol  = df['Volume'].iloc[-1]
-    bd = {}
+    bd   = {}
     meta = {}
 
-    # [A] 세력전환 — OBV 0선 돌파 (최대 50점)
-    obv_now   = df['OBV'].iloc[-1]
-    obv_prev  = df['OBV'].iloc[-2]
-    obv_5d    = df['OBV'].iloc[-6] if len(df) >= 6 else df['OBV'].iloc[0]
-    obv_chg   = (obv_now - obv_5d) / (abs(obv_5d) + 1) * 100
-    obv_cross = bool(obv_now > 0 and obv_prev <= 0)
-    a = 0
-    if obv_cross:
-        a = 50
-    elif obv_chg > 10:
-        a = min(int(obv_chg * 1.0), 20)
-    bd['세력전환'] = a
-    meta['obv_chg']   = round(float(obv_chg), 2)
-    meta['obv_cross'] = obv_cross
+    # ════════════════════════════════════════════════════════
+    #  [큰 흐름 매크로] 130점
+    # ════════════════════════════════════════════════════════
 
-    # [B] 세력매집 기간 (최대 50점)
+    # ─ A. OBV 60일 매집 추세 (최대 30점) ──────────────
+    # 큰 흐름 매집의 핵심 지표
+    obv_now = df['OBV'].iloc[-1]
+    obv_60_change = 0.0
+    a = 0
+    try:
+        if len(df) >= 60:
+            obv_60ago = df['OBV'].iloc[-60]
+            obv_60_change = (obv_now - obv_60ago) / (abs(obv_60ago) + 1) * 100
+            if   obv_60_change >= 50: a = 30
+            elif obv_60_change >= 30: a = 25
+            elif obv_60_change >= 15: a = 18
+            elif obv_60_change >= 5:  a = 10
+            elif obv_60_change > 0:   a = 5
+    except Exception:
+        pass
+    bd['OBV60일매집'] = a
+    meta['obv_60_change'] = round(float(obv_60_change), 2)
+
+    # ─ B. OBV 매집 일수 (최대 25점) ──────────────────
+    # 120일 중 OBV 상승일이 많을수록 꾸준한 매집
     obv_diff   = df['OBV'].diff().iloc[-120:]
     green_days = int((obv_diff > 0).sum())
     b = 0
-    if   green_days >= 120: b = 50
-    elif green_days >= 80:  b = 40
-    elif green_days >= 60:  b = 30
-    elif green_days >= 40:  b = 18
-    elif green_days >= 20:  b = 8
-    bd['세력매집'] = b
+    if   green_days >= 70: b = 25  # 58%↑
+    elif green_days >= 60: b = 20
+    elif green_days >= 50: b = 15
+    elif green_days >= 40: b = 10
+    elif green_days >= 30: b = 5
+    bd['매집일수'] = b
     meta['green_days'] = green_days
 
-    # [C] 매매신호 (최대 30점, 0점 시 -20점)
+    # ─ C. 거래량 살아있음/회복 (최대 25점) ───────────
+    # 최근 30일 평균 vs 직전 90일 평균 — 큰 평균 비교 (노이즈 제거)
+    c = 0
+    vol_alive_ratio = 0.0
+    try:
+        if len(df) >= 120:
+            recent_30  = float(df['Volume'].iloc[-30:].mean())
+            prior_90   = float(df['Volume'].iloc[-120:-30].mean())
+            if prior_90 > 0:
+                vol_alive_ratio = recent_30 / prior_90
+                if   vol_alive_ratio >= 1.5:  c = 25  # 거래량 폭발 시작
+                elif vol_alive_ratio >= 1.2:  c = 20  # 명확한 회복
+                elif vol_alive_ratio >= 1.0:  c = 15  # 살아남
+                elif vol_alive_ratio >= 0.85: c = 10
+                elif vol_alive_ratio >= 0.7:  c = 5
+    except Exception:
+        pass
+    bd['거래량살아있음'] = c
+    meta['vol_alive_ratio'] = round(float(vol_alive_ratio), 2)
+
+    # ─ D. 장기 횡보 기간 (최대 25점) ─────────────────
+    # 50% 범위 내 횡보가 길수록 에너지 축적
+    d_score = 0
+    sideways_days = 0
+    try:
+        for window in [200, 180, 120, 90, 60, 40]:
+            if len(df) < window:
+                continue
+            seg     = df.iloc[-window:]
+            hi      = float(seg['High'].max())
+            lo      = float(seg['Low'].min())
+            rng_pct = (hi - lo) / lo * 100 if lo > 0 else 999
+            if rng_pct <= 50:
+                sideways_days = window
+                break
+
+        if   sideways_days >= 180: d_score = 25
+        elif sideways_days >= 120: d_score = 20
+        elif sideways_days >= 90:  d_score = 15
+        elif sideways_days >= 60:  d_score = 10
+        elif sideways_days >= 40:  d_score = 5
+    except Exception:
+        pass
+    bd['횡보기간'] = d_score
+    meta['sideways_days'] = sideways_days
+
+    # ─ E. 1~3년 고점 괴리율 (최대 25점) ──────────────
+    # 고점에서 멀수록 상승 여력 큼
+    e = 0
+    high_long_gap = 0.0
+    try:
+        long_window = min(len(df), 756)
+        high_long   = float(df['High'].iloc[-long_window:].max())
+        high_long_gap = round((high_long - cur) / high_long * 100, 1)
+        if   high_long_gap >= 60: e = 25
+        elif high_long_gap >= 50: e = 20
+        elif high_long_gap >= 40: e = 15
+        elif high_long_gap >= 30: e = 10
+        elif high_long_gap >= 20: e = 5
+    except Exception:
+        pass
+    bd['고점괴리'] = e
+    meta['high52_gap'] = high_long_gap   # 키는 호환성 위해 high52_gap 유지
+
+    # ════════════════════════════════════════════════════════
+    #  [신호 + 수급] 70점
+    # ════════════════════════════════════════════════════════
+
+    # ─ F. 매매신호 위치 (최대 25점) ──────────────────
+    # 바닥주 특성 반영 — 25~50 구간 가산점 (반등 시작)
     low_14  = df['Low'].rolling(14).min()
     high_14 = df['High'].rolling(14).max()
     denom   = (high_14 - low_14).iloc[-1]
     stoch_k = (cur - low_14.iloc[-1]) / denom * 100 if denom > 0 else 50
-    stoch_p = (df['Close'].iloc[-2] - low_14.iloc[-2]) / \
-              max((high_14.iloc[-2] - low_14.iloc[-2]), 1) * 100
     signal_now  = stoch_k * 0.6 + rsi * 0.4
-    signal_prev = stoch_p * 0.6 + rsi_prev * 0.4
-    c = 0
-    signal_cross = bool(signal_now > 30 and signal_prev <= 30)
-    if signal_cross:
-        c = 30
-    elif signal_now > 60:
-        c = 25
-    elif 40 <= signal_now <= 60:
-        c = 20
-    elif 25 <= signal_now < 40:
-        c = 10
-    else:
-        c = -20
-    bd['매매신호']       = c
-    meta['signal']       = round(float(signal_now), 1)
-    meta['signal_cross'] = signal_cross
+    f_score = 0
+    if   30 <= signal_now <= 55:  f_score = 25  # 반등 초기 — 최적
+    elif 25 <= signal_now < 30:   f_score = 18  # 바닥 직전
+    elif 55 <  signal_now <= 70:  f_score = 18  # 반등 진행 중
+    elif 70 <  signal_now <= 85:  f_score = 10  # 강세 진행 (이미 늦음)
+    elif 20 <= signal_now < 25:   f_score = 8
+    bd['매매신호'] = f_score
+    meta['signal'] = round(float(signal_now), 1)
 
-    # [D] 거래량 스파이크 (최대 40점)
+    # ─ G. 거래량 스파이크 강도 (최대 25점) ────────────
+    # 60일 내 최대 스파이크 배수
     vol_ma20_ser = df['Volume'].rolling(20).mean()
-    recent_60    = df.iloc[-60:]
-    spike_ratios = recent_60['Volume'] / (vol_ma20_ser.iloc[-60:] + 1)
+    recent_60_d  = df.iloc[-60:]
+    spike_ratios = recent_60_d['Volume'] / (vol_ma20_ser.iloc[-60:] + 1)
     max_spike    = spike_ratios.max() if not spike_ratios.empty else 0
-    cur_ratio    = cur_vol / (vol_ma20 + 1)
-    d = 0
-    if   max_spike >= 10: d = 40
-    elif max_spike >= 5:  d = 30
-    elif max_spike >= 3:  d = 20
-    elif max_spike >= 2:  d = 10
-    bd['거래량스파이크'] = d
+    g = 0
+    if   max_spike >= 8: g = 25
+    elif max_spike >= 5: g = 20
+    elif max_spike >= 3: g = 15
+    elif max_spike >= 2: g = 10
+    bd['거래량스파이크'] = g
     meta['max_spike'] = round(float(max_spike), 1)
-    meta['vol_ratio'] = round(float(cur_ratio), 2)
+    meta['vol_ratio'] = round(float(cur_vol / (vol_ma20 + 1)), 2)
 
-    # [F] 수급 강도 (최대 15점)
-    f = 0
+    # ─ H. 외인/기관 수급 (최대 20점) ─────────────────
+    h = 0
     supply_text = "정보없음"
     if inv_df is not None and cols:
         fc_col, ic_col = cols
-        fd        = int((inv_df[fc_col] > 0).sum())
-        id_       = int((inv_df[ic_col] > 0).sum())
-        both_days = int(((inv_df[fc_col] > 0) & (inv_df[ic_col] > 0)).sum())
-        f = min(inst_streak * 3 + for_streak * 2 + both_days * 2, 15)
-        if fd > 0 and id_ > 0:
+        fd_count   = int((inv_df[fc_col] > 0).sum())
+        id_count   = int((inv_df[ic_col] > 0).sum())
+        both_days  = int(((inv_df[fc_col] > 0) & (inv_df[ic_col] > 0)).sum())
+        h = min(inst_streak * 3 + for_streak * 2 + both_days * 3, 20)
+        if fd_count > 0 and id_count > 0:
             supply_text = "외인+기관 양매수"
-        elif id_ > 0:
+        elif id_count > 0:
             supply_text = "기관매수"
-        elif fd > 0:
+        elif fd_count > 0:
             supply_text = "외인매수"
-    bd['수급강도']      = f
+    bd['수급강도'] = h
     meta['supply_text'] = supply_text
     meta['inst_streak'] = inst_streak
     meta['for_streak']  = for_streak
     meta['rsi']         = round(float(rsi), 1)
-    meta['bb_compress'] = 0
 
-    # [H] 스파이크 30일 이내 (최대 15점)
-    h = 0
-    days_since = -1
-    try:
-        vol_ma20_ser2 = df['Volume'].rolling(20).mean()
-        recent_30     = df.iloc[-30:]
-        spike_mask_30 = recent_30['Volume'] >= vol_ma20_ser2.iloc[-30:] * 2.0
-        if spike_mask_30.any():
-            last_spike_30 = recent_30[spike_mask_30].iloc[-1]
-            days_since    = len(df) - df.index.get_loc(last_spike_30.name) - 1
-            if   days_since <= 5:  h = 15
-            elif days_since <= 10: h = 12
-            elif days_since <= 20: h = 8
-            elif days_since <= 30: h = 4
-    except Exception:
-        pass
-    bd['근거리스파이크'] = h
-    meta['days_since_spike'] = days_since
+    # ════════════════════════════════════════════════════════
+    #  [참고 메타 — 점수 산정 안 함]
+    # ════════════════════════════════════════════════════════
 
-    # [I] OBV 0선 직전 (최대 10점)
-    i = 0
-    obv_pct = 0.0
-    try:
-        obv_range = abs(df['OBV'].iloc[-60:].max() - df['OBV'].iloc[-60:].min()) + 1
-        obv_pct   = obv_now / obv_range * 100
-        if obv_now < 0 and -15 <= obv_pct <= 0:
-            i = 10
-        elif obv_now < 0 and -30 <= obv_pct < -15:
-            i = 5
-    except Exception:
-        pass
-    bd['OBV0선직전'] = i
-    meta['obv_pct'] = round(float(obv_pct), 1)
-
-    # [J] 스파이크 반복 + 바닥 수렴 (최대 35점)
-    j = 0
+    # 반복 스파이크 횟수 (참고)
     spike_count  = 0
     last_spikes  = []
     try:
         vol_ma20_full = df['Volume'].rolling(20).mean()
         spike_mask_full = df['Volume'] >= vol_ma20_full * 2.0
-
         spike_dates = df.index[spike_mask_full].tolist()
         grouped = []
-        for d in spike_dates:
-            if not grouped or (d - grouped[-1][-1]).days > 5:
-                grouped.append([d])
+        for sd in spike_dates:
+            if not grouped or (sd - grouped[-1][-1]).days > 5:
+                grouped.append([sd])
             else:
-                grouped[-1].append(d)
+                grouped[-1].append(sd)
         spike_count = len(grouped)
         last_spikes = [g[-1] for g in grouped[-3:]]
-
-        if spike_count >= 2:
-            last_spike_close = float(df.loc[last_spikes[-1], 'Close'])
-            price_since = (cur - last_spike_close) / last_spike_close * 100
-            converging  = -15 <= price_since <= 10
-
-            retest = False
-            if len(last_spikes) >= 2:
-                idx1 = df.index.get_loc(last_spikes[-2])
-                idx2 = df.index.get_loc(last_spikes[-1])
-                between = df.iloc[idx1:idx2]['Close']
-                spike1_close = float(df.loc[last_spikes[-2], 'Close'])
-                if len(between) > 0:
-                    min_between = float(between.min())
-                    retest = (min_between / spike1_close) < 0.95
-
-            if spike_count >= 3 and converging and retest:
-                j = 35
-            elif spike_count >= 2 and converging and retest:
-                j = 28
-            elif spike_count >= 2 and converging:
-                j = 18
-            elif spike_count >= 2:
-                j = 8
     except Exception:
         pass
-    bd['반복스파이크'] = j
-    meta['spike_count']  = spike_count
-    meta['last_spikes']  = [str(d.date()) for d in last_spikes] if last_spikes else []
+    meta['spike_count'] = spike_count
+    meta['last_spikes'] = [str(d.date()) for d in last_spikes] if last_spikes else []
 
-    # [L] 이격도
+    # 이격도 (참고)
     disp20 = disp60 = 0.0
     try:
         ma20_v = float(df['Close'].rolling(20).mean().iloc[-1])
@@ -547,48 +597,6 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
         pass
     meta['disp20'] = disp20
     meta['disp60'] = disp60
-
-    # [M] 횡보 기간 (최대 20점)
-    m = 0
-    sideways_days = 0
-    try:
-        for window in [200, 180, 120, 90, 60, 40]:
-            if len(df) < window:
-                continue
-            seg     = df.iloc[-window:]
-            hi      = float(seg['High'].max())
-            lo      = float(seg['Low'].min())
-            rng_pct = (hi - lo) / lo * 100 if lo > 0 else 999
-            if rng_pct <= 25:
-                sideways_days = window
-                break
-
-        if   sideways_days >= 180: m = 20
-        elif sideways_days >= 120: m = 17
-        elif sideways_days >= 90:  m = 13
-        elif sideways_days >= 60:  m = 8
-        elif sideways_days >= 40:  m = 4
-    except Exception:
-        pass
-    bd['횡보기간'] = m
-    meta['sideways_days'] = sideways_days
-
-    # [N] 52주 고점 괴리율 (최대 20점)
-    n = 0
-    high52_gap = 0.0
-    try:
-        high52     = float(df['High'].iloc[-252:].max()) if len(df) >= 252 else float(df['High'].max())
-        high52_gap = round((high52 - cur) / high52 * 100, 1)
-
-        if   high52_gap >= 60: n = 20
-        elif high52_gap >= 45: n = 17
-        elif high52_gap >= 35: n = 13
-        elif high52_gap >= 25: n = 8
-        elif high52_gap >= 15: n = 4
-    except Exception:
-        pass
-    bd['고점괴리'] = n
-    meta['high52_gap'] = high52_gap
 
     return sum(bd.values()), bd, meta
 
@@ -614,12 +622,12 @@ def run_kr_scan():
         except Exception:
             continue
 
-    # ★ 100점 환산 기준 — 원점수 기준(70/285=24점)이 너무 관대했음 (v2.2)
-    SCORE_THRESHOLD_100 = 50   # 100점 환산: 50점 이상만 통과 (중상위 품질)
+    # ★ v3.0 채점 정합성 — 200점 만점, 100점 환산 50점 = 절반
+    SCORE_THRESHOLD_100 = 50   # 채점이 v3.0과 정합되어 50점이 진짜 50%
     # ★ RS_THRESHOLD 제거 — 바닥 매집 전략과 논리 충돌 (v2.1)
 
     print(f"📅 기준일: {today_str} | {label}")
-    print(f"🎯 전략: 선행매집 스캔 | TOP {TOP_N} | 임계 {SCORE_THRESHOLD_100}점 (100점 환산)\n")
+    print(f"🎯 전략: 큰 흐름 매크로 스캔 (v3.0) | TOP {TOP_N} | 임계 {SCORE_THRESHOLD_100}점 (200점→100환산)\n")
 
     # ── 시총 사전 필터링 ────────────────────────────────────────
     print(f"⚡ 시총 사전 필터링 ({MKTCAP_MIN}억↑ ~ {MKTCAP_MAX}억↓)...")
@@ -652,11 +660,11 @@ def run_kr_scan():
         return []
 
     candidates = []
-    # ★ v2.3: sideways, vol_recovery 로그 추가
+    # ★ v3.0: 큰 흐름 위주 필터 — 미시 비교 제거
     log = dict(total=len(all_tickers), penny=0, mktcap=len(all_tickers),
-               bottom=0, high_gap=0, uptrend=0, sideways=0,
-               vol_spike=0, vol_recovery=0,
-               obv_ok=0, signal_ok=0, trend_ok=0,
+               bottom=0, high_gap=0, sideways=0,
+               vol_alive=0, vol_recent=0,
+               obv_trend=0, signal_ok=0,
                seforce=0, final=0)
     lock = threading.Lock()
     passed_stage1 = []
@@ -679,44 +687,33 @@ def run_kr_scan():
             if mktcap is None or not (MKTCAP_MIN <= mktcap <= MKTCAP_MAX):
                 return
 
-            low52       = df['Low'].iloc[-252:].min() if len(df) >= 252 else df['Low'].min()
+            # ════════════════════════════════════════════════════
+            #  v3.0 큰 흐름 필터 — 매크로 추세 중심
+            # ════════════════════════════════════════════════════
+
+            # ─ ① 저점 대비 위치 (관대: 0~80%) ─────────────────
+            # 이미 좀 반등 시작한 종목까지 포함
+            low52 = df['Low'].iloc[-252:].min() if len(df) >= 252 else df['Low'].min()
             if low52 <= 0:
                 return
             rebound_pct = (cur - low52) / low52 * 100
-            if not (0 <= rebound_pct <= 50):
+            if not (0 <= rebound_pct <= 80):
                 return
             with lock:
                 log['bottom'] += 1
 
-            # ★ [v2.3] 1~3년 고점 대비 -35% 이상 하락 필수 ──────
-            # 민혁님 전략: "과거 1~3년 사이 고가였고 장기간 서서히 하락"
-            long_window = min(len(df), 756)   # 최대 3년 (504=2년, 756=3년)
+            # ─ ② 1~3년 고가 대비 -30%↑ 하락 (관대화) ────────
+            long_window = min(len(df), 756)
             high_long = df['High'].iloc[-long_window:].max()
             if high_long <= 0:
                 return
             long_gap_pct = (high_long - cur) / high_long * 100
-            if long_gap_pct < 35:   # 3년 고점 대비 35% 미만 하락 = 제외
+            if long_gap_pct < 30:   # 35→30 완화
                 return
             with lock:
                 log['high_gap'] += 1
 
-            vol_ma20   = vol.rolling(20).mean()
-            ma20_s     = close.rolling(20).mean()
-            ma20_slope = ma20_s.iloc[-1] / ma20_s.iloc[-20] if ma20_s.iloc[-20] > 0 else 1
-            if not (0.95 <= ma20_slope <= 1.20):
-                return
-            # ★ [v2.4] MA20 ±10% 범위로 완화 (이전: cur > MA20 탈락)
-            # 스파이크 후 "서서히 반응" 시작된 종목은 MA20 살짝 위에 있을 수 있음
-            if cur > ma20_s.iloc[-1] * 1.10:       # MA20 +10% 초과 = 과열
-                return
-            if cur < ma20_s.iloc[-1] * 0.90:       # MA20 -10% 미만 = 너무 깊은 하락
-                return
-            with lock:
-                log['uptrend'] += 1
-
-            # ★ [v2.3] 장기 횡보 60일 이상 필수 ──────
-            # 민혁님 전략: "장기 횡보 후 거래량 스파이크"
-            # ★ [v2.4] 범위 30% → 45% 완화 — 스파이크 2회 요구와 물리적 충돌 해소
+            # ─ ③ 장기 횡보 (60일↑, 범위 50% 관대) ──────────
             sideways_days_f = 0
             for window_s in [200, 120, 90, 60]:
                 if len(df) < window_s:
@@ -725,7 +722,7 @@ def run_kr_scan():
                 hi_s    = float(seg_s['High'].max())
                 lo_s    = float(seg_s['Low'].min())
                 rng_pct = (hi_s - lo_s) / lo_s * 100 if lo_s > 0 else 999
-                if rng_pct <= 45:
+                if rng_pct <= 50:    # 45→50 더 관대
                     sideways_days_f = window_s
                     break
             if sideways_days_f < 60:
@@ -733,69 +730,51 @@ def run_kr_scan():
             with lock:
                 log['sideways'] += 1
 
-            # ★ [v2.3] 반복 스파이크 ≥ 2회 + 거래량 죽음 필수 ──────
-            # 민혁님 전략: "스파이크가 2번정도 터졌는데 거래량이 죽다가"
-            vol_ma20_full   = vol.rolling(20).mean()
-            spike_mask_full = vol >= vol_ma20_full * 2.0
-            spike_dates_f   = df.index[spike_mask_full].tolist()
-            grouped_f = []
-            for sd in spike_dates_f:
-                if not grouped_f or (sd - grouped_f[-1][-1]).days > 5:
-                    grouped_f.append([sd])
-                else:
-                    grouped_f[-1].append(sd)
-            spike_count_f = len(grouped_f)
-            if spike_count_f < 2:               # 스파이크 2회 이상 필수
-                return
-            last_spike_date = grouped_f[-1][-1]
-            last_spike      = df.loc[last_spike_date]
-            if cur <= last_spike['Low']:
-                return
-            si = df.index.get_loc(last_spike_date)
-            af = df.iloc[si + 1:]
-            # 스파이크 후 "거래량 죽음" 구간 필수 (최소 5일)
-            if len(af) < 5:
-                return
-            sil = af['Volume'].mean() / (last_spike['Volume'] + 1)
-            silence_ratio = round(float(sil), 2)
-            if sil > 0.7:                       # 스파이크 평균 70% 이하여야 "죽음"
-                return
-            with lock:
-                log['vol_spike'] += 1
+            # ════════════════════════════════════════════════════
+            #  최근 신호 위주 — "거래량이 깨어나고 있다"
+            # ════════════════════════════════════════════════════
 
-            # ★ [v2.5.1] 거래량 회복 로직 — 추가 완화
-            # 이전 1.10 조건이 너무 빡빡 → 10건 전멸
-            # 서서히 반응 = "안 죽어있다" 수준이면 OK (동일 이상)
-            if len(af) >= 5:
-                half = max(len(af) // 2, 1)
-                early_half_avg = float(af['Volume'].iloc[:half].mean())
-                late_half_avg  = float(af['Volume'].iloc[half:].mean())
-                if early_half_avg <= 0:
+            # ─ ④ 거래량 살아있음 (최근 30일 ≥ 직전 90일 × 0.7) ─
+            # "죽지 않고 살아있다"가 핵심 — 큰 흐름에서 거래량은 노이즈 많아 관대화
+            if len(vol) >= 120:
+                recent_30  = float(vol.iloc[-30:].mean())
+                prior_90   = float(vol.iloc[-120:-30].mean())
+                if prior_90 <= 0:
                     return
-                vol_recovery = late_half_avg / early_half_avg
-                if vol_recovery < 1.0:   # 최근 후반이 전반 대비 같거나 높아야 함
+                vol_alive_ratio = recent_30 / prior_90
+                if vol_alive_ratio < 0.7:   # 죽어버린 종목만 탈락
                     return
             else:
                 return
             with lock:
-                log['vol_recovery'] += 1
+                log['vol_alive'] += 1
 
-            # ★ RS는 표시용으로만 계산 (필터 아님) — v2.1
-            rs = calc_relative_strength(df, kospi_df)
-
-            # [F1] 선행 매집 — OBV↑ / 가격 정체
-            obv         = calc_obv(df)
-            obv_now     = obv.iloc[-1]
-            obv_20ago   = obv.iloc[-20] if len(obv) >= 20 else obv.iloc[0]
-            obv_change  = (obv_now - obv_20ago) / (abs(obv_20ago) + 1) * 100
-            price_20ago = close.iloc[-20] if len(close) >= 20 else close.iloc[0]
-            price_change = (cur - price_20ago) / price_20ago * 100 if price_20ago > 0 else 0
-            if obv_change <= 0 or price_change > 25:
+            # ─ ⑤ 최근 60일 내 의미있는 스파이크 1회↑ ───────
+            # 2회 강제 → 1회로 완화 (관대 모드)
+            vol_ma20_full   = vol.rolling(20).mean()
+            recent_60_vol   = vol.iloc[-60:]
+            recent_60_ma    = vol_ma20_full.iloc[-60:]
+            spike_mask_60   = recent_60_vol >= recent_60_ma * 2.0
+            if not spike_mask_60.any():
                 return
             with lock:
-                log['obv_ok'] += 1
+                log['vol_recent'] += 1
 
-            # [F2] 매매신호 25~80
+            # ─ ⑥ OBV 누적 매집 추세 (큰 흐름) ──────────────
+            # 60일 OBV 기울기가 양수 = 세력 매집 진행 중
+            obv = calc_obv(df)
+            if len(obv) < 60:
+                return
+            obv_60ago = float(obv.iloc[-60])
+            obv_now_v = float(obv.iloc[-1])
+            obv_60_change = (obv_now_v - obv_60ago) / (abs(obv_60ago) + 1) * 100
+            if obv_60_change <= 0:   # OBV 60일 하락 = 세력 이탈 = 탈락
+                return
+            with lock:
+                log['obv_trend'] += 1
+
+            # ─ ⑦ 매매신호 폭 확대 20~85 (관대) ──────────────
+            # 바닥주는 시그널 25 미만도 많음 — 20으로 하향
             rsi_ser   = calc_rsi(close)
             rsi_cur   = float(rsi_ser.iloc[-1])
             low_14    = df['Low'].rolling(14).min().iloc[-1]
@@ -803,26 +782,20 @@ def run_kr_scan():
             denom     = high_14 - low_14
             stoch_cur = (cur - low_14) / denom * 100 if denom > 0 else 50.0
             signal_cur = stoch_cur * 0.6 + rsi_cur * 0.4
-            if not (25 <= signal_cur <= 80):
+            if not (20 <= signal_cur <= 85):
                 return
             with lock:
                 log['signal_ok'] += 1
 
-            # [F3] 스파이크 후 가격 반응 +0~35%
-            spike_close = float(last_spike['Close'])
-            post_high   = float(af['High'].max()) if len(af) >= 1 else spike_close
-            if spike_close <= 0:
-                return
-            post_return = post_high / spike_close
-            if not (1.00 <= post_return <= 1.35):
-                return
-            with lock:
-                log['trend_ok'] += 1
+            # RS 표시용 (필터 아님)
+            rs = calc_relative_strength(df, kospi_df)
+
+            vol_ma20 = vol.rolling(20).mean()
 
             with lock:
                 passed_stage1.append((
                     ticker, df, vol_ma20, mktcap, rebound_pct, cur,
-                    vol.iloc[-1], vol_ma20.iloc[-1], silence_ratio, rs
+                    vol.iloc[-1], vol_ma20.iloc[-1], rs
                 ))
         except Exception:
             return
@@ -838,7 +811,7 @@ def run_kr_scan():
 
     print(f"\n2단계: 수급 스크리닝 {len(passed_stage1)}건...")
     for row in passed_stage1:
-        ticker, df, vol_ma20, mktcap, rebound_pct, cur, cur_vol, cur_vm20, silence_ratio, rs = row
+        ticker, df, vol_ma20, mktcap, rebound_pct, cur, cur_vol, cur_vm20, rs = row
         try:
             inv_df, cols, inst_streak, for_streak = get_investor_detail(ticker, start_10d, today_str)
             if inv_df is not None and cols is not None:
@@ -855,7 +828,6 @@ def run_kr_scan():
             meta['rebound_pct']   = round(float(rebound_pct), 1)
             meta['cur_close']     = int(cur)
             meta['vol_ratio']     = round(float(cur_vol) / (float(cur_vm20) + 1), 2)
-            meta['silence_ratio'] = silence_ratio
             meta['rs']            = rs
             meta['trade']         = calc_trade_levels(df, cur)
             meta['spike_news']    = []
@@ -868,24 +840,23 @@ def run_kr_scan():
         except Exception:
             continue
 
-    # ── 필터 현황 출력 ─────────────────────────────────────────
-    # ★ RS 라인 제거 (v2.1)
-    print(f"\n📊 [필터 현황]")
+    # ── 필터 현황 출력 (v3.0) ──────────────────────────────
+    print(f"\n📊 [필터 현황 — v3.0 큰 흐름 모드]")
     for lbl, key in [
-        ("전체", "total"), ("① 동전주 제외", "penny"),
-        ("② 시총 필터", "mktcap"), ("③ 저점대비 0~50%", "bottom"),
-        ("④ 3년고점 -35%↑ 하락", "high_gap"),
-        ("⑤ MA20 박스권", "uptrend"),
-        ("⑥ 장기 횡보 60일↑", "sideways"),
-        ("⑦ 반복 스파이크 2회↑", "vol_spike"),
-        ("⑧ 최근 거래량 회복", "vol_recovery"),
-        ("⑨ 선행매집(OBV↑/가격↔)", "obv_ok"),
-        ("⑩ 매매신호 25~80", "signal_ok"),
-        ("⑪ 스파이크후 +0~35%", "trend_ok"),
-        ("⑫ 수급 확인", "seforce"),
+        ("전체", "total"),
+        ("① 동전주 제외", "penny"),
+        ("② 시총 필터", "mktcap"),
+        ("③ 저점대비 0~80%", "bottom"),
+        ("④ 1~3년고점 -30%↑ 하락", "high_gap"),
+        ("⑤ 장기 횡보 60일↑ (50%↓)", "sideways"),
+        ("⑥ 거래량 살아있음 (≥0.7)", "vol_alive"),
+        ("⑦ 60일내 스파이크 1회↑", "vol_recent"),
+        ("⑧ OBV 60일 매집 추세↑", "obv_trend"),
+        ("⑨ 매매신호 20~85", "signal_ok"),
+        ("⑩ 수급 확인", "seforce"),
         ("최종 통과", "final"),
     ]:
-        print(f"  {lbl:<24} {log[key]:>5}건")
+        print(f"  {lbl:<28} {log[key]:>5}건")
 
     candidates.sort(key=lambda x: x[0], reverse=True)
     top_raw = candidates[:TOP_N]
@@ -948,15 +919,12 @@ def run_kr_scan():
             "score_detail": breakdown,
             "meta": {
                 "rsi":           meta.get('rsi', 0),
-                "bb_compress":   meta.get('bb_compress', 0),
                 "rebound_pct":   meta.get('rebound_pct', 0),
                 "vol_ratio":     meta.get('vol_ratio', 0),
                 "inst_streak":   meta.get('inst_streak', 0),
                 "for_streak":    meta.get('for_streak', 0),
                 "mktcap":        meta.get('mktcap', 0),
-                "silence_ratio": meta.get('silence_ratio', 0),
                 "green_days":    meta.get('green_days', 0),
-                "obv_cross":     meta.get('obv_cross', False),
                 "signal":        meta.get('signal', 0),
                 "max_spike":     meta.get('max_spike', 0),
                 "rs":            meta.get('rs', 0),
@@ -969,6 +937,9 @@ def run_kr_scan():
                 "spike_news":    meta.get('spike_news', []),
                 "sideways_days": meta.get('sideways_days', 0),
                 "high52_gap":    meta.get('high52_gap', 0.0),
+                # v3.0 신규 메타
+                "vol_alive_ratio": meta.get('vol_alive_ratio', 0.0),
+                "obv_60_change":   meta.get('obv_60_change', 0.0),
             }
         })
 
@@ -1026,25 +997,29 @@ def build_telegram_message(picks):
         filled = int(score_100 / 10)
         bar    = '█' * filled + '░' * (10 - filled)
 
-        gather_100   = normalize_score(sd.get('세력매집',     0), 50)
-        spike_100    = normalize_score(sd.get('거래량스파이크', 0), 40)
-        signal_100   = normalize_score(sd.get('매매신호',      0), 30)
-        near_100     = normalize_score(sd.get('근거리스파이크', 0), 15)
-        obv0_100     = normalize_score(sd.get('OBV0선직전',    0), 10)
-        repeat_100   = normalize_score(sd.get('반복스파이크',  0), 35)
-        side_100     = normalize_score(sd.get('횡보기간',      0), 20)
-        gap_100      = normalize_score(sd.get('고점괴리',      0), 20)
+        # ★ v3.0 채점 키 매핑 ────────────────────────────
+        obv60_100    = normalize_score(sd.get('OBV60일매집',  0), 30)
+        gather_100   = normalize_score(sd.get('매집일수',     0), 25)
+        valive_100   = normalize_score(sd.get('거래량살아있음', 0), 25)
+        side_100     = normalize_score(sd.get('횡보기간',     0), 25)
+        gap_100      = normalize_score(sd.get('고점괴리',     0), 25)
+        signal_100   = normalize_score(sd.get('매매신호',     0), 25)
+        spike_100    = normalize_score(sd.get('거래량스파이크', 0), 25)
+        supply_100   = normalize_score(sd.get('수급강도',     0), 20)
 
         spike_cnt     = p['meta'].get('spike_count', 0)
         disp20_val    = p['meta'].get('disp20', 0.0)
         disp60_val    = p['meta'].get('disp60', 0.0)
         sideways_days = p['meta'].get('sideways_days', 0)
         high52_gap    = p['meta'].get('high52_gap', 0.0)
+        vol_alive     = p['meta'].get('vol_alive_ratio', 0.0)
+        obv_60_chg    = p['meta'].get('obv_60_change', 0.0)
         spike_news    = p['meta'].get('spike_news', [])
 
-        ds_score    = sd.get('근거리스파이크', 0) + sd.get('OBV0선직전', 0)
-        ds_flag     = "🔥 <b>DS패턴 감지</b>" if ds_score >= 20 else ""
-        repeat_flag = "🔁 <b>반복패턴 감지</b>" if sd.get('반복스파이크', 0) >= 28 else ""
+        # 매크로 흐름 강도 = OBV60 + 매집일수 + 거래량살아있음 (130점 만점 → 100환산)
+        macro_raw   = sd.get('OBV60일매집', 0) + sd.get('매집일수', 0) + sd.get('거래량살아있음', 0)
+        macro_100   = int(round(macro_raw / 80 * 100))
+        macro_flag  = "🔥 <b>매크로 매집 강세</b>" if macro_100 >= 70 else ""
 
         lines += [
             f"#{p['rank']} <b><a href='{chart_url}'>{p['name']}</a></b> ({p['code']})",
@@ -1055,17 +1030,19 @@ def build_telegram_message(picks):
             f"  💰 현재가: {p['cur_price']:,}원 {rt_flag} | RS: {rs_val:+}%",
             f"  📈 기대수익: {p['expected_return']}",
             f"",
-            f"  📊 <b>핵심 지표</b>",
-            f"    {grade_emoji(gather_100)} 세력매집        {gather_100}점",
-            f"    {grade_emoji(spike_100)} 거래량스파이크   {spike_100}점",
-            f"    {grade_emoji(signal_100)} 매매신호        {signal_100}점",
+            f"  📊 <b>큰 흐름 매크로</b>{('  ' + macro_flag) if macro_flag else ''}",
+            f"    {grade_emoji(obv60_100)} OBV 60일 매집     {obv60_100}점 ({obv_60_chg:+.1f}%)",
+            f"    {grade_emoji(gather_100)} 매집 일수         {gather_100}점",
+            f"    {grade_emoji(valive_100)} 거래량 살아있음  {valive_100}점 ({vol_alive:.2f}배)",
+            f"    {grade_emoji(side_100)} 장기 횡보 {sideways_days}일  {side_100}점",
+            f"    {grade_emoji(gap_100)} 1~3년 고점 -{high52_gap:.0f}%  {gap_100}점",
             f"",
-            f"  📐 MA20 {disp20_val:+.1f}% | MA60 {disp60_val:+.1f}% (매물대 이하 진입)",
+            f"  📐 MA20 {disp20_val:+.1f}% | MA60 {disp60_val:+.1f}%",
             f"",
-            f"  💎 <b>대상승 패턴</b>{('  ' + ds_flag) if ds_flag else ''}",
-            f"    {grade_emoji(near_100)} 근거리스파이크  {near_100}점",
-            f"    {grade_emoji(obv0_100)} OBV 0선직전     {obv0_100}점",
-            f"    {grade_emoji(repeat_100)} 스파이크 {spike_cnt}회 반복  {repeat_100}점{('  ' + repeat_flag) if repeat_flag else ''}",
+            f"  🎯 <b>최근 신호</b>",
+            f"    {grade_emoji(signal_100)} 매매신호          {signal_100}점",
+            f"    {grade_emoji(spike_100)} 거래량스파이크   {spike_100}점 ({spike_cnt}회)",
+            f"    {grade_emoji(supply_100)} 외인/기관 수급  {supply_100}점",
             f"",
             f"  🏦 수급: {p['supply']}",
         ]

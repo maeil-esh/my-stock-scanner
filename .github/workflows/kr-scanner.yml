@@ -5,6 +5,13 @@ on:
     - cron: '33 0 * * 1-5'   # 09:33 KST (장 시작 33분 후 — 시초가 변동 진정)
     - cron: '7 4 * * 1-5'    # 13:07 KST (점심 후 후반장 시작)
     - cron: '17 7 * * 1-5'   # 16:17 KST (장 마감 47분 후 — 종가 데이터 안정화)
+  push:
+    branches: [main]
+    paths:
+      - 'engine_kr.py'
+      - 'engine_common.py'
+      - 'requirements.txt'
+      - '.github/workflows/kr-scanner.yml'
   workflow_dispatch:
 
 jobs:

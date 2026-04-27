@@ -2,16 +2,16 @@
     "today_picks": [],
     "scan_label": "📊 장 중간 스캔",
     "total_candidates": 0,
-    "total_screened": 1410,
+    "total_screened": 1418,
     "filter_log": {
-        "total": 1410,
-        "penny": 1364,
-        "mktcap": 1410,
-        "bottom": 728,
-        "high_gap": 125,
-        "uptrend": 60,
-        "sideways": 17,
-        "vol_spike": 10,
+        "total": 1418,
+        "penny": 1372,
+        "mktcap": 1418,
+        "bottom": 715,
+        "high_gap": 119,
+        "uptrend": 62,
+        "sideways": 19,
+        "vol_spike": 12,
         "vol_recovery": 0,
         "obv_ok": 0,
         "signal_ok": 0,
@@ -19,5 +19,5 @@
         "seforce": 0,
         "final": 0
     },
-    "base_date": "20260424"
+    "base_date": "20260427"
 }

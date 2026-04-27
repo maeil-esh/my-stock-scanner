@@ -41,7 +41,7 @@ engine_kr.py — 국장 바닥반등+거래량 스캐너 (PRO v3.0)
    ✗ OBV 0선 직전 — 음수 OBV만 점수
    ✗ 반복스파이크 — 너무 빡빡한 만점 조건
 
-  점수 임계: 50점 (200점→100환산), TOP_N: 5→15
+  점수 임계: 50점 (200점→100환산), TOP_N: 5 (유지)
 
 [변경 이력 v2.5.1] — 거래량 회복 필터 완화
 [변경 이력 v2.4] — 필터 병목 해소 (v2.3 실행 결과 0건 원인 제거)
@@ -90,7 +90,7 @@ from engine_common import (
 
 DATA_FILE    = 'stock_data.json'
 HISTORY_FILE = 'history.json'
-TOP_N        = 15  # v3.0 관대 모드: 5→15
+TOP_N        = 5
 MAX_SCORE    = 200  # v3.0: A(30)+B(25)+C(25)+D(25)+E(25)+F(25)+G(25)+H(20)
 MKTCAP_MIN   = 1000
 MKTCAP_MAX   = 30000

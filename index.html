@@ -491,4 +491,327 @@ function renderMyPicks(data) {
       <td style="font-family:'JetBrains Mono';font-size:11px">${Number(p.curr_price).toLocaleString()}원</td>
       <td style="text-align:right;font-weight:800;color:${pos?'var(--up)':'var(--down)'}">
         ${pos?'+':''}${p.profit}%
-     
+           </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── KR 종목 카드 (v3.0 채점 시스템) ──
+function renderKrPicks(data) {
+  const picks = data.today_picks || [];
+  if (!picks.length) {
+    document.getElementById('top5').innerHTML = `
+      <div class="empty-state">
+        <div class="icon">📭</div>
+        <h3>오늘 조건 충족 종목 없음</h3>
+        <p>다음 스캔까지 기다려주세요.<br>
+        스캔 시각: 09:33 / 13:07 / 16:17 KST</p>
+      </div>`;
+    return;
+  }
+
+  document.getElementById('top5').innerHTML = picks.map((p, idx) => {
+    const rank = RANKS[idx] || RANKS[4];
+    const sd   = p.score_detail || {};
+    const m    = p.meta || {};
+    const score100 = p.score_100 ?? 0;
+
+    // v3.0 채점 항목 (각 항목별 % 환산)
+    const factors = [
+      { key:'OBV60일매집',     max:30, label:'OBV 60일' },
+      { key:'매집일수',        max:25, label:'매집일수' },
+      { key:'거래량살아있음',  max:25, label:'거래량 회복' },
+      { key:'횡보기간',        max:25, label:'장기 횡보' },
+      { key:'고점괴리',        max:25, label:'고점 괴리' },
+      { key:'매매신호',        max:25, label:'매매신호' },
+      { key:'거래량스파이크',  max:25, label:'스파이크' },
+      { key:'수급강도',        max:20, label:'수급 강도' },
+    ];
+
+    // 상위 3개 팩터 추출 (배지)
+    const topFactors = factors
+      .map(f => ({ ...f, val: sd[f.key] || 0, pct: ((sd[f.key] || 0) / f.max * 100) }))
+      .filter(f => f.val > 0)
+      .sort((a,b) => b.pct - a.pct)
+      .slice(0, 3);
+
+    // 팩터 배지
+    const badges = topFactors.map(f => {
+      const style = KR_FACTOR_STYLE[f.key] || 'background:rgba(100,116,139,0.15);color:#94a3b8;';
+      return `<span class="factor-badge" style="${style}">${f.label}</span>`;
+    }).join('');
+
+    // 매크로 흐름 강도 (큰 흐름 점수 - 130점 만점)
+    const macroRaw = (sd['OBV60일매집']||0) + (sd['매집일수']||0) + (sd['거래량살아있음']||0)
+                   + (sd['횡보기간']||0) + (sd['고점괴리']||0);
+    const macroPct = Math.round(macroRaw / 130 * 100);
+
+    // 신호 강도 (70점 만점)
+    const signalRaw = (sd['매매신호']||0) + (sd['거래량스파이크']||0) + (sd['수급강도']||0);
+    const signalPct = Math.round(signalRaw / 70 * 100);
+
+    // 트레이드 플랜
+    const t = m.trade;
+    const tradeBlock = t ? `
+      <div style="background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:10px;padding:12px;margin-top:10px;">
+        <div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:1px;margin-bottom:8px;">🎯 TRADE PLAN</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:11px;">
+          <div>
+            <div style="color:var(--muted);font-size:9px;">진입</div>
+            <div style="font-family:'JetBrains Mono';font-weight:700;color:#fff;">${Number(t.entry).toLocaleString()}</div>
+          </div>
+          <div>
+            <div style="color:var(--muted);font-size:9px;">🛑 손절 (-${t.risk_pct}%)</div>
+            <div style="font-family:'JetBrains Mono';font-weight:700;color:var(--down);">${Number(t.stop_loss).toLocaleString()}</div>
+          </div>
+          <div>
+            <div style="color:var(--muted);font-size:9px;">🥇 1차 (+${t.reward_pct}%)</div>
+            <div style="font-family:'JetBrains Mono';font-weight:700;color:var(--up);">${Number(t.target_1).toLocaleString()}</div>
+          </div>
+        </div>
+      </div>` : '';
+
+    // 차트 링크
+    const chartUrl = `https://m.stock.naver.com/domestic/stock/${p.code}/total`;
+
+    // 등급 색상 (점수 기반)
+    const scoreColor = score100 >= 70 ? 'var(--up)'
+                     : score100 >= 50 ? 'var(--gold)'
+                     : score100 >= 30 ? 'var(--accent)'
+                     : 'var(--muted)';
+
+    return `
+    <div class="pick-card ${rank.cls}">
+      <div class="card-inner">
+        <div class="rank-badge">
+          <div class="rank-num" style="color:${rank.color};">${rank.num}</div>
+        </div>
+        <div class="card-body">
+          <div class="card-head">
+            <div>
+              <div class="stock-name">
+                <a href="${chartUrl}" target="_blank" style="color:#fff;text-decoration:none;">${p.name}</a>
+              </div>
+              <div class="stock-info">${p.code} · ${Number(p.cur_price).toLocaleString()}원 ${m.rt_price_used ? '📡' : '📋'}</div>
+            </div>
+            <div class="score-box">
+              <div class="score-main" style="color:${scoreColor};">${score100}점</div>
+              <div class="supply-txt">${p.supply || '-'}</div>
+            </div>
+          </div>
+
+          <div class="company-summary">${p.company_summary || ''}</div>
+
+          <div class="factor-badges">${badges}</div>
+
+          <!-- 큰 흐름 매크로 -->
+          <div class="prog-wrap">
+            <div class="prog-head">
+              <span>📊 큰 흐름 매크로 (130점)</span>
+              <span style="color:${macroPct >= 70 ? 'var(--up)' : macroPct >= 50 ? 'var(--gold)' : 'var(--muted)'};font-weight:700;">${macroPct}%</span>
+            </div>
+            <div class="prog-track">
+              <div class="prog-fill" style="width:${macroPct}%;background:linear-gradient(90deg,var(--purple),var(--accent));"></div>
+            </div>
+          </div>
+
+          <!-- 신호 + 수급 -->
+          <div class="prog-wrap">
+            <div class="prog-head">
+              <span>🎯 신호 + 수급 (70점)</span>
+              <span style="color:${signalPct >= 70 ? 'var(--up)' : 'var(--muted)'};font-weight:700;">${signalPct}%</span>
+            </div>
+            <div class="prog-track">
+              <div class="prog-fill" style="width:${signalPct}%;background:linear-gradient(90deg,var(--gold),var(--up));"></div>
+            </div>
+          </div>
+
+          <!-- 메타 정보 -->
+          <div class="signal-grid">
+            <div class="signal-item">
+              <div class="signal-label">OBV 60일 변화</div>
+              <div class="signal-val" style="color:${(m.obv_60_change||0) > 0 ? 'var(--up)' : 'var(--down)'};">
+                ${(m.obv_60_change||0) > 0 ? '+' : ''}${(m.obv_60_change||0).toFixed(1)}%
+              </div>
+            </div>
+            <div class="signal-item">
+              <div class="signal-label">거래량 살아있음</div>
+              <div class="signal-val" style="color:${(m.vol_alive_ratio||0) >= 1.0 ? 'var(--up)' : 'var(--muted)'};">
+                ${(m.vol_alive_ratio||0).toFixed(2)}배
+              </div>
+            </div>
+            <div class="signal-item">
+              <div class="signal-label">매집 일수 (120일)</div>
+              <div class="signal-val">${m.green_days || 0}일</div>
+            </div>
+            <div class="signal-item">
+              <div class="signal-label">횡보 기간</div>
+              <div class="signal-val">${m.sideways_days || 0}일</div>
+            </div>
+            <div class="signal-item">
+              <div class="signal-label">고점 괴리율</div>
+              <div class="signal-val" style="color:var(--gold);">-${(m.high52_gap||0).toFixed(1)}%</div>
+            </div>
+            <div class="signal-item">
+              <div class="signal-label">스파이크 강도</div>
+              <div class="signal-val">
+                ${(m.max_spike||0).toFixed(1)}배 · ${m.spike_count || 0}회
+              </div>
+            </div>
+          </div>
+
+          <!-- 메타 라인 -->
+          <div class="meta-row">
+            <div class="meta-item"><span>RSI</span><span class="meta-val">${(m.rsi||0).toFixed(1)}</span></div>
+            <div class="meta-item"><span>신호</span><span class="meta-val">${(m.signal||0).toFixed(1)}</span></div>
+            <div class="meta-item"><span>RS</span><span class="meta-val">${m.rs >= 0 ? '+' : ''}${(m.rs||0).toFixed(1)}%</span></div>
+            <div class="meta-item"><span>MA20</span><span class="meta-val">${m.disp20 >= 0 ? '+' : ''}${(m.disp20||0).toFixed(1)}%</span></div>
+            <div class="meta-item"><span>시총</span><span class="meta-val">${Number(m.mktcap||0).toLocaleString()}억</span></div>
+          </div>
+
+          ${tradeBlock}
+
+          <div class="expected-row" style="margin-top:10px;">
+            <span class="expected-val">${p.expected_return || '--'}</span>
+            <span class="expected-sub">예상 수익</span>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── US 종목 카드 (Short Squeeze) ──
+function renderUsPicks(data) {
+  const picks = data.today_picks || [];
+  if (!picks.length) {
+    document.getElementById('top5').innerHTML = `
+      <div class="empty-state">
+        <div class="icon">📭</div>
+        <h3>No Squeeze Candidates Today</h3>
+        <p>Watchlist will refresh on next scan.</p>
+      </div>`;
+    return;
+  }
+
+  document.getElementById('top5').innerHTML = picks.map((p, idx) => {
+    const rank = RANKS[idx] || RANKS[4];
+    const sd   = p.score_detail || {};
+    const m    = p.meta || {};
+    const score100 = p.score_100 ?? 0;
+
+    const factors = Object.keys(sd).slice(0, 3);
+    const badges = factors.map(k => {
+      const style = US_FACTOR_STYLE[k] || 'background:rgba(100,116,139,0.15);color:#94a3b8;';
+      return `<span class="factor-badge" style="${style}">${k}</span>`;
+    }).join('');
+
+    const chartUrl = `https://finance.yahoo.com/quote/${p.code}`;
+    const scoreColor = score100 >= 70 ? 'var(--up)' : score100 >= 50 ? 'var(--gold)' : 'var(--muted)';
+
+    return `
+    <div class="pick-card ${rank.cls}">
+      <div class="card-inner">
+        <div class="rank-badge">
+          <div class="rank-num" style="color:${rank.color};">${rank.num}</div>
+        </div>
+        <div class="card-body">
+          <div class="card-head">
+            <div>
+              <div class="stock-name">
+                <a href="${chartUrl}" target="_blank" style="color:#fff;text-decoration:none;">${p.name}</a>
+              </div>
+              <div class="stock-info">${p.code} · $${Number(p.cur_price).toFixed(2)}</div>
+            </div>
+            <div class="score-box">
+              <div class="score-main" style="color:${scoreColor};">${score100}pt</div>
+              <div class="supply-txt">${p.supply || ''}</div>
+            </div>
+          </div>
+
+          <div class="company-summary">${p.company_summary || ''}</div>
+          <div class="factor-badges">${badges}</div>
+
+          <div class="meta-row">
+            ${Object.entries(m).slice(0, 6).map(([k, v]) =>
+              `<div class="meta-item"><span>${k}</span><span class="meta-val">${typeof v === 'number' ? v.toFixed(2) : v}</span></div>`
+            ).join('')}
+          </div>
+
+          <div class="expected-row" style="margin-top:10px;">
+            <span class="expected-val">${p.expected_return || '--'}</span>
+            <span class="expected-sub">expected</span>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── 전략 패널 ──
+function renderStrategyPanel() {
+  const panel = document.getElementById('strategy-panel');
+  if (currentMarket === 'kr') {
+    panel.innerHTML = `
+      <h4>🇰🇷 KR · v3.0 큰 흐름 매크로 모드</h4>
+      <div class="strategy-grid">
+        <div class="strategy-col">
+          <h5>📋 필터 체인 (10단계)</h5>
+          <div class="filter-item"><span class="filter-num">①</span>동전주 제외 (1,000원 이상)</div>
+          <div class="filter-item"><span class="filter-num">②</span>시총 1천억 ~ 3조원</div>
+          <div class="filter-item"><span class="filter-num">③</span>저점 대비 0~80% 반등 위치</div>
+          <div class="filter-item"><span class="filter-num">④</span>1~3년 고점 대비 -30%↑ 하락</div>
+          <div class="filter-item"><span class="filter-num">⑤</span>장기 횡보 60일↑ (50% 범위)</div>
+          <div class="filter-item"><span class="filter-num">⑥</span>거래량 살아있음 (최근30/직전90 ≥ 0.7)</div>
+          <div class="filter-item"><span class="filter-num">⑦</span>60일내 스파이크 1회↑</div>
+          <div class="filter-item"><span class="filter-num">⑧</span>OBV 60일 매집 추세↑</div>
+          <div class="filter-item"><span class="filter-num">⑨</span>매매신호 20~85</div>
+          <div class="filter-item"><span class="filter-num">⑩</span>외인/기관 수급 확인</div>
+        </div>
+        <div class="strategy-col">
+          <h5>📊 채점 시스템 (200점 만점)</h5>
+          <div class="score-item"><span>OBV 60일 매집 추세</span><span class="score-pt">30점</span></div>
+          <div class="score-item"><span>매집 일수 (120일)</span><span class="score-pt">25점</span></div>
+          <div class="score-item"><span>거래량 살아있음</span><span class="score-pt">25점</span></div>
+          <div class="score-item"><span>장기 횡보 기간</span><span class="score-pt">25점</span></div>
+          <div class="score-item"><span>1~3년 고점 괴리율</span><span class="score-pt">25점</span></div>
+          <div class="score-item"><span>매매신호 위치</span><span class="score-pt">25점</span></div>
+          <div class="score-item"><span>거래량 스파이크</span><span class="score-pt">25점</span></div>
+          <div class="score-item"><span>외인/기관 수급</span><span class="score-pt">20점</span></div>
+          <div class="score-item" style="margin-top:8px;border-top:2px solid var(--border);padding-top:8px;">
+            <span style="color:var(--gold);font-weight:700;">최종 컷오프</span>
+            <span class="score-pt" style="color:var(--gold);">100환산 50점↑</span>
+          </div>
+        </div>
+      </div>
+    `;
+  } else {
+    panel.innerHTML = `
+      <h4>🇺🇸 US · Short Squeeze Hunter</h4>
+      <div class="strategy-grid">
+        <div class="strategy-col">
+          <h5>📋 Filter Chain</h5>
+          <div class="filter-item"><span class="filter-num">①</span>Short Interest ≥ 20%</div>
+          <div class="filter-item"><span class="filter-num">②</span>Days to Cover ≥ 5</div>
+          <div class="filter-item"><span class="filter-num">③</span>Float &lt; 50M shares</div>
+          <div class="filter-item"><span class="filter-num">④</span>Volume Surge ≥ 2x</div>
+          <div class="filter-item"><span class="filter-num">⑤</span>Price Action Confirmed</div>
+        </div>
+        <div class="strategy-col">
+          <h5>📊 Scoring</h5>
+          <div class="score-item"><span>공매도 강도</span><span class="score-pt">40pt</span></div>
+          <div class="score-item"><span>거래량 급증</span><span class="score-pt">25pt</span></div>
+          <div class="score-item"><span>유통주 희소성</span><span class="score-pt">20pt</span></div>
+          <div class="score-item"><span>커버 소요일</span><span class="score-pt">15pt</span></div>
+        </div>
+      </div>
+    `;
+  }
+}
+
+// ── 초기 로드 ──
+window.addEventListener('DOMContentLoaded', initLoad);
+</script>
+
+</body>
+</html>

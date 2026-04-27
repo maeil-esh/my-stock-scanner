@@ -1,7 +1,24 @@
 """
-engine_kr.py — 국장 바닥반등+거래량 스캐너 (PRO v3.0)
+engine_kr.py — 국장 바닥반등+거래량 스캐너 (PRO v3.2)
 실행: python engine_kr.py
-스케줄: 09:30 / 13:00 / 16:00 KST
+스케줄: 09:33 / 13:07 / 16:17 KST
+
+[변경 이력 v3.2] — 수급 데이터 하이브리드 소스
+  ① 1순위: pykrx (KRX 공식 데이터)
+     - GitHub Actions IP 차단 위험 없음
+     - 가장 정확한 데이터
+     - requirements.txt에 'pykrx' 추가 필요
+  ② 2순위: 네이버 스크래핑 (v3.1 강화 로직 유지)
+     - pykrx 실패 시 fallback
+  ③ 모두 실패 시: 수급 0점 처리
+
+[변경 이력 v3.1] — 수급 스크래핑 강화
+  네이버 frgn.naver 페이지에서 수급 0건 문제 해결:
+  ① User-Agent를 Chrome 풀 정보로
+  ② Referer/Accept/Accept-Encoding 헤더 추가
+  ③ iframe URL 직접 호출 (page=1 명시)
+  ④ fallback 셀렉터 체인
+  ⑤ HTTP 상태 코드 검증 + 다중 URL 재시도
 
 [변경 이력 v3.0] — 큰 흐름 매크로 모드 (전면 재설계)
   방향: A.매우 관대 (10~30건) + 최근 신호 위주
@@ -317,46 +334,51 @@ def get_company_summary(ticker, name):
     return name
 
 
-def get_investor_detail(ticker, start, end):
+def _get_investor_via_pykrx(ticker, start, end):
     """
-    외인·기관 수급 — 네이버 금융 PC 페이지 스크랩
+    수급 데이터 — pykrx (KRX 공식 데이터, 1순위)
+
+    반환: (inv_df, cols, inst_streak, for_streak) 또는 None (실패 시)
     """
     try:
-        url = f"https://finance.naver.com/item/frgn.naver?code={ticker}"
-        headers = {
-            'User-Agent': 'Mozilla/5.0',
-            'Accept-Language': 'ko-KR,ko;q=0.9'
-        }
-        r = requests.get(url, headers=headers, timeout=8)
-        r.encoding = 'euc-kr'
-        soup = BeautifulSoup(r.text, 'html.parser')
+        from pykrx import stock
+    except ImportError:
+        return None
 
-        rows = soup.select('table.type2 tr')
-        foreign_vals = []
-        inst_vals    = []
+    try:
+        # pykrx는 'YYYYMMDD' 형식 사용
+        # start/end는 'YYYY-MM-DD' 또는 datetime — 문자열 변환
+        def to_pykrx_date(d):
+            s = str(d).replace('-', '').replace('.', '')
+            return s[:8]  # YYYYMMDD만
 
-        for row in rows[1:]:
-            tds = row.select('td')
-            if len(tds) < 5:
-                continue
-            try:
-                # 외국인 순매수: td[2], 기관 순매수: td[4]
-                f_txt = tds[2].get_text(strip=True).replace(',', '').replace('+', '')
-                i_txt = tds[4].get_text(strip=True).replace(',', '').replace('+', '')
-                if f_txt and i_txt and f_txt != '-' and i_txt != '-':
-                    foreign_vals.append(int(f_txt))
-                    inst_vals.append(int(i_txt))
-            except Exception:
-                continue
-            if len(foreign_vals) >= 5:
-                break
+        from_date = to_pykrx_date(start)
+        to_date   = to_pykrx_date(end)
+
+        # 종목별 일자별 거래원 매수 거래대금
+        df = stock.get_market_trading_value_by_date(from_date, to_date, ticker)
+        if df is None or df.empty:
+            return None
+
+        # 컬럼명: '기관합계', '기타법인', '개인', '외국인합계', '전체'
+        # 일부 종목은 '기타외국인' 또는 컬럼명 차이 있을 수 있음
+        inst_col = next((c for c in df.columns if '기관합계' in c or '기관' == c), None)
+        for_col  = next((c for c in df.columns if '외국인합계' in c or '외국인' == c), None)
+        if not inst_col or not for_col:
+            return None
+
+        # 최근 5일 (역순 정렬 — 최신이 [0])
+        df_sorted = df.sort_index(ascending=False).head(5)
+        inst_vals    = df_sorted[inst_col].astype(int).tolist()
+        foreign_vals = df_sorted[for_col].astype(int).tolist()
 
         if not foreign_vals:
-            return None, None, 0, 0
+            return None
 
         inv_df = pd.DataFrame({'외국인': foreign_vals, '기관': inst_vals})
         cols   = ('외국인', '기관')
 
+        # 연속 매수 일수 계산 (최신부터)
         inst_streak = for_streak = 0
         for val in inst_vals:
             if val > 0: inst_streak += 1
@@ -368,8 +390,110 @@ def get_investor_detail(ticker, start, end):
         return inv_df, cols, inst_streak, for_streak
 
     except Exception as e:
-        print(f"  ⚠️  수급 조회 실패({ticker}): {e}")
-        return None, None, 0, 0
+        # pykrx 실패 (네트워크, 종목 데이터 없음 등) — fallback으로 넘김
+        return None
+
+
+def _get_investor_via_naver(ticker):
+    """
+    수급 데이터 — 네이버 금융 스크래핑 (2순위 fallback)
+
+    반환: (inv_df, cols, inst_streak, for_streak) 또는 None (실패 시)
+    """
+    headers = {
+        'User-Agent': ('Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+                       'AppleWebKit/537.36 (KHTML, like Gecko) '
+                       'Chrome/120.0.0.0 Safari/537.36'),
+        'Accept': ('text/html,application/xhtml+xml,application/xml;q=0.9,'
+                   'image/avif,image/webp,*/*;q=0.8'),
+        'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Referer': f'https://finance.naver.com/item/main.naver?code={ticker}',
+        'Connection': 'keep-alive',
+    }
+
+    urls_to_try = [
+        f"https://finance.naver.com/item/frgn.naver?code={ticker}&page=1",
+        f"https://finance.naver.com/item/frgn.naver?code={ticker}",
+    ]
+
+    for url in urls_to_try:
+        try:
+            r = requests.get(url, headers=headers, timeout=8)
+            if r.status_code != 200:
+                continue
+            r.encoding = 'euc-kr'
+            soup = BeautifulSoup(r.text, 'html.parser')
+
+            rows = (soup.select('table.type2 tr')
+                    or soup.select('table[class*="type2"] tr')
+                    or soup.select('table.tb_type1 tr'))
+            if not rows:
+                continue
+
+            foreign_vals = []
+            inst_vals    = []
+            for row in rows[1:]:
+                tds = row.select('td')
+                if len(tds) < 5:
+                    continue
+                try:
+                    f_txt = tds[2].get_text(strip=True).replace(',', '').replace('+', '')
+                    i_txt = tds[4].get_text(strip=True).replace(',', '').replace('+', '')
+                    if (f_txt and i_txt and f_txt != '-' and i_txt != '-'
+                            and f_txt != '\xa0' and i_txt != '\xa0'):
+                        foreign_vals.append(int(f_txt))
+                        inst_vals.append(int(i_txt))
+                except (ValueError, IndexError):
+                    continue
+                if len(foreign_vals) >= 5:
+                    break
+
+            if not foreign_vals:
+                continue
+
+            inv_df = pd.DataFrame({'외국인': foreign_vals, '기관': inst_vals})
+            cols   = ('외국인', '기관')
+
+            inst_streak = for_streak = 0
+            for val in inst_vals:
+                if val > 0: inst_streak += 1
+                else: break
+            for val in foreign_vals:
+                if val > 0: for_streak += 1
+                else: break
+
+            return inv_df, cols, inst_streak, for_streak
+
+        except Exception:
+            continue
+
+    return None
+
+
+def get_investor_detail(ticker, start, end):
+    """
+    외인·기관 수급 — 하이브리드 (v3.2)
+
+    1순위: pykrx (KRX 공식 데이터, IP 차단 없음)
+    2순위: 네이버 스크래핑 (강화된 헤더)
+
+    반환: (inv_df, cols, inst_streak, for_streak)
+          - 둘 다 실패 시 (None, None, 0, 0)
+    """
+    # 1순위: pykrx
+    result = _get_investor_via_pykrx(ticker, start, end)
+    if result is not None:
+        return result
+
+    # 2순위: 네이버
+    result = _get_investor_via_naver(ticker)
+    if result is not None:
+        return result
+
+    # 모두 실패
+    print(f"  ⚠️  수급 조회 실패({ticker}): pykrx + 네이버 모두 실패")
+    return None, None, 0, 0
 
 
 # ══════════════════════════════════════════════════════════════

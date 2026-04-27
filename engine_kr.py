@@ -1,14 +1,15 @@
 """
-engine_kr.py — 국장 바닥반등+거래량 스캐너 (PRO v3.3)
+engine_kr.py — 국장 바닥반등+거래량 스캐너 (PRO v3.4)
 실행: python engine_kr.py
 스케줄: 09:33 / 13:07 / 16:17 KST
 
-[변경 이력 v3.3] — 회사 정보(업종) 안정화
-  네이버 모바일 API의 description 필드 미작동 문제 해결:
-  ① FinanceDataReader의 Sector/Industry 컬럼을 1순위 데이터 소스로
-  ② 시총 필터링 시 sector_cache에 함께 저장 (추가 API 호출 없음)
-  ③ 네이버 API는 fallback으로만 유지
-  ④ 외부 API 의존도 ↓ — GitHub Actions 안정성 ↑
+[변경 이력 v3.4] — 업종 정보 단순화
+  FDR이 Sector/Industry 컬럼을 제공하지 않아 v3.3 접근 폐기:
+  ① 업종/산업 정보 표시 포기 (시장만 표시)
+  ② sector_cache → market_cache 단순화
+  ③ get_company_summary 함수 제거 (네이버 fallback 미작동)
+  ④ 디버그 로그 정리
+  ⑤ 차트 링크로 업종 확인 가능 (네이버 모바일)
 
 [변경 이력 v3.2] — 수급 데이터 하이브리드 소스
   ① 1순위: pykrx (KRX 공식 데이터)
@@ -298,47 +299,6 @@ def _find_cap_col(df):
     for col in df.columns:
         if 'cap' in col.lower(): return col
     return None
-
-
-def get_company_summary(ticker, name):
-    # 1순위: 네이버 모바일 API (_market, _industry 전처리 필드)
-    try:
-        data     = _fetch_naver_basic(ticker)
-        mkt      = data.get('_market', '')
-        industry = data.get('_industry', '')
-        parts    = []
-        if mkt:      parts.append(f"[{mkt}]")
-        if industry: parts.append(industry)
-        if parts:    return ' '.join(parts)
-    except Exception:
-        pass
-
-    # 2순위: 네이버 PC 기업정보 스크랩
-    try:
-        url = f"https://finance.naver.com/item/coinfo.naver?code={ticker}"
-        headers = {'User-Agent': 'Mozilla/5.0', 'Accept-Language': 'ko-KR,ko;q=0.9'}
-        r = requests.get(url, headers=headers, timeout=6)
-        r.encoding = 'euc-kr'
-        soup  = BeautifulSoup(r.text, 'html.parser')
-        rows  = soup.select('.coinfo_table tr')
-        parts = {}
-        for row in rows:
-            th = row.select_one('th'); td = row.select_one('td')
-            if th and td:
-                key = th.text.strip()
-                if key in ['업종', '주요제품', '주요사업']:
-                    val = td.text.strip().replace('\n', ' ')
-                    if val: parts[key] = val[:40]
-        if parts:
-            desc = []
-            if '업종'     in parts: desc.append(f"[{parts['업종']}]")
-            if '주요제품'  in parts: desc.append(parts['주요제품'])
-            elif '주요사업' in parts: desc.append(parts['주요사업'])
-            return ' '.join(desc)
-    except Exception:
-        pass
-
-    return name
 
 
 def _get_investor_via_pykrx(ticker, start, end):
@@ -762,9 +722,9 @@ def run_kr_scan():
 
     # ── 시총 사전 필터링 ────────────────────────────────────────
     print(f"⚡ 시총 사전 필터링 ({MKTCAP_MIN}억↑ ~ {MKTCAP_MAX}억↓)...")
-    mktcap_cache = {}
-    sector_cache = {}   # ★ v3.3: 업종/산업 정보 캐시 (FDR 기반)
-    all_tickers  = []
+    mktcap_cache  = {}
+    market_cache  = {}   # 종목 → 'KOSPI' or 'KOSDAQ'
+    all_tickers   = []
     try:
         for market in ["KOSPI", "KOSDAQ"]:
             df_cap   = fdr.StockListing(market)
@@ -773,23 +733,6 @@ def run_kr_scan():
             if not cap_col:
                 raise ValueError(f"{market} 시총 컬럼 없음")
 
-            sector_col  = next((c for c in ['Sector','sector','업종'] if c in df_cap.columns), None)
-            product_col = next((c for c in ['Industry','industry','주요제품'] if c in df_cap.columns), None)
-
-            # ★ v3.3 디버그: FDR 실제 컬럼/데이터 확인 (1회만)
-            print(f"  🔍 [{market}] FDR 전체 컬럼 ({len(df_cap.columns)}개):")
-            for i, col in enumerate(df_cap.columns):
-                print(f"       {i+1}. {col}")
-            print(f"  🔍 [{market}] sector_col={sector_col}, product_col={product_col}")
-            if sector_col or product_col:
-                # 첫 3개 종목의 실제 값 샘플
-                sample = df_cap.head(3)
-                for _, r in sample.iterrows():
-                    tk = str(r.get(code_col, '?')).zfill(6)
-                    sv = r.get(sector_col, 'N/A') if sector_col else 'N/A'
-                    iv = r.get(product_col, 'N/A') if product_col else 'N/A'
-                    print(f"  🔍   {tk}: sector='{sv}', industry='{iv}'")
-
             for _, row in df_cap.iterrows():
                 ticker_s = str(row[code_col]).zfill(6)
                 cap_raw  = row[cap_col]
@@ -797,14 +740,7 @@ def run_kr_scan():
                     continue
                 cap = int(cap_raw / 1e8) if cap_raw > 1e6 else int(cap_raw)
                 mktcap_cache[ticker_s] = cap
-
-                # ★ v3.3: 업종/산업 정보 캐시
-                sector_info = {
-                    'market':   market,
-                    'sector':   str(row[sector_col]) if sector_col and pd.notna(row.get(sector_col)) else '',
-                    'industry': str(row[product_col]) if product_col and pd.notna(row.get(product_col)) else '',
-                }
-                sector_cache[ticker_s] = sector_info
+                market_cache[ticker_s] = market
 
                 if MKTCAP_MIN <= cap <= MKTCAP_MAX:
                     all_tickers.append(ticker_s)
@@ -1054,27 +990,9 @@ def run_kr_scan():
         spike_date_strs = meta.get('last_spikes', [])
         meta['spike_news'] = fetch_spike_news(ticker, spike_date_strs)
 
-        # ── 회사 요약 (v3.3): FDR 캐시 1순위, 네이버 fallback ──
-        sector_info = sector_cache.get(ticker, {})
-        cached_market   = sector_info.get('market', '')
-        cached_sector   = sector_info.get('sector', '').strip()
-        cached_industry = sector_info.get('industry', '').strip()
-
-        summary_parts = []
-        if cached_market:
-            summary_parts.append(f"[{cached_market}]")
-        if cached_sector and cached_sector.lower() not in ['nan', 'none', '']:
-            summary_parts.append(cached_sector)
-        if (cached_industry and cached_industry.lower() not in ['nan', 'none', '']
-                and cached_industry != cached_sector):
-            summary_parts.append(cached_industry[:30])
-
-        if len(summary_parts) >= 2:
-            # FDR로 충분한 정보 확보 (시장 + 업종 이상)
-            summary = ' '.join(summary_parts)
-        else:
-            # FDR 정보 부족 시 네이버 fallback
-            summary = get_company_summary(ticker, name)
+        # ── 회사 요약 (v3.4): 시장 정보만 단순 표시 ──
+        market = market_cache.get(ticker, '')
+        summary = f"[{market}]" if market else ""
 
         score_100    = int(round(total_score / MAX_SCORE * 100))
         star_count   = min(score_100 // 20, 5)

@@ -9425,5 +9425,301 @@
                 }
             }
         ]
+    },
+    {
+        "date": "20260428",
+        "label": "🌙 미장 스캔",
+        "picks": [
+            {
+                "rank": 1,
+                "name": "대보마그네틱",
+                "code": "290670",
+                "company_summary": "[KOSDAQ]",
+                "supply": "기관매수",
+                "cur_price": 12850,
+                "score_100": 72,
+                "score": "★★★☆☆ 72점",
+                "tags": "OBV60일매집 / 거래량살아있음 / 거래량스파이크",
+                "expected_return": "15.8%",
+                "score_detail": {
+                    "OBV60일매집": 30,
+                    "매집일수": 15,
+                    "거래량살아있음": 25,
+                    "횡보기간": 15,
+                    "고점괴리": 10,
+                    "매매신호": 18,
+                    "거래량스파이크": 25,
+                    "수급강도": 6
+                },
+                "meta": {
+                    "rsi": 60.0,
+                    "rebound_pct": 28.5,
+                    "vol_ratio": 0.57,
+                    "inst_streak": 2,
+                    "for_streak": 0,
+                    "mktcap": 1009,
+                    "green_days": 58,
+                    "signal": 56.0,
+                    "max_spike": 10.7,
+                    "rs": -39.8,
+                    "trade": {
+                        "entry": 12850,
+                        "stop_loss": 11932,
+                        "target_1": 14684,
+                        "target_2": 15907,
+                        "risk_pct": 7.1,
+                        "reward_pct": 14.3,
+                        "rr_ratio": 2.0,
+                        "atr": 611.4
+                    },
+                    "rt_price_used": true,
+                    "spike_count": 7,
+                    "disp20": 8.6,
+                    "disp60": 5.7,
+                    "last_spikes": [
+                        "2026-01-29",
+                        "2026-04-02",
+                        "2026-04-22"
+                    ],
+                    "spike_news": [],
+                    "sideways_days": 90,
+                    "high52_gap": 31.9,
+                    "vol_alive_ratio": 1.96,
+                    "obv_60_change": 168.15
+                }
+            },
+            {
+                "rank": 2,
+                "name": "동국생명과학",
+                "code": "303810",
+                "company_summary": "[KOSDAQ]",
+                "supply": "외인매수",
+                "cur_price": 3490,
+                "score_100": 72,
+                "score": "★★★☆☆ 72점",
+                "tags": "OBV60일매집 / 거래량살아있음 / 거래량스파이크",
+                "expected_return": "15.8%",
+                "score_detail": {
+                    "OBV60일매집": 30,
+                    "매집일수": 15,
+                    "거래량살아있음": 25,
+                    "횡보기간": 20,
+                    "고점괴리": 10,
+                    "매매신호": 18,
+                    "거래량스파이크": 25,
+                    "수급강도": 0
+                },
+                "meta": {
+                    "rsi": 53.5,
+                    "rebound_pct": 8.7,
+                    "vol_ratio": 0.17,
+                    "inst_streak": 0,
+                    "for_streak": 0,
+                    "mktcap": 1116,
+                    "green_days": 57,
+                    "signal": 60.9,
+                    "max_spike": 14.7,
+                    "rs": -36.8,
+                    "trade": {
+                        "entry": 3490,
+                        "stop_loss": 3359,
+                        "target_1": 3751,
+                        "target_2": 3925,
+                        "risk_pct": 3.8,
+                        "reward_pct": 7.5,
+                        "rr_ratio": 2.0,
+                        "atr": 87.1
+                    },
+                    "rt_price_used": true,
+                    "spike_count": 5,
+                    "disp20": 2.3,
+                    "disp60": 0.7,
+                    "last_spikes": [
+                        "2026-01-29",
+                        "2026-02-24",
+                        "2026-04-02"
+                    ],
+                    "spike_news": [],
+                    "sideways_days": 120,
+                    "high52_gap": 34.5,
+                    "vol_alive_ratio": 2.35,
+                    "obv_60_change": 157.97
+                }
+            },
+            {
+                "rank": 3,
+                "name": "동신건설",
+                "code": "025950",
+                "company_summary": "[KOSDAQ]",
+                "supply": "외인+기관 양매수",
+                "cur_price": 17100,
+                "score_100": 70,
+                "score": "★★★☆☆ 70점",
+                "tags": "OBV60일매집 / 매매신호 / 거래량스파이크",
+                "expected_return": "15.5%",
+                "score_detail": {
+                    "OBV60일매집": 25,
+                    "매집일수": 15,
+                    "거래량살아있음": 5,
+                    "횡보기간": 10,
+                    "고점괴리": 15,
+                    "매매신호": 25,
+                    "거래량스파이크": 25,
+                    "수급강도": 20
+                },
+                "meta": {
+                    "rsi": 55.6,
+                    "rebound_pct": 28.4,
+                    "vol_ratio": 0.44,
+                    "inst_streak": 5,
+                    "for_streak": 0,
+                    "mktcap": 1436,
+                    "green_days": 52,
+                    "signal": 46.0,
+                    "max_spike": 11.8,
+                    "rs": -38.9,
+                    "trade": {
+                        "entry": 17100,
+                        "stop_loss": 15723,
+                        "target_1": 19853,
+                        "target_2": 21689,
+                        "risk_pct": 8.1,
+                        "reward_pct": 16.1,
+                        "rr_ratio": 2.0,
+                        "atr": 917.9
+                    },
+                    "rt_price_used": true,
+                    "spike_count": 8,
+                    "disp20": 3.2,
+                    "disp60": 2.7,
+                    "last_spikes": [
+                        "2026-03-20",
+                        "2026-04-09",
+                        "2026-04-15"
+                    ],
+                    "spike_news": [],
+                    "sideways_days": 60,
+                    "high52_gap": 43.4,
+                    "vol_alive_ratio": 0.8,
+                    "obv_60_change": 43.78
+                }
+            },
+            {
+                "rank": 4,
+                "name": "이엠텍",
+                "code": "091120",
+                "company_summary": "[KOSDAQ]",
+                "supply": "외인+기관 양매수",
+                "cur_price": 7020,
+                "score_100": 64,
+                "score": "★★★☆☆ 64점",
+                "tags": "OBV60일매집 / 수급강도 / 매매신호",
+                "expected_return": "14.6%",
+                "score_detail": {
+                    "OBV60일매집": 30,
+                    "매집일수": 15,
+                    "거래량살아있음": 5,
+                    "횡보기간": 15,
+                    "고점괴리": 10,
+                    "매매신호": 18,
+                    "거래량스파이크": 15,
+                    "수급강도": 20
+                },
+                "meta": {
+                    "rsi": 59.5,
+                    "rebound_pct": 18.4,
+                    "vol_ratio": 2.84,
+                    "inst_streak": 5,
+                    "for_streak": 1,
+                    "mktcap": 1202,
+                    "green_days": 59,
+                    "signal": 69.0,
+                    "max_spike": 5.0,
+                    "rs": -51.0,
+                    "trade": {
+                        "entry": 7020,
+                        "stop_loss": 6576,
+                        "target_1": 7907,
+                        "target_2": 8498,
+                        "risk_pct": 6.3,
+                        "reward_pct": 12.6,
+                        "rr_ratio": 2.0,
+                        "atr": 295.7
+                    },
+                    "rt_price_used": true,
+                    "spike_count": 6,
+                    "disp20": 9.2,
+                    "disp60": 1.8,
+                    "last_spikes": [
+                        "2026-02-23",
+                        "2026-03-17",
+                        "2026-04-28"
+                    ],
+                    "spike_news": [],
+                    "sideways_days": 90,
+                    "high52_gap": 35.8,
+                    "vol_alive_ratio": 0.83,
+                    "obv_60_change": 20461.94
+                }
+            },
+            {
+                "rank": 5,
+                "name": "아난티",
+                "code": "025980",
+                "company_summary": "[KOSDAQ]",
+                "supply": "외인매수",
+                "cur_price": 7080,
+                "score_100": 52,
+                "score": "★★☆☆☆ 52점",
+                "tags": "OBV60일매집 / 횡보기간 / 거래량스파이크",
+                "expected_return": "12.8%",
+                "score_detail": {
+                    "OBV60일매집": 25,
+                    "매집일수": 15,
+                    "거래량살아있음": 5,
+                    "횡보기간": 20,
+                    "고점괴리": 10,
+                    "매매신호": 8,
+                    "거래량스파이크": 20,
+                    "수급강도": 0
+                },
+                "meta": {
+                    "rsi": 45.5,
+                    "rebound_pct": 8.3,
+                    "vol_ratio": 0.61,
+                    "inst_streak": 0,
+                    "for_streak": 0,
+                    "mktcap": 6888,
+                    "green_days": 59,
+                    "signal": 22.0,
+                    "max_spike": 5.6,
+                    "rs": -48.1,
+                    "trade": {
+                        "entry": 7080,
+                        "stop_loss": 6723,
+                        "target_1": 7793,
+                        "target_2": 8269,
+                        "risk_pct": 5.0,
+                        "reward_pct": 10.1,
+                        "rr_ratio": 2.0,
+                        "atr": 237.9
+                    },
+                    "rt_price_used": true,
+                    "spike_count": 11,
+                    "disp20": -1.2,
+                    "disp60": -8.3,
+                    "last_spikes": [
+                        "2026-02-06",
+                        "2026-02-13",
+                        "2026-02-19"
+                    ],
+                    "spike_news": [],
+                    "sideways_days": 120,
+                    "high52_gap": 35.3,
+                    "vol_alive_ratio": 0.72,
+                    "obv_60_change": 33.17
+                }
+            }
+        ]
     }
 ]

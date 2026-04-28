@@ -1,14 +1,24 @@
-name: US Scanner
+name: KR Scanner
+# Cron re-register 2026-04-28
 
 on:
   schedule:
-    - cron: '43 22 * * 0-4'   # 07:43 KST 월~금 (일~목 UTC)
+    - cron: '33 0 * * 1-5'   # 09:33 KST (장 시작 33분 후 — 시초가 변동 진정)
+    - cron: '7 4 * * 1-5'    # 13:07 KST (점심 후 후반장 시작)
+    - cron: '17 7 * * 1-5'   # 16:17 KST (장 마감 47분 후 — 종가 데이터 안정화)
+  push:
+    branches: [main]
+    paths:
+      - 'engine_kr.py'
+      - 'engine_common.py'
+      - 'requirements.txt'
+      - '.github/workflows/kr-scanner.yml'
   workflow_dispatch:
 
 jobs:
-  us-scan:
+  kr-scan:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     permissions:
       contents: write
     steps:
@@ -28,11 +38,14 @@ jobs:
       - name: Install libraries
         run: pip install -r requirements.txt
 
-      - name: Run US Scanner
+      - name: Run KR Scanner
         env:
+          DART_API_KEY:     ${{ secrets.DART_API_KEY }}
           TELEGRAM_TOKEN:   ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: python engine_us.py
+          KRX_ID:           ${{ secrets.KRX_ID }}
+          KRX_PW:           ${{ secrets.KRX_PW }}
+        run: python engine_kr.py
 
       - name: Save Results
         run: |
@@ -40,6 +53,6 @@ jobs:
           git config --global user.email 'action@github.com'
           grep -qxF '__pycache__/' .gitignore || echo '__pycache__/' >> .gitignore
           git pull origin main --rebase --autostash
-          git add -A
-          git diff --staged --quiet || git commit -m "US scan [$(date +'%Y-%m-%d %H:%M KST')]"
+          git add stock_data.json history.json .gitignore
+          git diff --staged --quiet || git commit -m "KR scan [$(date +'%Y-%m-%d %H:%M KST')]"
           git push

@@ -11201,5 +11201,337 @@
                 }
             }
         ]
+    },
+    {
+        "date": "20260430",
+        "label": "📊 장 중간 스캔",
+        "picks": [
+            {
+                "rank": 1,
+                "name": "동신건설",
+                "code": "025950",
+                "company_summary": "[KOSDAQ]",
+                "supply": "외인+기관 양매수",
+                "cur_price": 16580,
+                "score_100": 70,
+                "score": "★★★☆☆ 70점",
+                "tags": "매매신호 / 거래량스파이크 / 수급강도",
+                "expected_return": "15.5%",
+                "score_detail": {
+                    "OBV60일매집": 18,
+                    "매집일수": 15,
+                    "거래량살아있음": 5,
+                    "횡보기간": 10,
+                    "고점괴리": 15,
+                    "매매신호": 25,
+                    "거래량스파이크": 25,
+                    "수급강도": 20,
+                    "영업이익률증가": 20
+                },
+                "meta": {
+                    "rsi": 49.8,
+                    "rebound_pct": 24.6,
+                    "vol_ratio": 0.11,
+                    "inst_streak": 5,
+                    "for_streak": 0,
+                    "mktcap": 1391,
+                    "green_days": 52,
+                    "signal": 30.4,
+                    "max_spike": 11.8,
+                    "rs": -42.0,
+                    "trade": {
+                        "entry": 16580,
+                        "stop_loss": 15475,
+                        "target_1": 18789,
+                        "target_2": 20262,
+                        "risk_pct": 6.7,
+                        "reward_pct": 13.3,
+                        "rr_ratio": 2.0,
+                        "atr": 736.4
+                    },
+                    "rt_price_used": true,
+                    "spike_count": 8,
+                    "disp20": -0.9,
+                    "disp60": 0.0,
+                    "last_spikes": [
+                        "2026-03-20",
+                        "2026-04-09",
+                        "2026-04-15"
+                    ],
+                    "spike_news": [],
+                    "sideways_days": 60,
+                    "high52_gap": 45.0,
+                    "vol_alive_ratio": 0.79,
+                    "obv_60_change": 24.05,
+                    "op_margin_info": {
+                        "q_latest": "20254Q",
+                        "m_latest": -6.61,
+                        "q_prev": "20253Q",
+                        "m_prev": -19.82,
+                        "change_pct": 100.0
+                    }
+                }
+            },
+            {
+                "rank": 2,
+                "name": "아이스크림미디어",
+                "code": "461300",
+                "company_summary": "[KOSDAQ]",
+                "supply": "외인+기관 양매수",
+                "cur_price": 18910,
+                "score_100": 64,
+                "score": "★★★☆☆ 64점",
+                "tags": "OBV60일매집 / 횡보기간 / 영업이익률증가",
+                "expected_return": "14.6%",
+                "score_detail": {
+                    "OBV60일매집": 30,
+                    "매집일수": 15,
+                    "거래량살아있음": 15,
+                    "횡보기간": 20,
+                    "고점괴리": 10,
+                    "매매신호": 10,
+                    "거래량스파이크": 15,
+                    "수급강도": 6,
+                    "영업이익률증가": 20
+                },
+                "meta": {
+                    "rsi": 72.2,
+                    "rebound_pct": 33.8,
+                    "vol_ratio": 0.43,
+                    "inst_streak": 1,
+                    "for_streak": 0,
+                    "mktcap": 2516,
+                    "green_days": 56,
+                    "signal": 84.7,
+                    "max_spike": 4.6,
+                    "rs": -9.0,
+                    "trade": {
+                        "entry": 18910,
+                        "stop_loss": 18083,
+                        "target_1": 20563,
+                        "target_2": 21665,
+                        "risk_pct": 4.4,
+                        "reward_pct": 8.7,
+                        "rr_ratio": 2.0,
+                        "atr": 551.1
+                    },
+                    "rt_price_used": true,
+                    "spike_count": 8,
+                    "disp20": 15.5,
+                    "disp60": 15.0,
+                    "last_spikes": [
+                        "2026-01-30",
+                        "2026-03-10",
+                        "2026-03-19"
+                    ],
+                    "spike_news": [],
+                    "sideways_days": 120,
+                    "high52_gap": 31.4,
+                    "vol_alive_ratio": 1.19,
+                    "obv_60_change": 146.38,
+                    "op_margin_info": {
+                        "q_latest": "20254Q",
+                        "m_latest": 31.53,
+                        "q_prev": "20253Q",
+                        "m_prev": -50.83,
+                        "change_pct": 100.0
+                    }
+                }
+            },
+            {
+                "rank": 3,
+                "name": "휴먼테크놀로지",
+                "code": "175140",
+                "company_summary": "[KOSDAQ]",
+                "supply": "외인매수",
+                "cur_price": 4030,
+                "score_100": 62,
+                "score": "★★★☆☆ 62점",
+                "tags": "OBV60일매집 / 매매신호 / 영업이익률증가",
+                "expected_return": "14.3%",
+                "score_detail": {
+                    "OBV60일매집": 25,
+                    "매집일수": 15,
+                    "거래량살아있음": 15,
+                    "횡보기간": 10,
+                    "고점괴리": 10,
+                    "매매신호": 25,
+                    "거래량스파이크": 15,
+                    "수급강도": 2,
+                    "영업이익률증가": 20
+                },
+                "meta": {
+                    "rsi": 50.6,
+                    "rebound_pct": 22.1,
+                    "vol_ratio": 0.6,
+                    "inst_streak": 0,
+                    "for_streak": 1,
+                    "mktcap": 1011,
+                    "green_days": 54,
+                    "signal": 40.4,
+                    "max_spike": 3.1,
+                    "rs": -37.8,
+                    "trade": {
+                        "entry": 4030,
+                        "stop_loss": 3764,
+                        "target_1": 4561,
+                        "target_2": 4915,
+                        "risk_pct": 6.6,
+                        "reward_pct": 13.2,
+                        "rr_ratio": 2.0,
+                        "atr": 177.1
+                    },
+                    "rt_price_used": true,
+                    "spike_count": 11,
+                    "disp20": -0.9,
+                    "disp60": 1.3,
+                    "last_spikes": [
+                        "2026-03-04",
+                        "2026-03-13",
+                        "2026-03-19"
+                    ],
+                    "spike_news": [],
+                    "sideways_days": 60,
+                    "high52_gap": 33.4,
+                    "vol_alive_ratio": 1.19,
+                    "obv_60_change": 41.79,
+                    "op_margin_info": {
+                        "q_latest": "20254Q",
+                        "m_latest": -20.96,
+                        "q_prev": "20253Q",
+                        "m_prev": -21.24,
+                        "change_pct": 100.0
+                    }
+                }
+            },
+            {
+                "rank": 4,
+                "name": "한국화장품제조",
+                "code": "003350",
+                "company_summary": "[KOSPI]",
+                "supply": "외인+기관 양매수",
+                "cur_price": 9820,
+                "score_100": 62,
+                "score": "★★★☆☆ 62점",
+                "tags": "OBV60일매집 / 매매신호 / 횡보기간",
+                "expected_return": "14.3%",
+                "score_detail": {
+                    "OBV60일매집": 30,
+                    "매집일수": 15,
+                    "거래량살아있음": 10,
+                    "횡보기간": 20,
+                    "고점괴리": 10,
+                    "매매신호": 25,
+                    "거래량스파이크": 20,
+                    "수급강도": 6,
+                    "영업이익률증가": 0
+                },
+                "meta": {
+                    "rsi": 53.5,
+                    "rebound_pct": 16.1,
+                    "vol_ratio": 0.39,
+                    "inst_streak": 0,
+                    "for_streak": 0,
+                    "mktcap": 2227,
+                    "green_days": 50,
+                    "signal": 42.5,
+                    "max_spike": 7.9,
+                    "rs": -30.8,
+                    "trade": {
+                        "entry": 9820,
+                        "stop_loss": 9240,
+                        "target_1": 10979,
+                        "target_2": 11752,
+                        "risk_pct": 5.9,
+                        "reward_pct": 11.8,
+                        "rr_ratio": 2.0,
+                        "atr": 386.4
+                    },
+                    "rt_price_used": true,
+                    "spike_count": 5,
+                    "disp20": 3.3,
+                    "disp60": 1.5,
+                    "last_spikes": [
+                        "2026-02-26",
+                        "2026-04-10",
+                        "2026-04-27"
+                    ],
+                    "spike_news": [],
+                    "sideways_days": 120,
+                    "high52_gap": 30.4,
+                    "vol_alive_ratio": 0.9,
+                    "obv_60_change": 57.2,
+                    "op_margin_info": {
+                        "reason": "DART 데이터 부족"
+                    }
+                }
+            },
+            {
+                "rank": 5,
+                "name": "엣지파운드리",
+                "code": "105550",
+                "company_summary": "[KOSDAQ]",
+                "supply": "외인매수",
+                "cur_price": 1309,
+                "score_100": 58,
+                "score": "★★☆☆☆ 58점",
+                "tags": "고점괴리 / 거래량스파이크 / 영업이익률증가",
+                "expected_return": "13.7%",
+                "score_detail": {
+                    "OBV60일매집": 5,
+                    "매집일수": 15,
+                    "거래량살아있음": 15,
+                    "횡보기간": 10,
+                    "고점괴리": 20,
+                    "매매신호": 18,
+                    "거래량스파이크": 20,
+                    "수급강도": 4,
+                    "영업이익률증가": 20
+                },
+                "meta": {
+                    "rsi": 53.6,
+                    "rebound_pct": 19.2,
+                    "vol_ratio": 0.47,
+                    "inst_streak": 0,
+                    "for_streak": 2,
+                    "mktcap": 1029,
+                    "green_days": 57,
+                    "signal": 57.2,
+                    "max_spike": 5.0,
+                    "rs": -47.4,
+                    "trade": {
+                        "entry": 1309,
+                        "stop_loss": 1201,
+                        "target_1": 1523,
+                        "target_2": 1666,
+                        "risk_pct": 8.3,
+                        "reward_pct": 16.3,
+                        "rr_ratio": 2.0,
+                        "atr": 71.6
+                    },
+                    "rt_price_used": true,
+                    "spike_count": 7,
+                    "disp20": 5.9,
+                    "disp60": -1.6,
+                    "last_spikes": [
+                        "2026-01-15",
+                        "2026-03-27",
+                        "2026-04-22"
+                    ],
+                    "spike_news": [],
+                    "sideways_days": 60,
+                    "high52_gap": 51.0,
+                    "vol_alive_ratio": 1.19,
+                    "obv_60_change": 1.0,
+                    "op_margin_info": {
+                        "q_latest": "20254Q",
+                        "m_latest": -42.7,
+                        "q_prev": "20253Q",
+                        "m_prev": -50.96,
+                        "change_pct": 100.0
+                    }
+                }
+            }
+        ]
     }
 ]

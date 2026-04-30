@@ -3,12 +3,19 @@
         {
             "rank": 1,
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 =======
+=======
+>>>>>>> Stashed changes
             "name": "광무",
             "code": "029480",
             "company_summary": "[KOSDAQ]",
             "supply": "외인매수",
+<<<<<<< Updated upstream
             "cur_price": 2190,
+=======
+            "cur_price": 2195,
+>>>>>>> Stashed changes
             "score_100": 73,
             "score": "★★★☆☆ 73점",
             "tags": "OBV60일매집 / 매매신호 / 거래량스파이크",
@@ -36,10 +43,17 @@
                 "max_spike": 8.2,
                 "rs": -38.2,
                 "trade": {
+<<<<<<< Updated upstream
                     "entry": 2190,
                     "stop_loss": 1911,
                     "target_1": 2747,
                     "target_2": 3118,
+=======
+                    "entry": 2195,
+                    "stop_loss": 1916,
+                    "target_1": 2752,
+                    "target_2": 3123,
+>>>>>>> Stashed changes
                     "risk_pct": 12.7,
                     "reward_pct": 25.4,
                     "rr_ratio": 2.0,
@@ -70,11 +84,15 @@
         },
         {
             "rank": 2,
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
             "name": "동신건설",
             "code": "025950",
             "company_summary": "[KOSDAQ]",
             "supply": "외인+기관 양매수",
+<<<<<<< Updated upstream
             "cur_price": 16580,
 <<<<<<< Updated upstream
             "score_100": 70,
@@ -82,10 +100,16 @@
             "tags": "매매신호 / 거래량스파이크 / 수급강도",
             "expected_return": "15.5%",
 =======
+=======
+            "cur_price": 16640,
+>>>>>>> Stashed changes
             "score_100": 66,
             "score": "★★★☆☆ 66점",
             "tags": "거래량스파이크 / 수급강도 / 영업이익률증가",
             "expected_return": "14.9%",
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
             "score_detail": {
                 "OBV60일매집": 18,
@@ -100,8 +124,13 @@
             },
             "meta": {
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
                 "rsi": 49.8,
                 "rebound_pct": 24.6,
+=======
+                "rsi": 49.6,
+                "rebound_pct": 24.5,
+>>>>>>> Stashed changes
 =======
                 "rsi": 49.6,
                 "rebound_pct": 24.5,
@@ -111,6 +140,7 @@
                 "for_streak": 0,
                 "mktcap": 1391,
                 "green_days": 52,
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
                 "signal": 30.4,
                 "max_spike": 11.8,
@@ -126,6 +156,17 @@
                     "target_1": 18789,
                     "target_2": 20262,
                     "risk_pct": 6.7,
+=======
+                "signal": 29.8,
+                "max_spike": 11.8,
+                "rs": -42.1,
+                "trade": {
+                    "entry": 16640,
+                    "stop_loss": 15535,
+                    "target_1": 18849,
+                    "target_2": 20322,
+                    "risk_pct": 6.6,
+>>>>>>> Stashed changes
                     "reward_pct": 13.3,
                     "rr_ratio": 2.0,
                     "atr": 736.4
@@ -133,8 +174,13 @@
                 "rt_price_used": true,
                 "spike_count": 8,
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
                 "disp20": -0.9,
                 "disp60": 0.0,
+=======
+                "disp20": -1.0,
+                "disp60": -0.1,
+>>>>>>> Stashed changes
 =======
                 "disp20": -1.0,
                 "disp60": -0.1,
@@ -147,7 +193,11 @@
                 "spike_news": [],
                 "sideways_days": 60,
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
                 "high52_gap": 45.0,
+=======
+                "high52_gap": 45.1,
+>>>>>>> Stashed changes
 =======
                 "high52_gap": 45.1,
 >>>>>>> Stashed changes
@@ -164,7 +214,11 @@
         },
         {
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
             "rank": 2,
+=======
+            "rank": 3,
+>>>>>>> Stashed changes
 =======
             "rank": 3,
 >>>>>>> Stashed changes
@@ -173,9 +227,13 @@
             "company_summary": "[KOSDAQ]",
             "supply": "외인+기관 양매수",
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
             "cur_price": 18910,
 =======
             "cur_price": 18890,
+>>>>>>> Stashed changes
+=======
+            "cur_price": 18840,
 >>>>>>> Stashed changes
             "score_100": 64,
             "score": "★★★☆☆ 64점",
@@ -194,7 +252,11 @@
             },
             "meta": {
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
                 "rsi": 72.2,
+=======
+                "rsi": 72.3,
+>>>>>>> Stashed changes
 =======
                 "rsi": 72.3,
 >>>>>>> Stashed changes
@@ -204,6 +266,7 @@
                 "for_streak": 0,
                 "mktcap": 2516,
                 "green_days": 56,
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
                 "signal": 84.7,
                 "max_spike": 4.6,
@@ -216,14 +279,25 @@
                     "risk_pct": 4.4,
                     "reward_pct": 8.7,
 =======
+=======
+>>>>>>> Stashed changes
                 "signal": 85.0,
                 "max_spike": 4.6,
                 "rs": -8.9,
                 "trade": {
+<<<<<<< Updated upstream
                     "entry": 18890,
                     "stop_loss": 18063,
                     "target_1": 20543,
                     "target_2": 21645,
+                    "risk_pct": 4.4,
+                    "reward_pct": 8.8,
+>>>>>>> Stashed changes
+=======
+                    "entry": 18840,
+                    "stop_loss": 18013,
+                    "target_1": 20493,
+                    "target_2": 21595,
                     "risk_pct": 4.4,
                     "reward_pct": 8.8,
 >>>>>>> Stashed changes
@@ -234,7 +308,11 @@
                 "spike_count": 8,
                 "disp20": 15.5,
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
                 "disp60": 15.0,
+=======
+                "disp60": 15.1,
+>>>>>>> Stashed changes
 =======
                 "disp60": 15.1,
 >>>>>>> Stashed changes
@@ -247,8 +325,13 @@
                 "sideways_days": 120,
                 "high52_gap": 31.4,
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
                 "vol_alive_ratio": 1.19,
                 "obv_60_change": 146.38,
+=======
+                "vol_alive_ratio": 1.2,
+                "obv_60_change": 146.37,
+>>>>>>> Stashed changes
 =======
                 "vol_alive_ratio": 1.2,
                 "obv_60_change": 146.37,
@@ -264,7 +347,11 @@
         },
         {
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
             "rank": 3,
+=======
+            "rank": 4,
+>>>>>>> Stashed changes
 =======
             "rank": 4,
 >>>>>>> Stashed changes
@@ -272,7 +359,11 @@
             "code": "175140",
             "company_summary": "[KOSDAQ]",
             "supply": "외인매수",
+<<<<<<< Updated upstream
             "cur_price": 4030,
+=======
+            "cur_price": 4010,
+>>>>>>> Stashed changes
             "score_100": 62,
             "score": "★★★☆☆ 62점",
             "tags": "OBV60일매집 / 매매신호 / 영업이익률증가",
@@ -300,10 +391,17 @@
                 "max_spike": 3.1,
                 "rs": -37.8,
                 "trade": {
+<<<<<<< Updated upstream
                     "entry": 4030,
                     "stop_loss": 3764,
                     "target_1": 4561,
                     "target_2": 4915,
+=======
+                    "entry": 4010,
+                    "stop_loss": 3744,
+                    "target_1": 4541,
+                    "target_2": 4895,
+>>>>>>> Stashed changes
                     "risk_pct": 6.6,
                     "reward_pct": 13.2,
                     "rr_ratio": 2.0,
@@ -330,6 +428,7 @@
                     "m_prev": -21.24,
                     "change_pct": 100.0
                 }
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
             }
         },
@@ -395,10 +494,13 @@
                 }
 =======
 >>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
             }
         },
         {
             "rank": 5,
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
             "name": "엣지파운드리",
             "code": "105550",
@@ -462,11 +564,17 @@
                     "m_prev": -50.96,
                     "change_pct": 100.0
 =======
+=======
+>>>>>>> Stashed changes
             "name": "한국화장품제조",
             "code": "003350",
             "company_summary": "[KOSPI]",
             "supply": "외인+기관 양매수",
+<<<<<<< Updated upstream
             "cur_price": 9810,
+=======
+            "cur_price": 9820,
+>>>>>>> Stashed changes
             "score_100": 62,
             "score": "★★★☆☆ 62점",
             "tags": "OBV60일매집 / 매매신호 / 횡보기간",
@@ -483,13 +591,19 @@
                 "영업이익률증가": 0
             },
             "meta": {
+<<<<<<< Updated upstream
                 "rsi": 53.5,
                 "rebound_pct": 16.1,
+=======
+                "rsi": 53.3,
+                "rebound_pct": 15.9,
+>>>>>>> Stashed changes
                 "vol_ratio": 0.39,
                 "inst_streak": 0,
                 "for_streak": 0,
                 "mktcap": 2227,
                 "green_days": 50,
+<<<<<<< Updated upstream
                 "signal": 42.5,
                 "max_spike": 7.9,
                 "rs": -30.8,
@@ -498,6 +612,16 @@
                     "stop_loss": 9230,
                     "target_1": 10969,
                     "target_2": 11742,
+=======
+                "signal": 42.1,
+                "max_spike": 7.9,
+                "rs": -30.9,
+                "trade": {
+                    "entry": 9820,
+                    "stop_loss": 9240,
+                    "target_1": 10979,
+                    "target_2": 11752,
+>>>>>>> Stashed changes
                     "risk_pct": 5.9,
                     "reward_pct": 11.8,
                     "rr_ratio": 2.0,
@@ -505,8 +629,13 @@
                 },
                 "rt_price_used": true,
                 "spike_count": 5,
+<<<<<<< Updated upstream
                 "disp20": 3.3,
                 "disp60": 1.5,
+=======
+                "disp20": 3.2,
+                "disp60": 1.4,
+>>>>>>> Stashed changes
                 "last_spikes": [
                     "2026-02-26",
                     "2026-04-10",
@@ -514,11 +643,18 @@
                 ],
                 "spike_news": [],
                 "sideways_days": 120,
+<<<<<<< Updated upstream
                 "high52_gap": 30.4,
+=======
+                "high52_gap": 30.5,
+>>>>>>> Stashed changes
                 "vol_alive_ratio": 0.9,
                 "obv_60_change": 57.19,
                 "op_margin_info": {
                     "reason": "DART 데이터 부족"
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
                 }
             }
@@ -526,7 +662,11 @@
     ],
     "scan_label": "📊 장 중간 스캔",
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     "total_candidates": 5,
+=======
+    "total_candidates": 6,
+>>>>>>> Stashed changes
 =======
     "total_candidates": 6,
 >>>>>>> Stashed changes
@@ -535,6 +675,7 @@
         "total": 1421,
         "penny": 1377,
         "mktcap": 1421,
+<<<<<<< Updated upstream
         "bottom": 934,
 <<<<<<< Updated upstream
         "high_gap": 230,
@@ -549,6 +690,10 @@
         "opmargin_pass": 5
 =======
         "high_gap": 231,
+=======
+        "bottom": 936,
+        "high_gap": 230,
+>>>>>>> Stashed changes
         "sideways": 83,
         "vol_alive": 24,
         "vol_recent": 24,
@@ -558,6 +703,9 @@
         "final": 6,
         "opmargin_checked": 14,
         "opmargin_pass": 6
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
     },
     "base_date": "20260430"

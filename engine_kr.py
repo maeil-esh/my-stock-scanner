@@ -1,7 +1,14 @@
 """
-engine_kr.py — 국장 바닥반등+거래량 스캐너 (PRO v3.4)
+engine_kr.py — 국장 바닥반등+거래량 스캐너 (PRO v3.5)
 실행: python engine_kr.py
 스케줄: 09:33 / 13:07 / 16:17 KST
+
+[변경 이력 v3.5] — 영업이익률 필터 + 점수 (DART)
+  ① 필터: 최근 2분기 영업이익률이 직전 대비 단순 증가
+  ② 점수: 0~10% 증가 → 5점, 10~30% → 15점, 30%↑ → 20점
+  ③ DART 데이터 부족 시 통과 + 0점 (관대 처리)
+  ④ MAX_SCORE: 200 → 220 (영업이익률 20점 추가)
+  ⑤ 첫 3개 종목만 디버그 로그 (실제 응답 검증용)
 
 [변경 이력 v3.4] — 업종 정보 단순화
   FDR이 Sector/Industry 컬럼을 제공하지 않아 v3.3 접근 폐기:
@@ -116,9 +123,12 @@ from engine_common import (
 DATA_FILE    = 'stock_data.json'
 HISTORY_FILE = 'history.json'
 TOP_N        = 5
-MAX_SCORE    = 200  # v3.0: A(30)+B(25)+C(25)+D(25)+E(25)+F(25)+G(25)+H(20)
+MAX_SCORE    = 220  # v3.5: A(30)+B(25)+C(25)+D(25)+E(25)+F(25)+G(25)+H(20)+I(20영업이익률)
 MKTCAP_MIN   = 1000
 MKTCAP_MAX   = 30000
+
+# DART API
+DART_BASE_URL = "https://opendart.fss.or.kr/api"
 
 # 네이버 모바일 API 응답 캐시 (ticker → dict) — 가격/업종 공용
 _naver_basic_cache: dict = {}
@@ -145,6 +155,200 @@ def fetch_spike_news(ticker: str, spike_date_strs: list) -> list:
     except Exception:
         pass
     return results
+
+
+# ══════════════════════════════════════════════════════════════
+#  DART 영업이익률 (v3.5)
+# ══════════════════════════════════════════════════════════════
+
+# DART 캐시 (실행 1회 동안만 유지)
+_dart_corp_code_cache: dict = {}
+_dart_op_margin_cache: dict = {}
+
+
+def _load_dart_corp_codes():
+    """
+    DART corpCode 매핑 로드 — 실행 1회만 다운로드 (xml.zip)
+    종목코드 → corp_code 매핑 딕셔너리 반환
+    """
+    global _dart_corp_code_cache
+    if _dart_corp_code_cache:
+        return _dart_corp_code_cache
+
+    api_key = os.environ.get('DART_API_KEY', '')
+    if not api_key:
+        print("  ⚠️  DART_API_KEY 없음 — 영업이익률 조회 비활성")
+        return {}
+
+    try:
+        import zipfile, io, xml.etree.ElementTree as ET
+        url = f"{DART_BASE_URL}/corpCode.xml?crtfc_key={api_key}"
+        r = requests.get(url, timeout=15)
+        if r.status_code != 200:
+            print(f"  ⚠️  DART corpCode 다운로드 실패: HTTP {r.status_code}")
+            return {}
+
+        with zipfile.ZipFile(io.BytesIO(r.content)) as zf:
+            xml_data = zf.read('CORPCODE.xml').decode('utf-8')
+
+        root = ET.fromstring(xml_data)
+        for child in root.findall('list'):
+            stock_code = (child.findtext('stock_code') or '').strip()
+            corp_code  = (child.findtext('corp_code') or '').strip()
+            if stock_code and corp_code and stock_code != ' ':
+                _dart_corp_code_cache[stock_code.zfill(6)] = corp_code
+
+        print(f"  ✅ DART corpCode 로드: {len(_dart_corp_code_cache)}건")
+        return _dart_corp_code_cache
+    except Exception as e:
+        print(f"  ⚠️  DART corpCode 처리 실패: {e}")
+        return {}
+
+
+def _get_op_margin_quarters(ticker: str, debug: bool = False) -> list:
+    """
+    DART에서 최근 분기 영업이익률 추출 (최근→과거 순)
+    반환: [{'period': '2024Q3', 'revenue': N, 'op_profit': N, 'op_margin': %}, ...]
+    """
+    if ticker in _dart_op_margin_cache:
+        return _dart_op_margin_cache[ticker]
+
+    api_key = os.environ.get('DART_API_KEY', '')
+    if not api_key:
+        return []
+
+    corp_codes = _load_dart_corp_codes()
+    corp_code = corp_codes.get(ticker)
+    if not corp_code:
+        if debug:
+            print(f"    🔍 DART {ticker}: corp_code 없음")
+        _dart_op_margin_cache[ticker] = []
+        return []
+
+    quarters = []
+    current_year = datetime.datetime.now().year
+
+    # reprt_code: 11013=1Q, 11012=반기(2Q), 11014=3Q, 11011=사업보고서(연간)
+    quarter_codes = [
+        ('11014', '3Q', current_year),
+        ('11012', '2Q', current_year),
+        ('11013', '1Q', current_year),
+        ('11011', '4Q', current_year - 1),
+        ('11014', '3Q', current_year - 1),
+        ('11012', '2Q', current_year - 1),
+        ('11013', '1Q', current_year - 1),
+        ('11011', '4Q', current_year - 2),
+    ]
+
+    for reprt_code, q_label, year in quarter_codes:
+        try:
+            url = f"{DART_BASE_URL}/fnlttSinglAcntAll.json"
+            params = {
+                'crtfc_key':  api_key,
+                'corp_code':  corp_code,
+                'bsns_year':  str(year),
+                'reprt_code': reprt_code,
+                'fs_div':     'CFS',  # 1순위: 연결재무제표
+            }
+            r = requests.get(url, params=params, timeout=8)
+            data = r.json()
+
+            if data.get('status') != '000':
+                # CFS 없으면 OFS (개별재무제표) 시도
+                params['fs_div'] = 'OFS'
+                r = requests.get(url, params=params, timeout=8)
+                data = r.json()
+                if data.get('status') != '000':
+                    continue
+
+            items = data.get('list', [])
+            revenue = op_profit = None
+
+            for item in items:
+                account = (item.get('account_nm') or '').strip()
+                amount  = (item.get('thstrm_amount') or '0').replace(',', '').replace(' ', '')
+
+                if not amount or amount == '-':
+                    continue
+                try:
+                    amount_int = int(amount)
+                except ValueError:
+                    continue
+
+                # 매출액 (계정명 다양)
+                if account in ['매출액', '수익(매출액)', '영업수익', '매출']:
+                    if revenue is None:  # 첫 매칭만 (중복 방지)
+                        revenue = amount_int
+                # 영업이익
+                elif account in ['영업이익', '영업이익(손실)']:
+                    if op_profit is None:
+                        op_profit = amount_int
+
+            if revenue and revenue > 0 and op_profit is not None:
+                op_margin = round(op_profit / revenue * 100, 2)
+                quarters.append({
+                    'period':    f"{year}{q_label}",
+                    'revenue':   revenue,
+                    'op_profit': op_profit,
+                    'op_margin': op_margin,
+                })
+                if debug:
+                    print(f"    🔍 DART {ticker} {year}{q_label}: 매출={revenue:,} 영업={op_profit:,} 마진={op_margin}%")
+
+        except Exception as e:
+            if debug:
+                print(f"    🔍 DART {ticker} {year}{q_label} 실패: {e}")
+            continue
+
+    quarters.sort(key=lambda x: x['period'], reverse=True)
+    _dart_op_margin_cache[ticker] = quarters[:6]
+    return quarters[:6]
+
+
+def check_op_margin_filter(ticker: str, debug: bool = False) -> tuple:
+    """
+    영업이익률 필터 + 점수
+    조건: 최근 2분기 영업이익률이 직전 대비 단순 증가
+    점수: 직전 대비 증가율 0~10% → 5점, 10~30% → 15점, 30%↑ → 20점
+
+    반환: (passed: bool, score: int, info: dict)
+    """
+    quarters = _get_op_margin_quarters(ticker, debug=debug)
+
+    # DART 데이터 부족 → 통과 + 0점 (관대)
+    if len(quarters) < 2:
+        return True, 0, {'reason': 'DART 데이터 부족'}
+
+    latest = quarters[0]
+    prev   = quarters[1]
+
+    m_latest = latest['op_margin']
+    m_prev   = prev['op_margin']
+
+    # 단순 증가 확인 (필터)
+    if m_latest <= m_prev:
+        return False, 0, {
+            'reason':    '영업이익률 미증가',
+            'q_latest':  latest['period'], 'm_latest':  m_latest,
+            'q_prev':    prev['period'],   'm_prev':    m_prev,
+        }
+
+    # 증가율 계산
+    if m_prev <= 0:
+        change_pct = 100.0   # 적자→흑자 또는 마진율 부호 변화
+    else:
+        change_pct = round((m_latest - m_prev) / abs(m_prev) * 100, 1)
+
+    if   change_pct >= 30: score = 20
+    elif change_pct >= 10: score = 15
+    else:                  score = 5
+
+    info = {
+        'q_latest':   latest['period'], 'm_latest':  m_latest,
+        'q_prev':     prev['period'],   'm_prev':    m_prev,
+        'change_pct': change_pct,
+    }
+    return True, score, info
 
 
 def _fetch_naver_basic(ticker: str) -> dict:
@@ -914,6 +1118,23 @@ def run_kr_scan():
                 inst_streak = for_streak = 0
 
             total_score, breakdown, meta = score_stock(df, inv_df, cols, inst_streak, for_streak)
+
+            # ★ v3.5: 영업이익률 필터 + 점수 (DART)
+            # 첫 3개 종목만 디버그 로그 (실제 응답 확인용)
+            debug_dart = (log.get('opmargin_checked', 0) < 3)
+            log['opmargin_checked'] = log.get('opmargin_checked', 0) + 1
+
+            op_passed, op_score, op_info = check_op_margin_filter(ticker, debug=debug_dart)
+            if not op_passed:
+                # 필터 탈락 (영업이익률 미증가)
+                continue
+            log['opmargin_pass'] = log.get('opmargin_pass', 0) + 1
+
+            # 점수 추가
+            breakdown['영업이익률증가'] = op_score
+            total_score += op_score
+            meta['op_margin_info'] = op_info
+
             meta['mktcap']        = mktcap
             meta['rebound_pct']   = round(float(rebound_pct), 1)
             meta['cur_close']     = int(cur)
@@ -922,7 +1143,7 @@ def run_kr_scan():
             meta['trade']         = calc_trade_levels(df, cur)
             meta['spike_news']    = []
 
-            # ★ 100점 환산 점수로 임계 비교 (v2.2)
+            # ★ 100점 환산 점수로 임계 비교 (220점 만점)
             score_100_check = int(round(total_score / MAX_SCORE * 100))
             if score_100_check >= SCORE_THRESHOLD_100:
                 candidates.append((total_score, ticker, breakdown, meta, df))
@@ -930,8 +1151,8 @@ def run_kr_scan():
         except Exception:
             continue
 
-    # ── 필터 현황 출력 (v3.0) ──────────────────────────────
-    print(f"\n📊 [필터 현황 — v3.0 큰 흐름 모드]")
+    # ── 필터 현황 출력 (v3.5) ──────────────────────────────
+    print(f"\n📊 [필터 현황 — v3.5 큰 흐름 + 영업이익률]")
     for lbl, key in [
         ("전체", "total"),
         ("① 동전주 제외", "penny"),
@@ -944,9 +1165,10 @@ def run_kr_scan():
         ("⑧ OBV 60일 매집 추세↑", "obv_trend"),
         ("⑨ 매매신호 20~85", "signal_ok"),
         ("⑩ 수급 확인", "seforce"),
+        ("⑪ 영업이익률 증가", "opmargin_pass"),
         ("최종 통과", "final"),
     ]:
-        print(f"  {lbl:<28} {log[key]:>5}건")
+        print(f"  {lbl:<28} {log.get(key, 0):>5}건")
 
     candidates.sort(key=lambda x: x[0], reverse=True)
     top_raw = candidates[:TOP_N]
@@ -1033,6 +1255,8 @@ def run_kr_scan():
                 # v3.0 신규 메타
                 "vol_alive_ratio": meta.get('vol_alive_ratio', 0.0),
                 "obv_60_change":   meta.get('obv_60_change', 0.0),
+                # v3.5 신규
+                "op_margin_info":  meta.get('op_margin_info', {}),
             }
         })
 
@@ -1114,6 +1338,9 @@ def build_telegram_message(picks):
         macro_100   = int(round(macro_raw / 80 * 100))
         macro_flag  = "🔥 <b>매크로 매집 강세</b>" if macro_100 >= 70 else ""
 
+        opmargin_100  = normalize_score(sd.get('영업이익률증가', 0), 20)
+        op_info       = p['meta'].get('op_margin_info', {})
+
         lines += [
             f"#{p['rank']} <b><a href='{chart_url}'>{p['name']}</a></b> ({p['code']})",
             f"  🏢 {p['company_summary']}",
@@ -1139,6 +1366,18 @@ def build_telegram_message(picks):
             f"",
             f"  🏦 수급: {p['supply']}",
         ]
+
+        # ★ v3.5: 영업이익률 정보 추가
+        if op_info.get('q_latest'):
+            lines += [
+                f"",
+                f"  💹 <b>영업이익률</b>  {grade_emoji(opmargin_100)} {opmargin_100}점",
+                f"    {op_info['q_prev']}: {op_info['m_prev']:.2f}% → "
+                f"{op_info['q_latest']}: {op_info['m_latest']:.2f}% "
+                f"({op_info['change_pct']:+.1f}%)",
+            ]
+        elif opmargin_100 == 0 and op_info.get('reason'):
+            lines.append(f"  💹 영업이익률: <i>{op_info['reason']}</i>")
 
         if spike_news:
             lines.append(f"")

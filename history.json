@@ -11208,37 +11208,128 @@
         "picks": [
             {
                 "rank": 1,
+<<<<<<< Updated upstream
+=======
+                "name": "광무",
+                "code": "029480",
+                "company_summary": "[KOSDAQ]",
+                "supply": "외인매수",
+                "cur_price": 2190,
+                "score_100": 73,
+                "score": "★★★☆☆ 73점",
+                "tags": "OBV60일매집 / 매매신호 / 거래량스파이크",
+                "expected_return": "15.9%",
+                "score_detail": {
+                    "OBV60일매집": 30,
+                    "매집일수": 15,
+                    "거래량살아있음": 20,
+                    "횡보기간": 10,
+                    "고점괴리": 10,
+                    "매매신호": 25,
+                    "거래량스파이크": 25,
+                    "수급강도": 6,
+                    "영업이익률증가": 20
+                },
+                "meta": {
+                    "rsi": 49.5,
+                    "rebound_pct": 21.7,
+                    "vol_ratio": 0.2,
+                    "inst_streak": 0,
+                    "for_streak": 3,
+                    "mktcap": 1304,
+                    "green_days": 53,
+                    "signal": 36.6,
+                    "max_spike": 8.2,
+                    "rs": -38.2,
+                    "trade": {
+                        "entry": 2190,
+                        "stop_loss": 1911,
+                        "target_1": 2747,
+                        "target_2": 3118,
+                        "risk_pct": 12.7,
+                        "reward_pct": 25.4,
+                        "rr_ratio": 2.0,
+                        "atr": 185.7
+                    },
+                    "rt_price_used": true,
+                    "spike_count": 10,
+                    "disp20": 0.6,
+                    "disp60": -3.6,
+                    "last_spikes": [
+                        "2026-03-25",
+                        "2026-04-14",
+                        "2026-04-21"
+                    ],
+                    "spike_news": [],
+                    "sideways_days": 60,
+                    "high52_gap": 30.0,
+                    "vol_alive_ratio": 1.49,
+                    "obv_60_change": 189.09,
+                    "op_margin_info": {
+                        "q_latest": "20254Q",
+                        "m_latest": -55.84,
+                        "q_prev": "20253Q",
+                        "m_prev": -58.53,
+                        "change_pct": 100.0
+                    }
+                }
+            },
+            {
+                "rank": 2,
+>>>>>>> Stashed changes
                 "name": "동신건설",
                 "code": "025950",
                 "company_summary": "[KOSDAQ]",
                 "supply": "외인+기관 양매수",
                 "cur_price": 16580,
+<<<<<<< Updated upstream
                 "score_100": 70,
                 "score": "★★★☆☆ 70점",
                 "tags": "매매신호 / 거래량스파이크 / 수급강도",
                 "expected_return": "15.5%",
+=======
+                "score_100": 66,
+                "score": "★★★☆☆ 66점",
+                "tags": "거래량스파이크 / 수급강도 / 영업이익률증가",
+                "expected_return": "14.9%",
+>>>>>>> Stashed changes
                 "score_detail": {
                     "OBV60일매집": 18,
                     "매집일수": 15,
                     "거래량살아있음": 5,
                     "횡보기간": 10,
                     "고점괴리": 15,
+<<<<<<< Updated upstream
                     "매매신호": 25,
+=======
+                    "매매신호": 18,
+>>>>>>> Stashed changes
                     "거래량스파이크": 25,
                     "수급강도": 20,
                     "영업이익률증가": 20
                 },
                 "meta": {
+<<<<<<< Updated upstream
                     "rsi": 49.8,
                     "rebound_pct": 24.6,
+=======
+                    "rsi": 49.6,
+                    "rebound_pct": 24.5,
+>>>>>>> Stashed changes
                     "vol_ratio": 0.11,
                     "inst_streak": 5,
                     "for_streak": 0,
                     "mktcap": 1391,
                     "green_days": 52,
+<<<<<<< Updated upstream
                     "signal": 30.4,
                     "max_spike": 11.8,
                     "rs": -42.0,
+=======
+                    "signal": 29.8,
+                    "max_spike": 11.8,
+                    "rs": -42.1,
+>>>>>>> Stashed changes
                     "trade": {
                         "entry": 16580,
                         "stop_loss": 15475,
@@ -11251,8 +11342,13 @@
                     },
                     "rt_price_used": true,
                     "spike_count": 8,
+<<<<<<< Updated upstream
                     "disp20": -0.9,
                     "disp60": 0.0,
+=======
+                    "disp20": -1.0,
+                    "disp60": -0.1,
+>>>>>>> Stashed changes
                     "last_spikes": [
                         "2026-03-20",
                         "2026-04-09",
@@ -11260,7 +11356,11 @@
                     ],
                     "spike_news": [],
                     "sideways_days": 60,
+<<<<<<< Updated upstream
                     "high52_gap": 45.0,
+=======
+                    "high52_gap": 45.1,
+>>>>>>> Stashed changes
                     "vol_alive_ratio": 0.79,
                     "obv_60_change": 24.05,
                     "op_margin_info": {
@@ -11273,12 +11373,20 @@
                 }
             },
             {
+<<<<<<< Updated upstream
                 "rank": 2,
+=======
+                "rank": 3,
+>>>>>>> Stashed changes
                 "name": "아이스크림미디어",
                 "code": "461300",
                 "company_summary": "[KOSDAQ]",
                 "supply": "외인+기관 양매수",
+<<<<<<< Updated upstream
                 "cur_price": 18910,
+=======
+                "cur_price": 18890,
+>>>>>>> Stashed changes
                 "score_100": 64,
                 "score": "★★★☆☆ 64점",
                 "tags": "OBV60일매집 / 횡보기간 / 영업이익률증가",
@@ -11295,13 +11403,18 @@
                     "영업이익률증가": 20
                 },
                 "meta": {
+<<<<<<< Updated upstream
                     "rsi": 72.2,
+=======
+                    "rsi": 72.3,
+>>>>>>> Stashed changes
                     "rebound_pct": 33.8,
                     "vol_ratio": 0.43,
                     "inst_streak": 1,
                     "for_streak": 0,
                     "mktcap": 2516,
                     "green_days": 56,
+<<<<<<< Updated upstream
                     "signal": 84.7,
                     "max_spike": 4.6,
                     "rs": -9.0,
@@ -11312,13 +11425,29 @@
                         "target_2": 21665,
                         "risk_pct": 4.4,
                         "reward_pct": 8.7,
+=======
+                    "signal": 85.0,
+                    "max_spike": 4.6,
+                    "rs": -8.9,
+                    "trade": {
+                        "entry": 18890,
+                        "stop_loss": 18063,
+                        "target_1": 20543,
+                        "target_2": 21645,
+                        "risk_pct": 4.4,
+                        "reward_pct": 8.8,
+>>>>>>> Stashed changes
                         "rr_ratio": 2.0,
                         "atr": 551.1
                     },
                     "rt_price_used": true,
                     "spike_count": 8,
                     "disp20": 15.5,
+<<<<<<< Updated upstream
                     "disp60": 15.0,
+=======
+                    "disp60": 15.1,
+>>>>>>> Stashed changes
                     "last_spikes": [
                         "2026-01-30",
                         "2026-03-10",
@@ -11327,8 +11456,13 @@
                     "spike_news": [],
                     "sideways_days": 120,
                     "high52_gap": 31.4,
+<<<<<<< Updated upstream
                     "vol_alive_ratio": 1.19,
                     "obv_60_change": 146.38,
+=======
+                    "vol_alive_ratio": 1.2,
+                    "obv_60_change": 146.37,
+>>>>>>> Stashed changes
                     "op_margin_info": {
                         "q_latest": "20254Q",
                         "m_latest": 31.53,
@@ -11339,7 +11473,11 @@
                 }
             },
             {
+<<<<<<< Updated upstream
                 "rank": 3,
+=======
+                "rank": 4,
+>>>>>>> Stashed changes
                 "name": "휴먼테크놀로지",
                 "code": "175140",
                 "company_summary": "[KOSDAQ]",
@@ -11405,12 +11543,20 @@
                 }
             },
             {
+<<<<<<< Updated upstream
                 "rank": 4,
+=======
+                "rank": 5,
+>>>>>>> Stashed changes
                 "name": "한국화장품제조",
                 "code": "003350",
                 "company_summary": "[KOSPI]",
                 "supply": "외인+기관 양매수",
+<<<<<<< Updated upstream
                 "cur_price": 9820,
+=======
+                "cur_price": 9810,
+>>>>>>> Stashed changes
                 "score_100": 62,
                 "score": "★★★☆☆ 62점",
                 "tags": "OBV60일매집 / 매매신호 / 횡보기간",
@@ -11438,10 +11584,17 @@
                     "max_spike": 7.9,
                     "rs": -30.8,
                     "trade": {
+<<<<<<< Updated upstream
                         "entry": 9820,
                         "stop_loss": 9240,
                         "target_1": 10979,
                         "target_2": 11752,
+=======
+                        "entry": 9810,
+                        "stop_loss": 9230,
+                        "target_1": 10969,
+                        "target_2": 11742,
+>>>>>>> Stashed changes
                         "risk_pct": 5.9,
                         "reward_pct": 11.8,
                         "rr_ratio": 2.0,
@@ -11460,11 +11613,16 @@
                     "sideways_days": 120,
                     "high52_gap": 30.4,
                     "vol_alive_ratio": 0.9,
+<<<<<<< Updated upstream
                     "obv_60_change": 57.2,
+=======
+                    "obv_60_change": 57.19,
+>>>>>>> Stashed changes
                     "op_margin_info": {
                         "reason": "DART 데이터 부족"
                     }
                 }
+<<<<<<< Updated upstream
             },
             {
                 "rank": 5,
@@ -11531,6 +11689,8 @@
                         "change_pct": 100.0
                     }
                 }
+=======
+>>>>>>> Stashed changes
             }
         ]
     }

@@ -1,7 +1,14 @@
 """
-engine_kr.py — 국장 바닥반등+거래량 스캐너 (PRO v3.5)
+engine_kr.py — 국장 바닥반등+거래량 스캐너 (PRO v3.6)
 실행: python engine_kr.py
-스케줄: 09:33 / 13:07 / 16:17 KST
+스케줄: 09:41 / 13:23 / 16:43 KST
+
+[변경 이력 v3.6] — 적자 기업 필터 추가
+  v3.5에서 영업이익률 증가만 봐서 적자→덜적자 종목도 통과한 문제 해결:
+  ① 전년도 사업보고서(11011) 영업이익 > 0 필수
+  ② 적자 기업은 무조건 탈락
+  ③ 분기 데이터와 연간 사업보고서를 분리해서 추적
+  ④ 텔레그램 메시지에 전년도 영업이익률 정보 추가
 
 [변경 이력 v3.5] — 영업이익률 필터 + 점수 (DART)
   ① 필터: 최근 2분기 영업이익률이 직전 대비 단순 증가
@@ -205,42 +212,47 @@ def _load_dart_corp_codes():
         return {}
 
 
-def _get_op_margin_quarters(ticker: str, debug: bool = False) -> list:
+def _get_op_margin_quarters(ticker: str, debug: bool = False) -> dict:
     """
-    DART에서 최근 분기 영업이익률 추출 (최근→과거 순)
-    반환: [{'period': '2024Q3', 'revenue': N, 'op_profit': N, 'op_margin': %}, ...]
+    DART에서 최근 분기 영업이익률 + 전년도 연간 영업이익 추출
+    반환: {
+      'quarters': [{'period': '2024Q3', 'revenue': N, 'op_profit': N, 'op_margin': %}, ...],  # 분기만
+      'annual':   {'year': 2023, 'revenue': N, 'op_profit': N, 'op_margin': %},  # 전년도 사업보고서 (없으면 None)
+    }
     """
     if ticker in _dart_op_margin_cache:
         return _dart_op_margin_cache[ticker]
 
     api_key = os.environ.get('DART_API_KEY', '')
     if not api_key:
-        return []
+        return {'quarters': [], 'annual': None}
 
     corp_codes = _load_dart_corp_codes()
     corp_code = corp_codes.get(ticker)
     if not corp_code:
         if debug:
             print(f"    🔍 DART {ticker}: corp_code 없음")
-        _dart_op_margin_cache[ticker] = []
-        return []
+        result = {'quarters': [], 'annual': None}
+        _dart_op_margin_cache[ticker] = result
+        return result
 
     quarters = []
+    annual   = None
     current_year = datetime.datetime.now().year
 
     # reprt_code: 11013=1Q, 11012=반기(2Q), 11014=3Q, 11011=사업보고서(연간)
     quarter_codes = [
-        ('11014', '3Q', current_year),
-        ('11012', '2Q', current_year),
-        ('11013', '1Q', current_year),
-        ('11011', '4Q', current_year - 1),
-        ('11014', '3Q', current_year - 1),
-        ('11012', '2Q', current_year - 1),
-        ('11013', '1Q', current_year - 1),
-        ('11011', '4Q', current_year - 2),
+        ('11014', '3Q', current_year,     False),   # 올해 3Q
+        ('11012', '2Q', current_year,     False),   # 올해 2Q
+        ('11013', '1Q', current_year,     False),   # 올해 1Q
+        ('11011', '연간', current_year - 1, True),   # 전년도 사업보고서 ★
+        ('11014', '3Q', current_year - 1, False),
+        ('11012', '2Q', current_year - 1, False),
+        ('11013', '1Q', current_year - 1, False),
+        ('11011', '연간', current_year - 2, True),   # 재작년 사업보고서 (백업)
     ]
 
-    for reprt_code, q_label, year in quarter_codes:
+    for reprt_code, q_label, year, is_annual in quarter_codes:
         try:
             url = f"{DART_BASE_URL}/fnlttSinglAcntAll.json"
             params = {
@@ -248,13 +260,12 @@ def _get_op_margin_quarters(ticker: str, debug: bool = False) -> list:
                 'corp_code':  corp_code,
                 'bsns_year':  str(year),
                 'reprt_code': reprt_code,
-                'fs_div':     'CFS',  # 1순위: 연결재무제표
+                'fs_div':     'CFS',
             }
             r = requests.get(url, params=params, timeout=8)
             data = r.json()
 
             if data.get('status') != '000':
-                # CFS 없으면 OFS (개별재무제표) 시도
                 params['fs_div'] = 'OFS'
                 r = requests.get(url, params=params, timeout=8)
                 data = r.json()
@@ -275,25 +286,31 @@ def _get_op_margin_quarters(ticker: str, debug: bool = False) -> list:
                 except ValueError:
                     continue
 
-                # 매출액 (계정명 다양)
                 if account in ['매출액', '수익(매출액)', '영업수익', '매출']:
-                    if revenue is None:  # 첫 매칭만 (중복 방지)
+                    if revenue is None:
                         revenue = amount_int
-                # 영업이익
                 elif account in ['영업이익', '영업이익(손실)']:
                     if op_profit is None:
                         op_profit = amount_int
 
             if revenue and revenue > 0 and op_profit is not None:
                 op_margin = round(op_profit / revenue * 100, 2)
-                quarters.append({
+                entry = {
                     'period':    f"{year}{q_label}",
+                    'year':      year,
                     'revenue':   revenue,
                     'op_profit': op_profit,
                     'op_margin': op_margin,
-                })
+                }
+                if is_annual:
+                    if annual is None:   # 가장 최근 연간만
+                        annual = entry
+                else:
+                    quarters.append(entry)
+
                 if debug:
-                    print(f"    🔍 DART {ticker} {year}{q_label}: 매출={revenue:,} 영업={op_profit:,} 마진={op_margin}%")
+                    tag = "연간" if is_annual else "분기"
+                    print(f"    🔍 DART {ticker} [{tag}] {year}{q_label}: 매출={revenue:,} 영업={op_profit:,} 마진={op_margin}%")
 
         except Exception as e:
             if debug:
@@ -301,23 +318,47 @@ def _get_op_margin_quarters(ticker: str, debug: bool = False) -> list:
             continue
 
     quarters.sort(key=lambda x: x['period'], reverse=True)
-    _dart_op_margin_cache[ticker] = quarters[:6]
-    return quarters[:6]
+    result = {'quarters': quarters[:6], 'annual': annual}
+    _dart_op_margin_cache[ticker] = result
+    return result
 
 
 def check_op_margin_filter(ticker: str, debug: bool = False) -> tuple:
     """
-    영업이익률 필터 + 점수
-    조건: 최근 2분기 영업이익률이 직전 대비 단순 증가
-    점수: 직전 대비 증가율 0~10% → 5점, 10~30% → 15점, 30%↑ → 20점
+    영업이익률 필터 + 점수 (v3.6)
+
+    필터:
+      ① 전년도 연간 영업이익 > 0 (적자 기업 탈락) ★ NEW
+      ② 최근 2분기 영업이익률이 직전 대비 단순 증가
+
+    점수: 0~10% 증가 → 5점, 10~30% → 15점, 30%↑ → 20점
 
     반환: (passed: bool, score: int, info: dict)
     """
-    quarters = _get_op_margin_quarters(ticker, debug=debug)
+    result = _get_op_margin_quarters(ticker, debug=debug)
+    quarters = result['quarters']
+    annual   = result['annual']
 
-    # DART 데이터 부족 → 통과 + 0점 (관대)
+    # ─ 필터 ① 전년도 영업이익 흑자 확인 ────────────────
+    if annual is None:
+        return False, 0, {'reason': '전년도 연간 데이터 없음'}
+
+    if annual['op_profit'] <= 0:
+        return False, 0, {
+            'reason':       f"전년도 영업이익 적자",
+            'annual_year':  annual['year'],
+            'annual_op':    annual['op_profit'],
+            'annual_margin': annual['op_margin'],
+        }
+
+    # ─ 필터 ② 분기 데이터 2개 이상 + 영업이익률 증가 ──
     if len(quarters) < 2:
-        return True, 0, {'reason': 'DART 데이터 부족'}
+        # 전년도는 흑자지만 분기 데이터 부족 → 통과 + 0점 (관대)
+        return True, 0, {
+            'reason':       'DART 분기 데이터 부족',
+            'annual_year':  annual['year'],
+            'annual_margin': annual['op_margin'],
+        }
 
     latest = quarters[0]
     prev   = quarters[1]
@@ -325,7 +366,6 @@ def check_op_margin_filter(ticker: str, debug: bool = False) -> tuple:
     m_latest = latest['op_margin']
     m_prev   = prev['op_margin']
 
-    # 단순 증가 확인 (필터)
     if m_latest <= m_prev:
         return False, 0, {
             'reason':    '영업이익률 미증가',
@@ -333,9 +373,8 @@ def check_op_margin_filter(ticker: str, debug: bool = False) -> tuple:
             'q_prev':    prev['period'],   'm_prev':    m_prev,
         }
 
-    # 증가율 계산
     if m_prev <= 0:
-        change_pct = 100.0   # 적자→흑자 또는 마진율 부호 변화
+        change_pct = 100.0
     else:
         change_pct = round((m_latest - m_prev) / abs(m_prev) * 100, 1)
 
@@ -344,9 +383,11 @@ def check_op_margin_filter(ticker: str, debug: bool = False) -> tuple:
     else:                  score = 5
 
     info = {
-        'q_latest':   latest['period'], 'm_latest':  m_latest,
-        'q_prev':     prev['period'],   'm_prev':    m_prev,
-        'change_pct': change_pct,
+        'q_latest':     latest['period'], 'm_latest':  m_latest,
+        'q_prev':       prev['period'],   'm_prev':    m_prev,
+        'change_pct':   change_pct,
+        'annual_year':  annual['year'],
+        'annual_margin': annual['op_margin'],
     }
     return True, score, info
 

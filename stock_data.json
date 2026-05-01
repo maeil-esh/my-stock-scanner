@@ -341,7 +341,7 @@
             }
         }
     ],
-    "scan_label": "🌙 미장 스캔",
+    "scan_label": "🏁 장 마감 스캔",
     "total_candidates": 6,
     "total_screened": 1414,
     "filter_log": {
@@ -360,5 +360,5 @@
         "opmargin_checked": 14,
         "opmargin_pass": 6
     },
-    "base_date": "20260430"
+    "base_date": "20260501"
 }

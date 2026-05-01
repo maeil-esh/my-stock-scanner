@@ -2,27 +2,27 @@
     "today_picks": [
         {
             "rank": 1,
-            "name": "Avis Budget Group, Inc.",
-            "code": "CAR",
-            "company_summary": "Avis Budget Group, Inc., together with its subsidiaries, provides car and truck rentals, car sharing...",
-            "cur_price": 181.15,
+            "name": "Hertz Global Holdings, Inc",
+            "code": "HTZ",
+            "company_summary": "Hertz Global Holdings, Inc. operates as a vehicle rental company. It operates through two segments: ...",
+            "cur_price": 6.36,
             "score_raw": 67,
             "score_100": 67,
             "squeeze_level": "⚡ HIGH",
             "score_detail": {
                 "공매도강도": 40,
-                "거래량급증": 5,
-                "유통주희소": 18,
-                "커버소요일": 4
+                "거래량급증": 13,
+                "유통주희소": 5,
+                "커버소요일": 8
             },
             "meta": {
-                "float_m": 9.4,
-                "short_pct": 80.0,
-                "vol_spike": 1.12,
-                "rsi": 42.4,
-                "short_ratio": 2.8,
-                "short_str": "80.0%",
-                "float_str": "9.4M"
+                "float_m": 127.4,
+                "short_pct": 44.9,
+                "vol_spike": 2.72,
+                "rsi": 55.6,
+                "short_ratio": 5.7,
+                "short_str": "44.9%",
+                "float_str": "127.4M"
             }
         },
         {
@@ -30,7 +30,7 @@
             "name": "Groupon, Inc.",
             "code": "GRPN",
             "company_summary": "Groupon, Inc. operates a marketplace that connects consumers to merchants by offering goods and serv...",
-            "cur_price": 14.24,
+            "cur_price": 14.21,
             "score_raw": 64,
             "score_100": 64,
             "squeeze_level": "⚡ HIGH",
@@ -43,8 +43,8 @@
             "meta": {
                 "float_m": 29.0,
                 "short_pct": 51.7,
-                "vol_spike": 0.64,
-                "rsi": 55.0,
+                "vol_spike": 0.73,
+                "rsi": 54.8,
                 "short_ratio": 9.1,
                 "short_str": "51.7%",
                 "float_str": "29.0M"
@@ -52,27 +52,27 @@
         },
         {
             "rank": 3,
-            "name": "Hertz Global Holdings, Inc",
-            "code": "HTZ",
-            "company_summary": "Hertz Global Holdings, Inc. operates as a vehicle rental company. It operates through two segments: ...",
-            "cur_price": 5.6,
-            "score_raw": 53,
-            "score_100": 53,
+            "name": "Avis Budget Group, Inc.",
+            "code": "CAR",
+            "company_summary": "Avis Budget Group, Inc., together with its subsidiaries, provides car and truck rentals, car sharing...",
+            "cur_price": 180.67,
+            "score_raw": 57,
+            "score_100": 57,
             "squeeze_level": "⚡ HIGH",
             "score_detail": {
                 "공매도강도": 40,
                 "거래량급증": 0,
-                "유통주희소": 5,
-                "커버소요일": 8
+                "유통주희소": 12,
+                "커버소요일": 4
             },
             "meta": {
-                "float_m": 127.4,
-                "short_pct": 44.9,
-                "vol_spike": 0.63,
-                "rsi": 47.0,
-                "short_ratio": 5.7,
-                "short_str": "44.9%",
-                "float_str": "127.4M"
+                "float_m": 35.3,
+                "short_pct": 80.0,
+                "vol_spike": 0.6,
+                "rsi": 42.4,
+                "short_ratio": 2.8,
+                "short_str": "80.0%",
+                "float_str": "35.3M"
             }
         },
         {
@@ -80,21 +80,21 @@
             "name": "Upstart Holdings, Inc.",
             "code": "UPST",
             "company_summary": "Upstart Holdings, Inc., together with its subsidiaries, operates a cloud-based artificial intelligen...",
-            "cur_price": 30.48,
-            "score_raw": 51,
-            "score_100": 51,
+            "cur_price": 31.58,
+            "score_raw": 50,
+            "score_100": 50,
             "squeeze_level": "⚡ HIGH",
             "score_detail": {
                 "공매도강도": 32,
-                "거래량급증": 6,
+                "거래량급증": 5,
                 "유통주희소": 3,
                 "커버소요일": 9
             },
             "meta": {
                 "float_m": 80.3,
                 "short_pct": 33.4,
-                "vol_spike": 1.26,
-                "rsi": 49.3,
+                "vol_spike": 1.09,
+                "rsi": 53.0,
                 "short_ratio": 6.0,
                 "short_str": "33.4%",
                 "float_str": "80.3M"
@@ -105,7 +105,7 @@
             "name": "Hims & Hers Health, Inc.",
             "code": "HIMS",
             "company_summary": "Hims & Hers Health, Inc. operates as a consumer-first health and wellness platform that connects con...",
-            "cur_price": 26.33,
+            "cur_price": 27.17,
             "score_raw": 46,
             "score_100": 46,
             "squeeze_level": "⚡ HIGH",
@@ -118,8 +118,8 @@
             "meta": {
                 "float_m": 207.4,
                 "short_pct": 37.8,
-                "vol_spike": 0.57,
-                "rsi": 54.1,
+                "vol_spike": 0.51,
+                "rsi": 56.2,
                 "short_ratio": 2.7,
                 "short_str": "37.8%",
                 "float_str": "207.4M"
@@ -128,5 +128,5 @@
     ],
     "total_candidates": 30,
     "total_screened": 30,
-    "base_date": "20260430"
+    "base_date": "20260501"
 }

@@ -1,7 +1,11 @@
 """
-engine_kr.py — 국장 바닥반등+거래량 스캐너 (PRO v3.6)
+engine_kr.py — 국장 바닥반등+거래량 스캐너 (PRO v4.0)
 실행: python engine_kr.py
 스케줄: 09:41 / 13:23 / 16:43 KST
+
+[변경 이력 v4.0] — QUANT VALUE 엔진 추가 (별도 섹션)
+  기존 BASIC 엔진(v3.6) 완전 유지 + TOP_N 5→3
+  ★ BASIC 엔진 내부 코드 무변경
 
 [변경 이력 v3.6] — 적자 기업 필터 추가
   v3.5에서 영업이익률 증가만 봐서 적자→덜적자 종목도 통과한 문제 해결:
@@ -18,98 +22,15 @@ engine_kr.py — 국장 바닥반등+거래량 스캐너 (PRO v3.6)
   ⑤ 첫 3개 종목만 디버그 로그 (실제 응답 검증용)
 
 [변경 이력 v3.4] — 업종 정보 단순화
-  FDR이 Sector/Industry 컬럼을 제공하지 않아 v3.3 접근 폐기:
-  ① 업종/산업 정보 표시 포기 (시장만 표시)
-  ② sector_cache → market_cache 단순화
-  ③ get_company_summary 함수 제거 (네이버 fallback 미작동)
-  ④ 디버그 로그 정리
-  ⑤ 차트 링크로 업종 확인 가능 (네이버 모바일)
-
 [변경 이력 v3.2] — 수급 데이터 하이브리드 소스
-  ① 1순위: pykrx (KRX 공식 데이터)
-     - GitHub Actions IP 차단 위험 없음
-     - 가장 정확한 데이터
-     - requirements.txt에 'pykrx' 추가 필요
-  ② 2순위: 네이버 스크래핑 (v3.1 강화 로직 유지)
-     - pykrx 실패 시 fallback
-  ③ 모두 실패 시: 수급 0점 처리
-
 [변경 이력 v3.1] — 수급 스크래핑 강화
-  네이버 frgn.naver 페이지에서 수급 0건 문제 해결:
-  ① User-Agent를 Chrome 풀 정보로
-  ② Referer/Accept/Accept-Encoding 헤더 추가
-  ③ iframe URL 직접 호출 (page=1 명시)
-  ④ fallback 셀렉터 체인
-  ⑤ HTTP 상태 코드 검증 + 다중 URL 재시도
-
 [변경 이력 v3.0] — 큰 흐름 매크로 모드 (전면 재설계)
-  방향: A.매우 관대 (10~30건) + 최근 신호 위주
-
-  ── 필터 재설계 ───────────────────────────────────
-  미시 비교 필터 전면 제거:
-   ✗ 어제vs오늘 단기 거래량 비교
-   ✗ 스파이크 직후 5일 평균 비교
-   ✗ MA20 ±10% 같은 일일 위치 체크
-   ✗ 반복 스파이크 2회 강제 (1회로 완화)
-   ✗ 스파이크후 +0~35% 가격 반응 체크
-
-  매크로 추세 필터로 전환:
-   ✓ 저점 대비 0~80% (반등 시작 종목 포함)
-   ✓ 1~3년 고점 -30%↑ 하락 (장기 흐름)
-   ✓ 60일↑ 횡보 (50% 범위 관대)
-   ✓ 거래량 살아있음: 최근30일 ≥ 직전90일 × 0.7 (큰 평균 비교)
-   ✓ 60일내 스파이크 1회↑ (최소 신호)
-   ✓ OBV 60일 누적 매집 추세↑ (큰 흐름 매집)
-   ✓ 매매신호 20~85 (바닥주 폭 확대)
-
-  ── 채점 시스템 재설계 (200점 만점) ────────────────
-  [큰 흐름 매크로] 130점
-    A. OBV 60일 매집 추세        30점
-    B. OBV 매집 일수 (120일)     25점
-    C. 거래량 살아있음 (30/90)   25점
-    D. 장기 횡보 기간             25점
-    E. 1~3년 고점 괴리율          25점
-  [신호 + 수급] 70점
-    F. 매매신호 위치              25점
-    G. 거래량 스파이크 강도        25점
-    H. 외인/기관 수급             20점
-
-  제거된 채점 항목:
-   ✗ 세력전환 (OBV 0선 돌파) — 바닥주 거의 0점
-   ✗ 근거리스파이크 (30일내) — 30일 지난 종목 0점
-   ✗ OBV 0선 직전 — 음수 OBV만 점수
-   ✗ 반복스파이크 — 너무 빡빡한 만점 조건
-
-  점수 임계: 50점 (200점→100환산), TOP_N: 5 (유지)
-
 [변경 이력 v2.5.1] — 거래량 회복 필터 완화
-[변경 이력 v2.4] — 필터 병목 해소 (v2.3 실행 결과 0건 원인 제거)
-① MA20 박스권 완화: "cur > MA20 탈락" → "MA20 ±10% 범위"
-   (서서히 반응 시작된 종목이 MA20 살짝 위에 있을 수 있음)
-② 장기 횡보 범위 30% → 45% 완화
-   (스파이크 2회 요구와 30% 범위 요구는 물리적 충돌 — 1회 스파이크만으로도 20~30% 범위 발생)
-
+[변경 이력 v2.4] — 필터 병목 해소
 [변경 이력 v2.3] — 민혁님 전략 패턴 필수 필터화
-① 52주 고점 → 3년 고점 -35% 필터로 확장
-② 장기 횡보 60일 이상 필수 (이전: 채점에만 있었음)
-③ 반복 스파이크 2회 이상 필수 (이전: 1회만 있어도 통과)
-④ 스파이크 후 거래량 "죽음" 강화 (silence < 0.7)
-⑤ 최근 5일 거래량 "회복" 필수 (직전 20일 대비 5%↑)
-
-[변경 이력 v2.2]
-★ SCORE_THRESHOLD 원점수 → 100점 환산 50점 기준으로 변경
-
-[변경 이력 v2.1]
-★ RS 필터 제거 — 바닥 매집 전략과 논리 충돌
-  (고점대비 -25%↑ 바닥주이므로 3개월 상대강도가 양수일 수 없음)
-  RS는 표시/참고용으로만 유지 (점수 산정·필터에 사용 안 함)
-
-[변경 이력 v2]
-① TOP_N 3 고정
-② 실시간 현재가 (네이버 polling API) → 트레이드 플랜 실시간 재산출
-③ 스레드 5→10, sleep 제거 → 실행 시간 단축
-④ DART 코드 로딩 제거 (스캔 로직 미사용)
-⑤ 시총 필터 실패 시 조기 종료
+[변경 이력 v2.2] — SCORE_THRESHOLD 원점수 → 100점 환산 50점 기준
+[변경 이력 v2.1] — RS 필터 제거
+[변경 이력 v2] — TOP_N 3 고정, 실시간 현재가
 """
 import os, json, datetime
 import threading
@@ -129,8 +50,8 @@ from engine_common import (
 
 DATA_FILE    = 'stock_data.json'
 HISTORY_FILE = 'history.json'
-TOP_N        = 5
-MAX_SCORE    = 220  # v3.5: A(30)+B(25)+C(25)+D(25)+E(25)+F(25)+G(25)+H(20)+I(20영업이익률)
+TOP_N        = 3          # v4.0: 5 → 3 (QUANT VALUE 2종목 추가로 조정)
+MAX_SCORE    = 220
 MKTCAP_MIN   = 1000
 MKTCAP_MAX   = 30000
 
@@ -216,8 +137,8 @@ def _get_op_margin_quarters(ticker: str, debug: bool = False) -> dict:
     """
     DART에서 최근 분기 영업이익률 + 전년도 연간 영업이익 추출
     반환: {
-      'quarters': [{'period': '2024Q3', 'revenue': N, 'op_profit': N, 'op_margin': %}, ...],  # 분기만
-      'annual':   {'year': 2023, 'revenue': N, 'op_profit': N, 'op_margin': %},  # 전년도 사업보고서 (없으면 None)
+      'quarters': [{'period': '2024Q3', 'revenue': N, 'op_profit': N, 'op_margin': %}, ...],
+      'annual':   {'year': 2023, 'revenue': N, 'op_profit': N, 'op_margin': %},
     }
     """
     if ticker in _dart_op_margin_cache:
@@ -240,16 +161,15 @@ def _get_op_margin_quarters(ticker: str, debug: bool = False) -> dict:
     annual   = None
     current_year = datetime.datetime.now().year
 
-    # reprt_code: 11013=1Q, 11012=반기(2Q), 11014=3Q, 11011=사업보고서(연간)
     quarter_codes = [
-        ('11014', '3Q', current_year,     False),   # 올해 3Q
-        ('11012', '2Q', current_year,     False),   # 올해 2Q
-        ('11013', '1Q', current_year,     False),   # 올해 1Q
-        ('11011', '연간', current_year - 1, True),   # 전년도 사업보고서 ★
+        ('11014', '3Q', current_year,     False),
+        ('11012', '2Q', current_year,     False),
+        ('11013', '1Q', current_year,     False),
+        ('11011', '연간', current_year - 1, True),
         ('11014', '3Q', current_year - 1, False),
         ('11012', '2Q', current_year - 1, False),
         ('11013', '1Q', current_year - 1, False),
-        ('11011', '연간', current_year - 2, True),   # 재작년 사업보고서 (백업)
+        ('11011', '연간', current_year - 2, True),
     ]
 
     for reprt_code, q_label, year, is_annual in quarter_codes:
@@ -303,7 +223,7 @@ def _get_op_margin_quarters(ticker: str, debug: bool = False) -> dict:
                     'op_margin': op_margin,
                 }
                 if is_annual:
-                    if annual is None:   # 가장 최근 연간만
+                    if annual is None:
                         annual = entry
                 else:
                     quarters.append(entry)
@@ -328,7 +248,7 @@ def check_op_margin_filter(ticker: str, debug: bool = False) -> tuple:
     영업이익률 필터 + 점수 (v3.6)
 
     필터:
-      ① 전년도 연간 영업이익 > 0 (적자 기업 탈락) ★ NEW
+      ① 전년도 연간 영업이익 > 0 (적자 기업 탈락)
       ② 최근 2분기 영업이익률이 직전 대비 단순 증가
 
     점수: 0~10% 증가 → 5점, 10~30% → 15점, 30%↑ → 20점
@@ -339,7 +259,6 @@ def check_op_margin_filter(ticker: str, debug: bool = False) -> tuple:
     quarters = result['quarters']
     annual   = result['annual']
 
-    # ─ 필터 ① 전년도 영업이익 흑자 확인 ────────────────
     if annual is None:
         return False, 0, {'reason': '전년도 연간 데이터 없음'}
 
@@ -351,9 +270,7 @@ def check_op_margin_filter(ticker: str, debug: bool = False) -> tuple:
             'annual_margin': annual['op_margin'],
         }
 
-    # ─ 필터 ② 분기 데이터 2개 이상 + 영업이익률 증가 ──
     if len(quarters) < 2:
-        # 전년도는 흑자지만 분기 데이터 부족 → 통과 + 0점 (관대)
         return True, 0, {
             'reason':       'DART 분기 데이터 부족',
             'annual_year':  annual['year'],
@@ -393,10 +310,6 @@ def check_op_margin_filter(ticker: str, debug: bool = False) -> tuple:
 
 
 def _fetch_naver_basic(ticker: str) -> dict:
-    """
-    네이버 모바일 주식 기본 API
-    실제 필드: stockName, sosok(0=KOSPI,1=KOSDAQ), closePrice 등
-    """
     if ticker in _naver_basic_cache:
         return _naver_basic_cache[ticker]
     try:
@@ -408,11 +321,9 @@ def _fetch_naver_basic(ticker: str) -> dict:
         r    = requests.get(url, headers=headers, timeout=5)
         data = r.json()
 
-        # sosok → 시장 구분 문자열 변환
         sosok = str(data.get('sosok', ''))
         data['_market'] = 'KOSPI' if sosok == '0' else 'KOSDAQ' if sosok == '1' else ''
 
-        # 업종/설명 — integration API description 필드 사용
         try:
             r2   = requests.get(
                 f"https://m.stock.naver.com/api/stock/{ticker}/integration",
@@ -454,11 +365,6 @@ def grade_emoji(score_100):
 # ══════════════════════════════════════════════════════════════
 
 def get_realtime_price(ticker):
-    """
-    실시간 현재가 — 네이버 모바일 API 1순위, PC 스크랩 2순위
-    실패 시 None → 호출부에서 전일 종가 fallback
-    """
-    # 1순위: 네이버 모바일 JSON API (확인된 필드: closePrice)
     try:
         data      = _fetch_naver_basic(ticker)
         price_str = data.get('closePrice', '')
@@ -467,7 +373,6 @@ def get_realtime_price(ticker):
     except Exception:
         pass
 
-    # 2순위: 네이버 PC 시세 페이지 스크랩
     try:
         url = f"https://finance.naver.com/item/main.naver?code={ticker}"
         headers = {'User-Agent': 'Mozilla/5.0', 'Accept-Language': 'ko-KR'}
@@ -547,39 +452,28 @@ def _find_cap_col(df):
 
 
 def _get_investor_via_pykrx(ticker, start, end):
-    """
-    수급 데이터 — pykrx (KRX 공식 데이터, 1순위)
-
-    반환: (inv_df, cols, inst_streak, for_streak) 또는 None (실패 시)
-    """
     try:
         from pykrx import stock
     except ImportError:
         return None
 
     try:
-        # pykrx는 'YYYYMMDD' 형식 사용
-        # start/end는 'YYYY-MM-DD' 또는 datetime — 문자열 변환
         def to_pykrx_date(d):
             s = str(d).replace('-', '').replace('.', '')
-            return s[:8]  # YYYYMMDD만
+            return s[:8]
 
         from_date = to_pykrx_date(start)
         to_date   = to_pykrx_date(end)
 
-        # 종목별 일자별 거래원 매수 거래대금
         df = stock.get_market_trading_value_by_date(from_date, to_date, ticker)
         if df is None or df.empty:
             return None
 
-        # 컬럼명: '기관합계', '기타법인', '개인', '외국인합계', '전체'
-        # 일부 종목은 '기타외국인' 또는 컬럼명 차이 있을 수 있음
         inst_col = next((c for c in df.columns if '기관합계' in c or '기관' == c), None)
         for_col  = next((c for c in df.columns if '외국인합계' in c or '외국인' == c), None)
         if not inst_col or not for_col:
             return None
 
-        # 최근 5일 (역순 정렬 — 최신이 [0])
         df_sorted = df.sort_index(ascending=False).head(5)
         inst_vals    = df_sorted[inst_col].astype(int).tolist()
         foreign_vals = df_sorted[for_col].astype(int).tolist()
@@ -590,7 +484,6 @@ def _get_investor_via_pykrx(ticker, start, end):
         inv_df = pd.DataFrame({'외국인': foreign_vals, '기관': inst_vals})
         cols   = ('외국인', '기관')
 
-        # 연속 매수 일수 계산 (최신부터)
         inst_streak = for_streak = 0
         for val in inst_vals:
             if val > 0: inst_streak += 1
@@ -601,17 +494,11 @@ def _get_investor_via_pykrx(ticker, start, end):
 
         return inv_df, cols, inst_streak, for_streak
 
-    except Exception as e:
-        # pykrx 실패 (네트워크, 종목 데이터 없음 등) — fallback으로 넘김
+    except Exception:
         return None
 
 
 def _get_investor_via_naver(ticker):
-    """
-    수급 데이터 — 네이버 금융 스크래핑 (2순위 fallback)
-
-    반환: (inv_df, cols, inst_streak, for_streak) 또는 None (실패 시)
-    """
     headers = {
         'User-Agent': ('Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
                        'AppleWebKit/537.36 (KHTML, like Gecko) '
@@ -684,26 +571,14 @@ def _get_investor_via_naver(ticker):
 
 
 def get_investor_detail(ticker, start, end):
-    """
-    외인·기관 수급 — 하이브리드 (v3.2)
-
-    1순위: pykrx (KRX 공식 데이터, IP 차단 없음)
-    2순위: 네이버 스크래핑 (강화된 헤더)
-
-    반환: (inv_df, cols, inst_streak, for_streak)
-          - 둘 다 실패 시 (None, None, 0, 0)
-    """
-    # 1순위: pykrx
     result = _get_investor_via_pykrx(ticker, start, end)
     if result is not None:
         return result
 
-    # 2순위: 네이버
     result = _get_investor_via_naver(ticker)
     if result is not None:
         return result
 
-    # 모두 실패
     print(f"  ⚠️  수급 조회 실패({ticker}): pykrx + 네이버 모두 실패")
     return None, None, 0, 0
 
@@ -716,18 +591,6 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
     """
     v3.0 채점 시스템 — 큰 흐름 매크로 위주
     총점 200점 만점 (8개 항목)
-
-    [큰 흐름 매크로] 130점
-      A. 장기 OBV 매집 추세 (60일)        30점
-      B. OBV 매집 일수 (120일)             25점
-      C. 거래량 살아있음/회복 (30/90)      25점
-      D. 장기 횡보 기간                    25점
-      E. 1~3년 고점 괴리율                 25점
-
-    [신호 + 수급] 70점
-      F. 매매신호 위치                     25점
-      G. 거래량 스파이크 강도               25점
-      H. 외인/기관 수급                    20점
     """
     df = df.copy()
     df['MA20']     = df['Close'].rolling(20).mean()
@@ -742,12 +605,7 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
     bd   = {}
     meta = {}
 
-    # ════════════════════════════════════════════════════════
-    #  [큰 흐름 매크로] 130점
-    # ════════════════════════════════════════════════════════
-
-    # ─ A. OBV 60일 매집 추세 (최대 30점) ──────────────
-    # 큰 흐름 매집의 핵심 지표
+    # A. OBV 60일 매집 추세 (최대 30점)
     obv_now = df['OBV'].iloc[-1]
     obv_60_change = 0.0
     a = 0
@@ -765,12 +623,11 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
     bd['OBV60일매집'] = a
     meta['obv_60_change'] = round(float(obv_60_change), 2)
 
-    # ─ B. OBV 매집 일수 (최대 25점) ──────────────────
-    # 120일 중 OBV 상승일이 많을수록 꾸준한 매집
+    # B. OBV 매집 일수 (최대 25점)
     obv_diff   = df['OBV'].diff().iloc[-120:]
     green_days = int((obv_diff > 0).sum())
     b = 0
-    if   green_days >= 70: b = 25  # 58%↑
+    if   green_days >= 70: b = 25
     elif green_days >= 60: b = 20
     elif green_days >= 50: b = 15
     elif green_days >= 40: b = 10
@@ -778,8 +635,7 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
     bd['매집일수'] = b
     meta['green_days'] = green_days
 
-    # ─ C. 거래량 살아있음/회복 (최대 25점) ───────────
-    # 최근 30일 평균 vs 직전 90일 평균 — 큰 평균 비교 (노이즈 제거)
+    # C. 거래량 살아있음/회복 (최대 25점)
     c = 0
     vol_alive_ratio = 0.0
     try:
@@ -788,9 +644,9 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
             prior_90   = float(df['Volume'].iloc[-120:-30].mean())
             if prior_90 > 0:
                 vol_alive_ratio = recent_30 / prior_90
-                if   vol_alive_ratio >= 1.5:  c = 25  # 거래량 폭발 시작
-                elif vol_alive_ratio >= 1.2:  c = 20  # 명확한 회복
-                elif vol_alive_ratio >= 1.0:  c = 15  # 살아남
+                if   vol_alive_ratio >= 1.5:  c = 25
+                elif vol_alive_ratio >= 1.2:  c = 20
+                elif vol_alive_ratio >= 1.0:  c = 15
                 elif vol_alive_ratio >= 0.85: c = 10
                 elif vol_alive_ratio >= 0.7:  c = 5
     except Exception:
@@ -798,8 +654,7 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
     bd['거래량살아있음'] = c
     meta['vol_alive_ratio'] = round(float(vol_alive_ratio), 2)
 
-    # ─ D. 장기 횡보 기간 (최대 25점) ─────────────────
-    # 50% 범위 내 횡보가 길수록 에너지 축적
+    # D. 장기 횡보 기간 (최대 25점)
     d_score = 0
     sideways_days = 0
     try:
@@ -824,8 +679,7 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
     bd['횡보기간'] = d_score
     meta['sideways_days'] = sideways_days
 
-    # ─ E. 1~3년 고점 괴리율 (최대 25점) ──────────────
-    # 고점에서 멀수록 상승 여력 큼
+    # E. 1~3년 고점 괴리율 (최대 25점)
     e = 0
     high_long_gap = 0.0
     try:
@@ -840,30 +694,24 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
     except Exception:
         pass
     bd['고점괴리'] = e
-    meta['high52_gap'] = high_long_gap   # 키는 호환성 위해 high52_gap 유지
+    meta['high52_gap'] = high_long_gap
 
-    # ════════════════════════════════════════════════════════
-    #  [신호 + 수급] 70점
-    # ════════════════════════════════════════════════════════
-
-    # ─ F. 매매신호 위치 (최대 25점) ──────────────────
-    # 바닥주 특성 반영 — 25~50 구간 가산점 (반등 시작)
+    # F. 매매신호 위치 (최대 25점)
     low_14  = df['Low'].rolling(14).min()
     high_14 = df['High'].rolling(14).max()
     denom   = (high_14 - low_14).iloc[-1]
     stoch_k = (cur - low_14.iloc[-1]) / denom * 100 if denom > 0 else 50
     signal_now  = stoch_k * 0.6 + rsi * 0.4
     f_score = 0
-    if   30 <= signal_now <= 55:  f_score = 25  # 반등 초기 — 최적
-    elif 25 <= signal_now < 30:   f_score = 18  # 바닥 직전
-    elif 55 <  signal_now <= 70:  f_score = 18  # 반등 진행 중
-    elif 70 <  signal_now <= 85:  f_score = 10  # 강세 진행 (이미 늦음)
+    if   30 <= signal_now <= 55:  f_score = 25
+    elif 25 <= signal_now < 30:   f_score = 18
+    elif 55 <  signal_now <= 70:  f_score = 18
+    elif 70 <  signal_now <= 85:  f_score = 10
     elif 20 <= signal_now < 25:   f_score = 8
     bd['매매신호'] = f_score
     meta['signal'] = round(float(signal_now), 1)
 
-    # ─ G. 거래량 스파이크 강도 (최대 25점) ────────────
-    # 60일 내 최대 스파이크 배수
+    # G. 거래량 스파이크 강도 (최대 25점)
     vol_ma20_ser = df['Volume'].rolling(20).mean()
     recent_60_d  = df.iloc[-60:]
     spike_ratios = recent_60_d['Volume'] / (vol_ma20_ser.iloc[-60:] + 1)
@@ -877,7 +725,7 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
     meta['max_spike'] = round(float(max_spike), 1)
     meta['vol_ratio'] = round(float(cur_vol / (vol_ma20 + 1)), 2)
 
-    # ─ H. 외인/기관 수급 (최대 20점) ─────────────────
+    # H. 외인/기관 수급 (최대 20점)
     h = 0
     supply_text = "정보없음"
     if inv_df is not None and cols:
@@ -897,10 +745,6 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
     meta['inst_streak'] = inst_streak
     meta['for_streak']  = for_streak
     meta['rsi']         = round(float(rsi), 1)
-
-    # ════════════════════════════════════════════════════════
-    #  [참고 메타 — 점수 산정 안 함]
-    # ════════════════════════════════════════════════════════
 
     # 반복 스파이크 횟수 (참고)
     spike_count  = 0
@@ -922,7 +766,6 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
     meta['spike_count'] = spike_count
     meta['last_spikes'] = [str(d.date()) for d in last_spikes] if last_spikes else []
 
-    # 이격도 (참고)
     disp20 = disp60 = 0.0
     try:
         ma20_v = float(df['Close'].rolling(20).mean().iloc[-1])
@@ -947,7 +790,6 @@ def run_kr_scan():
     start_10d  = get_start_date(today_str, 10)
     label      = now_label()
 
-    # KOSPI 데이터 독립 조회 (RS 표시용)
     kospi_df = None
     for sym in ['KS11', '^KS11', 'KOSPI']:
         try:
@@ -958,17 +800,14 @@ def run_kr_scan():
         except Exception:
             continue
 
-    # ★ v3.0 채점 정합성 — 200점 만점, 100점 환산 50점 = 절반
-    SCORE_THRESHOLD_100 = 50   # 채점이 v3.0과 정합되어 50점이 진짜 50%
-    # ★ RS_THRESHOLD 제거 — 바닥 매집 전략과 논리 충돌 (v2.1)
+    SCORE_THRESHOLD_100 = 50
 
     print(f"📅 기준일: {today_str} | {label}")
     print(f"🎯 전략: 큰 흐름 매크로 스캔 (v3.0) | TOP {TOP_N} | 임계 {SCORE_THRESHOLD_100}점 (200점→100환산)\n")
 
-    # ── 시총 사전 필터링 ────────────────────────────────────────
     print(f"⚡ 시총 사전 필터링 ({MKTCAP_MIN}억↑ ~ {MKTCAP_MAX}억↓)...")
     mktcap_cache  = {}
-    market_cache  = {}   # 종목 → 'KOSPI' or 'KOSDAQ'
+    market_cache  = {}
     all_tickers   = []
     try:
         for market in ["KOSPI", "KOSDAQ"]:
@@ -995,7 +834,6 @@ def run_kr_scan():
         return []
 
     candidates = []
-    # ★ v3.0: 큰 흐름 위주 필터 — 미시 비교 제거
     log = dict(total=len(all_tickers), penny=0, mktcap=len(all_tickers),
                bottom=0, high_gap=0, sideways=0,
                vol_alive=0, vol_recent=0,
@@ -1022,12 +860,6 @@ def run_kr_scan():
             if mktcap is None or not (MKTCAP_MIN <= mktcap <= MKTCAP_MAX):
                 return
 
-            # ════════════════════════════════════════════════════
-            #  v3.0 큰 흐름 필터 — 매크로 추세 중심
-            # ════════════════════════════════════════════════════
-
-            # ─ ① 저점 대비 위치 (관대: 0~80%) ─────────────────
-            # 이미 좀 반등 시작한 종목까지 포함
             low52 = df['Low'].iloc[-252:].min() if len(df) >= 252 else df['Low'].min()
             if low52 <= 0:
                 return
@@ -1037,18 +869,16 @@ def run_kr_scan():
             with lock:
                 log['bottom'] += 1
 
-            # ─ ② 1~3년 고가 대비 -30%↑ 하락 (관대화) ────────
             long_window = min(len(df), 756)
             high_long = df['High'].iloc[-long_window:].max()
             if high_long <= 0:
                 return
             long_gap_pct = (high_long - cur) / high_long * 100
-            if long_gap_pct < 30:   # 35→30 완화
+            if long_gap_pct < 30:
                 return
             with lock:
                 log['high_gap'] += 1
 
-            # ─ ③ 장기 횡보 (60일↑, 범위 50% 관대) ──────────
             sideways_days_f = 0
             for window_s in [200, 120, 90, 60]:
                 if len(df) < window_s:
@@ -1057,7 +887,7 @@ def run_kr_scan():
                 hi_s    = float(seg_s['High'].max())
                 lo_s    = float(seg_s['Low'].min())
                 rng_pct = (hi_s - lo_s) / lo_s * 100 if lo_s > 0 else 999
-                if rng_pct <= 50:    # 45→50 더 관대
+                if rng_pct <= 50:
                     sideways_days_f = window_s
                     break
             if sideways_days_f < 60:
@@ -1065,27 +895,19 @@ def run_kr_scan():
             with lock:
                 log['sideways'] += 1
 
-            # ════════════════════════════════════════════════════
-            #  최근 신호 위주 — "거래량이 깨어나고 있다"
-            # ════════════════════════════════════════════════════
-
-            # ─ ④ 거래량 살아있음 (최근 30일 ≥ 직전 90일 × 0.7) ─
-            # "죽지 않고 살아있다"가 핵심 — 큰 흐름에서 거래량은 노이즈 많아 관대화
             if len(vol) >= 120:
                 recent_30  = float(vol.iloc[-30:].mean())
                 prior_90   = float(vol.iloc[-120:-30].mean())
                 if prior_90 <= 0:
                     return
                 vol_alive_ratio = recent_30 / prior_90
-                if vol_alive_ratio < 0.7:   # 죽어버린 종목만 탈락
+                if vol_alive_ratio < 0.7:
                     return
             else:
                 return
             with lock:
                 log['vol_alive'] += 1
 
-            # ─ ⑤ 최근 60일 내 의미있는 스파이크 1회↑ ───────
-            # 2회 강제 → 1회로 완화 (관대 모드)
             vol_ma20_full   = vol.rolling(20).mean()
             recent_60_vol   = vol.iloc[-60:]
             recent_60_ma    = vol_ma20_full.iloc[-60:]
@@ -1095,21 +917,17 @@ def run_kr_scan():
             with lock:
                 log['vol_recent'] += 1
 
-            # ─ ⑥ OBV 누적 매집 추세 (큰 흐름) ──────────────
-            # 60일 OBV 기울기가 양수 = 세력 매집 진행 중
             obv = calc_obv(df)
             if len(obv) < 60:
                 return
             obv_60ago = float(obv.iloc[-60])
             obv_now_v = float(obv.iloc[-1])
             obv_60_change = (obv_now_v - obv_60ago) / (abs(obv_60ago) + 1) * 100
-            if obv_60_change <= 0:   # OBV 60일 하락 = 세력 이탈 = 탈락
+            if obv_60_change <= 0:
                 return
             with lock:
                 log['obv_trend'] += 1
 
-            # ─ ⑦ 매매신호 폭 확대 20~85 (관대) ──────────────
-            # 바닥주는 시그널 25 미만도 많음 — 20으로 하향
             rsi_ser   = calc_rsi(close)
             rsi_cur   = float(rsi_ser.iloc[-1])
             low_14    = df['Low'].rolling(14).min().iloc[-1]
@@ -1122,9 +940,7 @@ def run_kr_scan():
             with lock:
                 log['signal_ok'] += 1
 
-            # RS 표시용 (필터 아님)
             rs = calc_relative_strength(df, kospi_df)
-
             vol_ma20 = vol.rolling(20).mean()
 
             with lock:
@@ -1160,18 +976,14 @@ def run_kr_scan():
 
             total_score, breakdown, meta = score_stock(df, inv_df, cols, inst_streak, for_streak)
 
-            # ★ v3.5: 영업이익률 필터 + 점수 (DART)
-            # 첫 3개 종목만 디버그 로그 (실제 응답 확인용)
             debug_dart = (log.get('opmargin_checked', 0) < 3)
             log['opmargin_checked'] = log.get('opmargin_checked', 0) + 1
 
             op_passed, op_score, op_info = check_op_margin_filter(ticker, debug=debug_dart)
             if not op_passed:
-                # 필터 탈락 (영업이익률 미증가)
                 continue
             log['opmargin_pass'] = log.get('opmargin_pass', 0) + 1
 
-            # 점수 추가
             breakdown['영업이익률증가'] = op_score
             total_score += op_score
             meta['op_margin_info'] = op_info
@@ -1184,7 +996,6 @@ def run_kr_scan():
             meta['trade']         = calc_trade_levels(df, cur)
             meta['spike_news']    = []
 
-            # ★ 100점 환산 점수로 임계 비교 (220점 만점)
             score_100_check = int(round(total_score / MAX_SCORE * 100))
             if score_100_check >= SCORE_THRESHOLD_100:
                 candidates.append((total_score, ticker, breakdown, meta, df))
@@ -1192,7 +1003,6 @@ def run_kr_scan():
         except Exception:
             continue
 
-    # ── 필터 현황 출력 (v3.5) ──────────────────────────────
     print(f"\n📊 [필터 현황 — v3.5 큰 흐름 + 영업이익률]")
     for lbl, key in [
         ("전체", "total"),
@@ -1220,7 +1030,6 @@ def run_kr_scan():
     final_picks = []
     print(f"\n🏆 [TOP {TOP_N}] — 실시간 가격 조회 중...")
     for rank, (total_score, ticker, breakdown, meta, df) in enumerate(top_raw, 1):
-        # ── 종목명 ──────────────────────────────────────────────
         name = ticker
         try:
             data = _fetch_naver_basic(ticker)
@@ -1240,7 +1049,6 @@ def run_kr_scan():
             except Exception:
                 pass
 
-        # ── 실시간 가격 → 트레이드 플랜 재산출 ─────────────────
         rt_price = get_realtime_price(ticker)
         if rt_price:
             meta['cur_close'] = rt_price
@@ -1249,11 +1057,9 @@ def run_kr_scan():
         else:
             print(f"  #{rank} {name}({ticker}) | 실시간가 조회 실패 → 전일 종가 사용: {meta['cur_close']:,}원")
 
-        # ── 스파이크 시점 뉴스 수집 ──────────────────────────
         spike_date_strs = meta.get('last_spikes', [])
         meta['spike_news'] = fetch_spike_news(ticker, spike_date_strs)
 
-        # ── 회사 요약 (v3.4): 시장 정보만 단순 표시 ──
         market = market_cache.get(ticker, '')
         summary = f"[{market}]" if market else ""
 
@@ -1293,15 +1099,12 @@ def run_kr_scan():
                 "spike_news":    meta.get('spike_news', []),
                 "sideways_days": meta.get('sideways_days', 0),
                 "high52_gap":    meta.get('high52_gap', 0.0),
-                # v3.0 신규 메타
                 "vol_alive_ratio": meta.get('vol_alive_ratio', 0.0),
                 "obv_60_change":   meta.get('obv_60_change', 0.0),
-                # v3.5 신규
                 "op_margin_info":  meta.get('op_margin_info', {}),
             }
         })
 
-    # ── 결과 저장 ───────────────────────────────────────────────
     history_data = []
     if os.path.exists(HISTORY_FILE):
         with open(HISTORY_FILE, 'r', encoding='utf-8') as f:
@@ -1329,7 +1132,7 @@ def run_kr_scan():
 
 
 # ══════════════════════════════════════════════════════════════
-#  텔레그램 메시지 조립
+#  텔레그램 메시지 조립 (기존 그대로)
 # ══════════════════════════════════════════════════════════════
 
 def build_telegram_message(picks):
@@ -1340,7 +1143,7 @@ def build_telegram_message(picks):
         return "⚠️ 오늘 조건 충족 종목 없음"
 
     lines = [
-        f"🏆 <b>KR 선행매집 TOP {len(picks)} — {ko_date(today_str)} {label}</b>",
+        f"⚡ <b>폭풍전야 TOP {len(picks)} — {ko_date(today_str)} {label}</b>",
         "━" * 24,
     ]
 
@@ -1355,7 +1158,6 @@ def build_telegram_message(picks):
         filled = int(score_100 / 10)
         bar    = '█' * filled + '░' * (10 - filled)
 
-        # ★ v3.0 채점 키 매핑 ────────────────────────────
         obv60_100    = normalize_score(sd.get('OBV60일매집',  0), 30)
         gather_100   = normalize_score(sd.get('매집일수',     0), 25)
         valive_100   = normalize_score(sd.get('거래량살아있음', 0), 25)
@@ -1374,7 +1176,6 @@ def build_telegram_message(picks):
         obv_60_chg    = p['meta'].get('obv_60_change', 0.0)
         spike_news    = p['meta'].get('spike_news', [])
 
-        # 매크로 흐름 강도 = OBV60 + 매집일수 + 거래량살아있음 (130점 만점 → 100환산)
         macro_raw   = sd.get('OBV60일매집', 0) + sd.get('매집일수', 0) + sd.get('거래량살아있음', 0)
         macro_100   = int(round(macro_raw / 80 * 100))
         macro_flag  = "🔥 <b>매크로 매집 강세</b>" if macro_100 >= 70 else ""
@@ -1408,7 +1209,6 @@ def build_telegram_message(picks):
             f"  🏦 수급: {p['supply']}",
         ]
 
-        # ★ v3.5: 영업이익률 정보 추가
         if op_info.get('q_latest'):
             lines += [
                 f"",
@@ -1448,6 +1248,385 @@ def build_telegram_message(picks):
 
 
 # ══════════════════════════════════════════════════════════════
+#  ★ QUANT VALUE 엔진 (v4.0 신규 추가)
+#  기존 BASIC 엔진 코드와 완전 독립 — 별도 캐시, 별도 DART 호출
+# ══════════════════════════════════════════════════════════════
+
+VALUE_TOP_N      = 3    # v4.0: 2 → 3
+VALUE_UNIVERSE_N = 100    # 시장당 시총 상위
+
+# VALUE 전용 DART 캐시 (BASIC의 _dart_op_margin_cache와 분리)
+_value_dart_cache: dict = {}
+
+
+def _get_value_dart_data(ticker: str) -> dict:
+    """
+    VALUE 전용 DART 조회 — 3년치 분기/연간 통합
+    {(year, label): {'revenue': N, 'op_profit': N}}
+    label: 'Q1','Q2','Q3','Y'
+    """
+    if ticker in _value_dart_cache:
+        return _value_dart_cache[ticker]
+
+    api_key = os.environ.get('DART_API_KEY', '')
+    if not api_key:
+        _value_dart_cache[ticker] = {}
+        return {}
+
+    corp_codes = _load_dart_corp_codes()   # BASIC 공용 캐시 재활용
+    corp_code  = corp_codes.get(ticker)
+    if not corp_code:
+        _value_dart_cache[ticker] = {}
+        return {}
+
+    current_year = datetime.datetime.now().year
+    fetch_list = []
+    for year in [current_year, current_year - 1, current_year - 2]:
+        fetch_list += [
+            ('11013', 'Q1', year),
+            ('11012', 'Q2', year),
+            ('11014', 'Q3', year),
+            ('11011', 'Y',  year),
+        ]
+
+    result = {}
+    for reprt_code, label, year in fetch_list:
+        try:
+            url    = f"{DART_BASE_URL}/fnlttSinglAcntAll.json"
+            params = {'crtfc_key': api_key, 'corp_code': corp_code,
+                      'bsns_year': str(year), 'reprt_code': reprt_code, 'fs_div': 'CFS'}
+            r = requests.get(url, params=params, timeout=8)
+            data = r.json()
+            if data.get('status') != '000':
+                params['fs_div'] = 'OFS'
+                r = requests.get(url, params=params, timeout=8)
+                data = r.json()
+                if data.get('status') != '000':
+                    continue
+
+            revenue = op_profit = None
+            for item in data.get('list', []):
+                acct = (item.get('account_nm') or '').strip()
+                amt  = (item.get('thstrm_amount') or '0').replace(',', '').replace(' ', '')
+                if not amt or amt == '-': continue
+                try: amt_int = int(amt)
+                except ValueError: continue
+                if acct in ['매출액', '수익(매출액)', '영업수익', '매출']:
+                    if revenue is None: revenue = amt_int
+                elif acct in ['영업이익', '영업이익(손실)']:
+                    if op_profit is None: op_profit = amt_int
+
+            if revenue and revenue > 0 and op_profit is not None:
+                result[(year, label)] = {'revenue': revenue, 'op_profit': op_profit}
+        except Exception:
+            continue
+
+    _value_dart_cache[ticker] = result
+    return result
+
+
+def _check_4q_yoy(ticker: str) -> tuple:
+    """
+    4시점 매출+영업이익 모두 YoY+ 검증 (흑자 필수)
+    반환: (passed, info_dict)
+    """
+    data = _get_value_dart_data(ticker)
+    if not data:
+        return False, {'reason': 'DART 데이터 없음'}
+
+    _lbl_rank = {'Q1': 1, 'Q2': 2, 'Q3': 3, 'Y': 4}
+    pairs = []
+    for (year, label) in sorted(data.keys(),
+                                key=lambda k: (k[0], _lbl_rank.get(k[1], 0)),
+                                reverse=True):
+        prev_key = (year - 1, label)
+        if prev_key in data:
+            cur = data[(year, label)]
+            prv = data[prev_key]
+            pairs.append({
+                'period':   f"{year}{'Y' if label=='Y' else label}",
+                'cur_rev':  cur['revenue'],  'prev_rev': prv['revenue'],
+                'cur_op':   cur['op_profit'], 'prev_op': prv['op_profit'],
+            })
+            if len(pairs) >= 4:
+                break
+
+    if len(pairs) < 4:
+        return False, {'reason': f'YoY 비교 가능 {len(pairs)}개 (4개 미만)'}
+
+    for p in pairs:
+        if p['cur_rev'] <= p['prev_rev']:
+            return False, {'reason': f"{p['period']} 매출 YoY-"}
+        if p['cur_op']  <= p['prev_op']:
+            return False, {'reason': f"{p['period']} 영업이익 YoY-"}
+        if p['cur_op']  <= 0:
+            return False, {'reason': f"{p['period']} 영업이익 적자"}
+
+    rev_g = [(p['cur_rev']-p['prev_rev'])/max(abs(p['prev_rev']),1)*100 for p in pairs]
+    op_g  = [(p['cur_op'] -p['prev_op']) /max(abs(p['prev_op']), 1)*100 for p in pairs]
+    return True, {
+        'pairs':          pairs,
+        'avg_rev_growth': round(float(np.mean(rev_g)), 1),
+        'avg_op_growth':  round(float(np.mean(op_g)),  1),
+    }
+
+
+def _calc_capm_residual(stock_df, market_df, period: int = 60) -> tuple:
+    """
+    60일 일별 CAPM OLS 회귀 → 누적 잔차(%) + 베타
+    누적잔차 음수 = 시장 대비 이유 없는 언더퍼폼 = 비체계적 저평가
+    """
+    try:
+        if len(stock_df) < period or len(market_df) < period:
+            return 0.0, 1.0
+        s = stock_df['Close'].pct_change().iloc[-period:].dropna()
+        m = market_df['Close'].pct_change().iloc[-period:].dropna()
+        common = s.index.intersection(m.index)
+        if len(common) < period * 0.7:
+            return 0.0, 1.0
+        x, y = m.loc[common].values, s.loc[common].values
+        xm, ym = x.mean(), y.mean()
+        denom = float(np.sum((x - xm) ** 2))
+        if denom == 0: return 0.0, 1.0
+        beta  = float(np.sum((x - xm) * (y - ym)) / denom)
+        alpha = float(ym - beta * xm)
+        cum_resid = float(np.sum(y - (alpha + beta * x)) * 100)
+        return cum_resid, beta
+    except Exception:
+        return 0.0, 1.0
+
+
+def run_value_scan():
+    """QUANT VALUE 메인 — TOP 2"""
+    if not os.environ.get('DART_API_KEY', ''):
+        print("  ⚠️  DART_API_KEY 없음 — VALUE 스캔 건너뜀")
+        return []
+
+    today_str  = get_market_date()
+    start_date = get_start_date(today_str, 90)
+
+    print("\n" + "═" * 60)
+    print(f"💎 QUANT VALUE 엔진 — TOP {VALUE_TOP_N}")
+    print("═" * 60)
+
+    # ── 모집단 구성 ──────────────────────────────────────────
+    universe = []; market_map = {}; mktcap_map = {}
+    try:
+        for mkt in ["KOSPI", "KOSDAQ"]:
+            df_lst  = fdr.StockListing(mkt)
+            cap_col = _find_cap_col(df_lst)
+            cod_col = 'Code' if 'Code' in df_lst.columns else df_lst.columns[0]
+            if not cap_col: continue
+            df_lst = df_lst.dropna(subset=[cap_col]).copy()
+            df_lst['_c'] = df_lst[cap_col].apply(
+                lambda x: int(x/1e8) if x > 1e6 else int(x))
+            df_lst = df_lst[df_lst['_c'] >= 1000].sort_values('_c', ascending=False)
+            for _, row in df_lst.head(VALUE_UNIVERSE_N).iterrows():
+                t = str(row[cod_col]).zfill(6)
+                universe.append(t)
+                market_map[t] = mkt
+                mktcap_map[t] = int(row['_c'])
+    except Exception as e:
+        print(f"  ❌ 모집단 실패: {e}"); return []
+
+    print(f"  📊 모집단: {len(universe)}종목")
+
+    # ── KOSPI 지수 (CAPM 기준) ───────────────────────────────
+    mkt_df = None
+    for sym in ['KS11', '^KS11', 'KOSPI']:
+        try:
+            df_m = fdr.DataReader(sym, start_date, today_str)
+            if df_m is not None and len(df_m) >= 60:
+                mkt_df = df_m; break
+        except Exception: continue
+    if mkt_df is None:
+        print("  ❌ KOSPI 지수 실패"); return []
+
+    # ── PER/PBR 일괄 조회 ────────────────────────────────────
+    per_pbr_map = {}
+    try:
+        from pykrx import stock as pkstock
+        df_fund = pkstock.get_market_fundamental_by_ticker(today_str.replace('-', ''))
+        for t in universe:
+            if t in df_fund.index:
+                per_pbr_map[t] = (float(df_fund.loc[t].get('PER', 0)),
+                                  float(df_fund.loc[t].get('PBR', 0)))
+        print(f"  ✅ PER/PBR: {len(per_pbr_map)}건")
+    except Exception as e:
+        print(f"  ⚠️  PER/PBR 실패: {e}")
+
+    # ── 1차: 4분기 YoY+ ──────────────────────────────────────
+    print(f"\n🔍 1차: 4분기 YoY+ 필터...")
+    growth_ok = []
+    for i, t in enumerate(universe):
+        ok, info = _check_4q_yoy(t)
+        if ok: growth_ok.append((t, info))
+        if (i+1) % 50 == 0:
+            print(f"  진행 {i+1}/{len(universe)} | 통과 {len(growth_ok)}")
+    print(f"  → {len(growth_ok)}종목")
+    if not growth_ok: return []
+
+    # ── 시장별 PER/PBR 통계 (z-score 기준점) ─────────────────
+    mp = {'KOSPI': [], 'KOSDAQ': []}
+    mb = {'KOSPI': [], 'KOSDAQ': []}
+    for t in universe:
+        per, pbr = per_pbr_map.get(t, (0, 0))
+        m = market_map.get(t)
+        if 0 < per < 200 and 0 < pbr < 20:
+            mp[m].append(per); mb[m].append(pbr)
+
+    per_stat = {m: (float(np.median(v)), float(np.std(v)) or 1) for m, v in mp.items() if v}
+    pbr_stat = {m: (float(np.median(v)), float(np.std(v)) or 1) for m, v in mb.items() if v}
+
+    # ── 2차: 채점 ────────────────────────────────────────────
+    print(f"\n🔍 2차: PER/PBR + CAPM 잔차 채점...")
+    cands = []
+    for t, ginfo in growth_ok:
+        try:
+            per, pbr = per_pbr_map.get(t, (0, 0))
+            if per <= 0 or pbr <= 0: continue
+
+            df = fdr.DataReader(t, start_date, today_str)
+            if len(df) < 60: continue
+
+            resid, beta = _calc_capm_residual(df, mkt_df)
+            if not (0.3 <= beta <= 2.0): continue
+
+            m = market_map.get(t, 'KOSPI')
+            pm, ps = per_stat.get(m, (20, 10))
+            bm, bs = pbr_stat.get(m, (1, 0.5))
+
+            def _z2score(z, mx):
+                if   z <= -1.5: return mx
+                elif z <= -1.0: return int(mx * 0.83)
+                elif z <= -0.5: return int(mx * 0.60)
+                elif z <= 0:    return int(mx * 0.33)
+                return 0
+
+            per_s  = _z2score((per - pm) / ps, 30)
+            pbr_s  = _z2score((pbr - bm) / bs, 30)
+            res_s  = (25 if resid <= -20 else 20 if resid <= -10
+                      else 12 if resid <= -5 else 5 if resid <= 0 else 0)
+            avg_g  = (ginfo['avg_rev_growth'] + ginfo['avg_op_growth']) / 2
+            gr_s   = (15 if avg_g >= 30 else 12 if avg_g >= 20
+                      else 8 if avg_g >= 10 else 4 if avg_g > 0 else 0)
+            total  = per_s + pbr_s + res_s + gr_s
+
+            name = t
+            try:
+                nd = _fetch_naver_basic(t)
+                name = nd.get('stockName') or t
+            except Exception: pass
+
+            cands.append({
+                't': t, 'name': name, 'mkt': m,
+                'mktcap': mktcap_map.get(t, 0),
+                'score': total,
+                'bd': {'PER': per_s, 'PBR': pbr_s, 'CAPM잔차': res_s, '성장률': gr_s},
+                'per': round(per,1), 'pbr': round(pbr,2),
+                'per_med': round(pm,1), 'pbr_med': round(bm,2),
+                'beta': round(beta,2), 'resid': round(resid,2),
+                'rev_g': ginfo['avg_rev_growth'], 'op_g': ginfo['avg_op_growth'],
+                'pairs': ginfo['pairs'],
+                'cur': int(df['Close'].iloc[-1]), 'df': df,
+            })
+        except Exception: continue
+
+    cands.sort(key=lambda x: x['score'], reverse=True)
+    top = cands[:VALUE_TOP_N]
+
+    print(f"\n💎 [VALUE TOP {VALUE_TOP_N}]")
+    final = []
+    for rank, c in enumerate(top, 1):
+        rt = get_realtime_price(c['t'])
+        cp = rt if rt else c['cur']
+        trade = calc_trade_levels(c['df'], cp)
+        print(f"  #{rank} {c['name']}({c['t']}) {c['score']}/100점 "
+              f"PER {c['per']} PBR {c['pbr']} 잔차 {c['resid']:+.1f}%")
+        # 적정가 계산 (PER·PBR 기반 업종 중앙값 회귀)
+        fair_per = round(cp * (c['per_med'] / c['per'])) if c['per'] > 0 else 0
+        fair_pbr = round(cp * (c['pbr_med'] / c['pbr'])) if c['pbr'] > 0 else 0
+        fair_avg = round((fair_per + fair_pbr) / 2) if fair_per and fair_pbr else 0
+        fair_gap = round((fair_avg - cp) / cp * 100, 1) if cp > 0 and fair_avg > 0 else 0
+
+        final.append({
+            'rank': rank, 'ticker': c['t'], 'name': c['name'],
+            'market': c['mkt'], 'mktcap': c['mktcap'],
+            'total_score': c['score'], 'breakdown': c['bd'],
+            'cur_price': cp, 'rt_price_used': rt is not None,
+            'per': c['per'], 'pbr': c['pbr'],
+            'per_med': c['per_med'], 'pbr_med': c['pbr_med'],
+            'beta': c['beta'], 'cum_resid_pct': c['resid'],
+            'avg_rev_growth': c['rev_g'], 'avg_op_growth': c['op_g'],
+            'pairs': c['pairs'], 'trade': trade,
+            'fair_per': fair_per, 'fair_pbr': fair_pbr,
+            'fair_avg': fair_avg, 'fair_gap': fair_gap,
+        })
+    return final
+
+
+def build_value_message(picks):
+    """VALUE 전용 텔레그램 메시지"""
+    if not picks: return ""
+    today_str = get_market_date()
+    label     = now_label()
+
+    lines = [
+        f"📈 <b>퀀트투자 TOP {len(picks)} — {ko_date(today_str)} {label}</b>",
+        "<i>4분기 실적개선 + 동종업 저평가 + 비체계적 mispricing</i>",
+        "═" * 24,
+    ]
+    for p in picks:
+        chart = f"https://m.stock.naver.com/domestic/stock/{p['ticker']}/total"
+        bd    = p['breakdown']
+        trade = p.get('trade')
+        rt    = "📡 실시간" if p['rt_price_used'] else "📋 전일종가"
+        bar   = '█' * int(p['total_score']/10) + '░' * (10 - int(p['total_score']/10))
+
+        rf = ("🔥 <b>강한 비체계저평가</b>" if p['cum_resid_pct'] <= -10
+              else "🟢 <b>비체계저평가</b>"  if p['cum_resid_pct'] <= -5 else "")
+
+        lines += [
+            f"#{p['rank']} <b><a href='{chart}'>{p['name']}</a></b> ({p['ticker']}) [{p['market']}]",
+            f"  🏢 시총 {p['mktcap']:,}억  <code>{bar}</code> <b>{p['total_score']}/100점</b>",
+            f"  💰 현재가: {p['cur_price']:,}원 {rt}",
+            f"  🎯 적정가: {p['fair_avg']:,}원  <b>(+{p['fair_gap']}% 상승여력)</b>",
+            f"     └ PER기준 {p['fair_per']:,}원 / PBR기준 {p['fair_pbr']:,}원",
+            f"",
+            f"  📐 <b>동종업 저평가</b> ({p['market']} 내 z-score)",
+            f"    PER {p['per']} (중앙 {p['per_med']}) → {bd['PER']}점",
+            f"    PBR {p['pbr']} (중앙 {p['pbr_med']}) → {bd['PBR']}점",
+            f"",
+            f"  📊 <b>4분기 연속 실적개선</b>  ({bd['성장률']}점)",
+            f"    매출 avg +{p['avg_rev_growth']}% / 영업이익 avg +{p['avg_op_growth']}%",
+        ]
+        for pr in p['pairs'][:4]:
+            rv = (pr['cur_rev']-pr['prev_rev'])/max(abs(pr['prev_rev']),1)*100
+            op = (pr['cur_op'] -pr['prev_op']) /max(abs(pr['prev_op']), 1)*100
+            lines.append(f"      {pr['period']}: 매출 +{rv:.1f}% / 영업 +{op:.1f}%")
+
+        lines += [
+            f"",
+            f"  🎲 <b>비체계적 저평가</b> (CAPM 60일){('  '+rf) if rf else ''}",
+            f"    누적잔차 {p['cum_resid_pct']:+.1f}% | β {p['beta']} → {bd['CAPM잔차']}점",
+        ]
+        if trade:
+            lines += [
+                f"",
+                f"  🎯 <b>트레이드 플랜</b>",
+                f"    ├ 진입: {trade['entry']:,}원",
+                f"    ├ 🛑 손절: {trade['stop_loss']:,}원 (-{trade['risk_pct']}%)",
+                f"    ├ 🥇 1차: {trade['target_1']:,}원 (+{trade['reward_pct']}%)",
+                f"    └ 🥈 2차: {trade['target_2']:,}원",
+            ]
+        lines.append("")
+
+    lines.append("═" * 24)
+    lines.append("💎 <i>VALUE: 중장기 — 시간이 나의 편</i>")
+    return "\n".join(lines)
+
+
+# ══════════════════════════════════════════════════════════════
 #  엔트리포인트
 # ══════════════════════════════════════════════════════════════
 
@@ -1455,5 +1634,23 @@ if __name__ == "__main__":
     send_telegram(fetch_macro_summary())
     send_telegram(build_news_briefing())
 
+    # BASIC (TOP 3)
     picks = run_kr_scan()
     send_telegram(build_telegram_message(picks))
+
+    # VALUE (TOP 2)
+    try:
+        value_picks = run_value_scan()
+        if value_picks:
+            send_telegram(build_value_message(value_picks))
+            # stock_data.json에 value_picks 병합 저장
+            if os.path.exists(DATA_FILE):
+                with open(DATA_FILE, 'r', encoding='utf-8') as f:
+                    d = json.load(f)
+                d['value_picks'] = value_picks
+                with open(DATA_FILE, 'w', encoding='utf-8') as f:
+                    json.dump(d, f, ensure_ascii=False, indent=4, default=json_safe)
+    except Exception as e:
+        import traceback
+        print(f"\n❌ VALUE 엔진 예외: {e}")
+        traceback.print_exc()

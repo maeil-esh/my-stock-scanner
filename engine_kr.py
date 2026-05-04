@@ -932,9 +932,11 @@ def run_kr_scan():
             log['opmargin_checked'] = log.get('opmargin_checked', 0) + 1
 
             op_passed, op_score, op_info = check_op_margin_filter(ticker, debug=debug_dart)
-            if not op_passed:
-                continue
-            log['opmargin_pass'] = log.get('opmargin_pass', 0) + 1
+            # ★ v4.1: 임시로 영업이익 필터 무시 (DART corpCode 커버리지 낮음)
+            # if not op_passed:
+            #     continue
+            if op_passed:
+                log['opmargin_pass'] = log.get('opmargin_pass', 0) + 1
 
             breakdown['영업이익률증가'] = op_score
             total_score += op_score

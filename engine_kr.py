@@ -82,14 +82,28 @@ def _load_dart_corp_codes():
     api_key = os.environ.get('DART_API_KEY', '')
     if not api_key:
         print("  ⚠️  DART_API_KEY 없음 — 영업이익률 조회 비활성")
+        _dart_corp_code_cache = {}
         return {}
 
     try:
         import zipfile, io, xml.etree.ElementTree as ET
         url = f"{DART_BASE_URL}/corpCode.xml?crtfc_key={api_key}"
         r = requests.get(url, timeout=15)
+        
+        # ★ 진단: 응답 상태 확인
+        print(f"  🔍 DART API 응답: HTTP {r.status_code}, Content-Type: {r.headers.get('Content-Type', 'N/A')}")
+        
         if r.status_code != 200:
             print(f"  ⚠️  DART corpCode 다운로드 실패: HTTP {r.status_code}")
+            print(f"  🔍 응답 내용 (처음 200자): {r.text[:200]}")
+            _dart_corp_code_cache = {}
+            return {}
+
+        # ★ 진단: zip 파일인지 확인
+        if not r.content.startswith(b'PK'):
+            print(f"  ⚠️  DART 응답이 zip 형식이 아님")
+            print(f"  🔍 응답 내용 (처음 200자): {r.text[:200]}")
+            _dart_corp_code_cache = {}
             return {}
 
         with zipfile.ZipFile(io.BytesIO(r.content)) as zf:
@@ -106,6 +120,7 @@ def _load_dart_corp_codes():
         return _dart_corp_code_cache
     except Exception as e:
         print(f"  ⚠️  DART corpCode 처리 실패: {e}")
+        _dart_corp_code_cache = {}
         return {}
 
 

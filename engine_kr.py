@@ -79,6 +79,23 @@ def _load_dart_corp_codes():
     if _dart_corp_code_cache:
         return _dart_corp_code_cache
 
+    # ★ 1. 로컬 캐시 파일 확인 (7일 유효)
+    cache_file = 'dart_corpcode_cache.json'
+    if os.path.exists(cache_file):
+        try:
+            import time
+            file_age = time.time() - os.path.getmtime(cache_file)
+            if file_age < 7 * 24 * 3600:  # 7일 이내
+                with open(cache_file, 'r', encoding='utf-8') as f:
+                    _dart_corp_code_cache = json.load(f)
+                    print(f"  ✅ DART corpCode 캐시 로드: {len(_dart_corp_code_cache)}건 (파일: {int(file_age/3600)}시간 전)")
+                    return _dart_corp_code_cache
+            else:
+                print(f"  ⏰ 캐시 만료 ({int(file_age/86400)}일 전) — 새로 다운로드")
+        except Exception as e:
+            print(f"  ⚠️  캐시 파일 읽기 실패: {e}")
+
+    # ★ 2. API 호출 (캐시 없거나 만료 시)
     api_key = os.environ.get('DART_API_KEY', '')
     if not api_key:
         print("  ⚠️  DART_API_KEY 없음 — 영업이익률 조회 비활성")
@@ -90,19 +107,14 @@ def _load_dart_corp_codes():
         url = f"{DART_BASE_URL}/corpCode.xml?crtfc_key={api_key}"
         r = requests.get(url, timeout=15)
         
-        # ★ 진단: 응답 상태 확인
-        print(f"  🔍 DART API 응답: HTTP {r.status_code}, Content-Type: {r.headers.get('Content-Type', 'N/A')}")
-        
         if r.status_code != 200:
-            print(f"  ⚠️  DART corpCode 다운로드 실패: HTTP {r.status_code}")
-            print(f"  🔍 응답 내용 (처음 200자): {r.text[:200]}")
+            print(f"  ⚠️  DART HTTP {r.status_code} — 기존 캐시 유지")
             _dart_corp_code_cache = {}
             return {}
-
-        # ★ 진단: zip 파일인지 확인
-        if not r.content.startswith(b'PK'):
-            print(f"  ⚠️  DART 응답이 zip 형식이 아님")
-            print(f"  🔍 응답 내용 (처음 200자): {r.text[:200]}")
+        
+        # ★ 3. 에러 응답 체크 (사용량 초과 등)
+        if r.content.startswith(b'<?xml'):
+            print(f"  ⚠️  DART API 한도 초과 — 기존 캐시 유지")
             _dart_corp_code_cache = {}
             return {}
 
@@ -116,10 +128,15 @@ def _load_dart_corp_codes():
             if stock_code and corp_code and stock_code != ' ':
                 _dart_corp_code_cache[stock_code.zfill(6)] = corp_code
 
-        print(f"  ✅ DART corpCode 로드: {len(_dart_corp_code_cache)}건")
+        # ★ 4. 파일로 저장 (다음 실행에서 재사용)
+        with open(cache_file, 'w', encoding='utf-8') as f:
+            json.dump(_dart_corp_code_cache, f, ensure_ascii=False)
+        
+        print(f"  ✅ DART corpCode 다운로드 및 캐시 저장: {len(_dart_corp_code_cache)}건")
         return _dart_corp_code_cache
+        
     except Exception as e:
-        print(f"  ⚠️  DART corpCode 처리 실패: {e}")
+        print(f"  ⚠️  DART 처리 실패: {e} — 기존 캐시 유지")
         _dart_corp_code_cache = {}
         return {}
 

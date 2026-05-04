@@ -2158,5 +2158,197 @@
         "date": "20260504",
         "label": "🌙 미장 스캔",
         "picks": []
+    },
+    {
+        "date": "20260504",
+        "label": "🌙 미장 스캔",
+        "picks": [
+            {
+                "rank": 1,
+                "name": "동국생명과학",
+                "code": "303810",
+                "company_summary": "[KOSDAQ]",
+                "supply": "외인매수",
+                "cur_price": 3415,
+                "score_100": 68,
+                "score": "★★★☆☆ 68점",
+                "tags": "OBV60일매집 / 거래량살아있음 / 매매신호",
+                "expected_return": "15.2%",
+                "score_detail": {
+                    "OBV60일매집": 30,
+                    "매집일수": 15,
+                    "거래량살아있음": 25,
+                    "횡보기간": 20,
+                    "고점괴리": 10,
+                    "매매신호": 25,
+                    "거래량스파이크": 25,
+                    "수급강도": 0,
+                    "영업이익률증가": 0
+                },
+                "meta": {
+                    "rsi": 48.4,
+                    "rebound_pct": 6.4,
+                    "vol_ratio": 0.8,
+                    "inst_streak": 0,
+                    "for_streak": 0,
+                    "mktcap": 1092,
+                    "green_days": 57,
+                    "signal": 36.2,
+                    "max_spike": 14.7,
+                    "rs": -38.9,
+                    "trade": {
+                        "entry": 3415,
+                        "stop_loss": 3283,
+                        "target_1": 3677,
+                        "target_2": 3852,
+                        "risk_pct": 3.9,
+                        "reward_pct": 7.7,
+                        "rr_ratio": 2.0,
+                        "atr": 87.5
+                    },
+                    "rt_price_used": true,
+                    "spike_count": 5,
+                    "disp20": 0.0,
+                    "disp60": -1.4,
+                    "last_spikes": [
+                        "2026-01-29",
+                        "2026-02-24",
+                        "2026-04-02"
+                    ],
+                    "spike_news": [],
+                    "sideways_days": 120,
+                    "high52_gap": 35.9,
+                    "vol_alive_ratio": 2.36,
+                    "obv_60_change": 452.62,
+                    "op_margin_info": {
+                        "reason": "전년도 연간 데이터 없음"
+                    }
+                }
+            },
+            {
+                "rank": 2,
+                "name": "광무",
+                "code": "029480",
+                "company_summary": "[KOSDAQ]",
+                "supply": "외인+기관 양매수",
+                "cur_price": 2170,
+                "score_100": 63,
+                "score": "★★★☆☆ 63점",
+                "tags": "OBV60일매집 / 거래량살아있음 / 거래량스파이크",
+                "expected_return": "14.4%",
+                "score_detail": {
+                    "OBV60일매집": 30,
+                    "매집일수": 15,
+                    "거래량살아있음": 25,
+                    "횡보기간": 10,
+                    "고점괴리": 10,
+                    "매매신호": 18,
+                    "거래량스파이크": 25,
+                    "수급강도": 6,
+                    "영업이익률증가": 0
+                },
+                "meta": {
+                    "rsi": 48.6,
+                    "rebound_pct": 20.6,
+                    "vol_ratio": 0.4,
+                    "inst_streak": 2,
+                    "for_streak": 0,
+                    "mktcap": 1295,
+                    "green_days": 53,
+                    "signal": 28.8,
+                    "max_spike": 8.2,
+                    "rs": -41.7,
+                    "trade": {
+                        "entry": 2170,
+                        "stop_loss": 1947,
+                        "target_1": 2615,
+                        "target_2": 2912,
+                        "risk_pct": 10.3,
+                        "reward_pct": 20.5,
+                        "rr_ratio": 2.0,
+                        "atr": 148.6
+                    },
+                    "rt_price_used": true,
+                    "spike_count": 10,
+                    "disp20": -0.6,
+                    "disp60": -4.4,
+                    "last_spikes": [
+                        "2026-03-25",
+                        "2026-04-14",
+                        "2026-04-21"
+                    ],
+                    "spike_news": [],
+                    "sideways_days": 60,
+                    "high52_gap": 30.7,
+                    "vol_alive_ratio": 1.52,
+                    "obv_60_change": 129.26,
+                    "op_margin_info": {
+                        "reason": "전년도 연간 데이터 없음"
+                    }
+                }
+            },
+            {
+                "rank": 3,
+                "name": "초록뱀미디어",
+                "code": "047820",
+                "company_summary": "[KOSDAQ]",
+                "supply": "외인+기관 양매수",
+                "cur_price": 5490,
+                "score_100": 60,
+                "score": "★★★☆☆ 60점",
+                "tags": "거래량스파이크 / 횡보기간 / 매매신호",
+                "expected_return": "14.0%",
+                "score_detail": {
+                    "OBV60일매집": 10,
+                    "매집일수": 15,
+                    "거래량살아있음": 15,
+                    "횡보기간": 20,
+                    "고점괴리": 10,
+                    "매매신호": 18,
+                    "거래량스파이크": 25,
+                    "수급강도": 18,
+                    "영업이익률증가": 0
+                },
+                "meta": {
+                    "rsi": 67.9,
+                    "rebound_pct": 38.3,
+                    "vol_ratio": 0.82,
+                    "inst_streak": 5,
+                    "for_streak": 0,
+                    "mktcap": 1342,
+                    "green_days": 58,
+                    "signal": 69.5,
+                    "max_spike": 11.8,
+                    "rs": -17.0,
+                    "trade": {
+                        "entry": 5490,
+                        "stop_loss": 5031,
+                        "target_1": 6406,
+                        "target_2": 7016,
+                        "risk_pct": 8.4,
+                        "reward_pct": 16.7,
+                        "rr_ratio": 2.0,
+                        "atr": 305.4
+                    },
+                    "rt_price_used": true,
+                    "spike_count": 9,
+                    "disp20": 10.2,
+                    "disp60": 19.5,
+                    "last_spikes": [
+                        "2026-03-04",
+                        "2026-04-13",
+                        "2026-04-21"
+                    ],
+                    "spike_news": [],
+                    "sideways_days": 120,
+                    "high52_gap": 31.4,
+                    "vol_alive_ratio": 1.16,
+                    "obv_60_change": 13.46,
+                    "op_margin_info": {
+                        "reason": "전년도 연간 데이터 없음"
+                    }
+                }
+            }
+        ]
     }
 ]

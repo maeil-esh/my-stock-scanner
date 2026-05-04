@@ -5,21 +5,21 @@
             "name": "Groupon, Inc.",
             "code": "GRPN",
             "company_summary": "Groupon, Inc. operates a marketplace that connects consumers to merchants by offering goods and serv...",
-            "cur_price": 14.89,
-            "score_raw": 64,
-            "score_100": 64,
+            "cur_price": 15.51,
+            "score_raw": 69,
+            "score_100": 69,
             "squeeze_level": "⚡ HIGH",
             "score_detail": {
                 "공매도강도": 40,
-                "거래량급증": 0,
+                "거래량급증": 5,
                 "유통주희소": 14,
                 "커버소요일": 10
             },
             "meta": {
                 "float_m": 29.0,
                 "short_pct": 59.4,
-                "vol_spike": 0.65,
-                "rsi": 58.5,
+                "vol_spike": 1.02,
+                "rsi": 61.8,
                 "short_ratio": 9.1,
                 "short_str": "59.4%",
                 "float_str": "29.0M"
@@ -30,7 +30,7 @@
             "name": "Avis Budget Group, Inc.",
             "code": "CAR",
             "company_summary": "Avis Budget Group, Inc., together with its subsidiaries, provides car and truck rentals, car sharing...",
-            "cur_price": 185.55,
+            "cur_price": 168.29,
             "score_raw": 61,
             "score_100": 61,
             "squeeze_level": "⚡ HIGH",
@@ -43,8 +43,8 @@
             "meta": {
                 "float_m": 13.7,
                 "short_pct": 80.6,
-                "vol_spike": 0.26,
-                "rsi": 42.9,
+                "vol_spike": 0.35,
+                "rsi": 41.6,
                 "short_ratio": 2.8,
                 "short_str": "80.6%",
                 "float_str": "13.7M"
@@ -55,7 +55,7 @@
             "name": "Hertz Global Holdings, Inc",
             "code": "HTZ",
             "company_summary": "Hertz Global Holdings, Inc. operates as a vehicle rental company. It operates through two segments: ...",
-            "cur_price": 6.14,
+            "cur_price": 5.81,
             "score_raw": 53,
             "score_100": 53,
             "squeeze_level": "⚡ HIGH",
@@ -68,8 +68,8 @@
             "meta": {
                 "float_m": 127.4,
                 "short_pct": 44.9,
-                "vol_spike": 0.76,
-                "rsi": 52.9,
+                "vol_spike": 0.4,
+                "rsi": 49.1,
                 "short_ratio": 5.7,
                 "short_str": "44.9%",
                 "float_str": "127.4M"
@@ -77,27 +77,27 @@
         },
         {
             "rank": 4,
-            "name": "C3.ai, Inc.",
-            "code": "AI",
-            "company_summary": "C3.ai, Inc. operates as an enterprise artificial intelligence application software company. The comp...",
-            "cur_price": 9.16,
-            "score_raw": 52,
-            "score_100": 52,
+            "name": "GameStop Corporation",
+            "code": "GME",
+            "company_summary": "GameStop Corp., a specialty retailer, provides games, collectibles, and entertainment products throu...",
+            "cur_price": 23.84,
+            "score_raw": 51,
+            "score_100": 51,
             "squeeze_level": "⚡ HIGH",
             "score_detail": {
-                "공매도강도": 31,
-                "거래량급증": 5,
+                "공매도강도": 10,
+                "거래량급증": 25,
                 "유통주희소": 5,
                 "커버소요일": 10
             },
             "meta": {
-                "float_m": 135.2,
-                "short_pct": 33.1,
-                "vol_spike": 1.17,
-                "rsi": 54.1,
-                "short_ratio": 9.2,
-                "short_str": "33.1%",
-                "float_str": "135.2M"
+                "float_m": 408.2,
+                "short_pct": 15.1,
+                "vol_spike": 5.03,
+                "rsi": 46.8,
+                "short_ratio": 9.8,
+                "short_str": "15.1%",
+                "float_str": "408.2M"
             }
         },
         {
@@ -105,9 +105,9 @@
             "name": "Novavax, Inc.",
             "code": "NVAX",
             "company_summary": "Novavax, Inc., a biotechnology company, engages in the discovery, development, and commercialization...",
-            "cur_price": 8.04,
-            "score_raw": 46,
-            "score_100": 46,
+            "cur_price": 8.03,
+            "score_raw": 47,
+            "score_100": 47,
             "squeeze_level": "⚡ HIGH",
             "score_detail": {
                 "공매도강도": 26,
@@ -118,7 +118,7 @@
             "meta": {
                 "float_m": 140.2,
                 "short_pct": 28.5,
-                "vol_spike": 1.03,
+                "vol_spike": 1.17,
                 "rsi": 41.2,
                 "short_ratio": 12.4,
                 "short_str": "28.5%",
@@ -128,5 +128,5 @@
     ],
     "total_candidates": 30,
     "total_screened": 30,
-    "base_date": "20260504"
+    "base_date": "20260505"
 }

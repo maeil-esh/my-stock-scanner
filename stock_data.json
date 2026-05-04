@@ -307,7 +307,11 @@
                 "CAPM잔차": 0,
                 "성장률": 35
             },
+<<<<<<< Updated upstream
             "cur_price": 56100,
+=======
+            "cur_price": 55800,
+>>>>>>> Stashed changes
             "rt_price_used": true,
             "per": 8.0,
             "pbr": 0.35,
@@ -348,6 +352,7 @@
                 }
             ],
             "trade": {
+<<<<<<< Updated upstream
                 "entry": 56100,
                 "stop_loss": 51900,
                 "target_1": 64500,
@@ -361,6 +366,21 @@
             "fair_pbr": 89760,
             "fair_avg": 83449,
             "fair_gap": 48.8
+=======
+                "entry": 55800,
+                "stop_loss": 51600,
+                "target_1": 64200,
+                "target_2": 69800,
+                "risk_pct": 7.5,
+                "reward_pct": 15.1,
+                "rr_ratio": 2.0,
+                "atr": 2800.0
+            },
+            "fair_per": 76725,
+            "fair_pbr": 89280,
+            "fair_avg": 83002,
+            "fair_gap": 48.7
+>>>>>>> Stashed changes
         },
         {
             "rank": 3,

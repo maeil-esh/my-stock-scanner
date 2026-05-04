@@ -1,36 +1,22 @@
 """
-engine_kr.py — 국장 바닥반등+거래량 스캐너 (PRO v4.0)
+engine_kr.py — 국장 바닥반등+거래량 스캐너 (PRO v4.1)
 실행: python engine_kr.py
 스케줄: 09:41 / 13:23 / 16:43 KST
+
+[변경 이력 v4.1] — QUANT VALUE 엔진 개선
+  ① CAPM 잔차 버그 수정 (인덱스 불일치 → 전부 0.0% 문제)
+  ② VALUE 1차/2차 병렬화 (56분 → ~15분 목표)
+  ③ 모집단 변경: 시총 상위N → 중소형 구간 (1000억~1조)
+  ④ 채점 가중치 재조정: 성장률 15→35점, PER/PBR 각 30→20점
 
 [변경 이력 v4.0] — QUANT VALUE 엔진 추가 (별도 섹션)
   기존 BASIC 엔진(v3.6) 완전 유지 + TOP_N 5→3
   ★ BASIC 엔진 내부 코드 무변경
 
 [변경 이력 v3.6] — 적자 기업 필터 추가
-  v3.5에서 영업이익률 증가만 봐서 적자→덜적자 종목도 통과한 문제 해결:
-  ① 전년도 사업보고서(11011) 영업이익 > 0 필수
-  ② 적자 기업은 무조건 탈락
-  ③ 분기 데이터와 연간 사업보고서를 분리해서 추적
-  ④ 텔레그램 메시지에 전년도 영업이익률 정보 추가
-
 [변경 이력 v3.5] — 영업이익률 필터 + 점수 (DART)
-  ① 필터: 최근 2분기 영업이익률이 직전 대비 단순 증가
-  ② 점수: 0~10% 증가 → 5점, 10~30% → 15점, 30%↑ → 20점
-  ③ DART 데이터 부족 시 통과 + 0점 (관대 처리)
-  ④ MAX_SCORE: 200 → 220 (영업이익률 20점 추가)
-  ⑤ 첫 3개 종목만 디버그 로그 (실제 응답 검증용)
-
 [변경 이력 v3.4] — 업종 정보 단순화
-[변경 이력 v3.2] — 수급 데이터 하이브리드 소스
-[변경 이력 v3.1] — 수급 스크래핑 강화
 [변경 이력 v3.0] — 큰 흐름 매크로 모드 (전면 재설계)
-[변경 이력 v2.5.1] — 거래량 회복 필터 완화
-[변경 이력 v2.4] — 필터 병목 해소
-[변경 이력 v2.3] — 민혁님 전략 패턴 필수 필터화
-[변경 이력 v2.2] — SCORE_THRESHOLD 원점수 → 100점 환산 50점 기준
-[변경 이력 v2.1] — RS 필터 제거
-[변경 이력 v2] — TOP_N 3 고정, 실시간 현재가
 """
 import os, json, datetime
 import threading
@@ -50,22 +36,17 @@ from engine_common import (
 
 DATA_FILE    = 'stock_data.json'
 HISTORY_FILE = 'history.json'
-TOP_N        = 3          # v4.0: 5 → 3 (QUANT VALUE 2종목 추가로 조정)
+TOP_N        = 3
 MAX_SCORE    = 220
 MKTCAP_MIN   = 1000
 MKTCAP_MAX   = 30000
 
-# DART API
 DART_BASE_URL = "https://opendart.fss.or.kr/api"
 
-# 네이버 모바일 API 응답 캐시 (ticker → dict) — 가격/업종 공용
 _naver_basic_cache: dict = {}
 
+
 def fetch_spike_news(ticker: str, spike_date_strs: list) -> list:
-    """
-    스파이크 발생 시점 전후 3일 뉴스 수집 (정보용, 점수 없음)
-    반환: [{'date': '2024-03-15', 'title': '...', 'spike': '1차'}, ...]
-    """
     results = []
     try:
         headers = {'User-Agent': 'Mozilla/5.0', 'Accept-Language': 'ko-KR,ko;q=0.9'}
@@ -89,16 +70,11 @@ def fetch_spike_news(ticker: str, spike_date_strs: list) -> list:
 #  DART 영업이익률 (v3.5)
 # ══════════════════════════════════════════════════════════════
 
-# DART 캐시 (실행 1회 동안만 유지)
 _dart_corp_code_cache: dict = {}
 _dart_op_margin_cache: dict = {}
 
 
 def _load_dart_corp_codes():
-    """
-    DART corpCode 매핑 로드 — 실행 1회만 다운로드 (xml.zip)
-    종목코드 → corp_code 매핑 딕셔너리 반환
-    """
     global _dart_corp_code_cache
     if _dart_corp_code_cache:
         return _dart_corp_code_cache
@@ -134,13 +110,6 @@ def _load_dart_corp_codes():
 
 
 def _get_op_margin_quarters(ticker: str, debug: bool = False) -> dict:
-    """
-    DART에서 최근 분기 영업이익률 + 전년도 연간 영업이익 추출
-    반환: {
-      'quarters': [{'period': '2024Q3', 'revenue': N, 'op_profit': N, 'op_margin': %}, ...],
-      'annual':   {'year': 2023, 'revenue': N, 'op_profit': N, 'op_margin': %},
-    }
-    """
     if ticker in _dart_op_margin_cache:
         return _dart_op_margin_cache[ticker]
 
@@ -198,7 +167,6 @@ def _get_op_margin_quarters(ticker: str, debug: bool = False) -> dict:
             for item in items:
                 account = (item.get('account_nm') or '').strip()
                 amount  = (item.get('thstrm_amount') or '0').replace(',', '').replace(' ', '')
-
                 if not amount or amount == '-':
                     continue
                 try:
@@ -244,17 +212,6 @@ def _get_op_margin_quarters(ticker: str, debug: bool = False) -> dict:
 
 
 def check_op_margin_filter(ticker: str, debug: bool = False) -> tuple:
-    """
-    영업이익률 필터 + 점수 (v3.6)
-
-    필터:
-      ① 전년도 연간 영업이익 > 0 (적자 기업 탈락)
-      ② 최근 2분기 영업이익률이 직전 대비 단순 증가
-
-    점수: 0~10% 증가 → 5점, 10~30% → 15점, 30%↑ → 20점
-
-    반환: (passed: bool, score: int, info: dict)
-    """
     result = _get_op_margin_quarters(ticker, debug=debug)
     quarters = result['quarters']
     annual   = result['annual']
@@ -264,30 +221,29 @@ def check_op_margin_filter(ticker: str, debug: bool = False) -> tuple:
 
     if annual['op_profit'] <= 0:
         return False, 0, {
-            'reason':       f"전년도 영업이익 적자",
-            'annual_year':  annual['year'],
-            'annual_op':    annual['op_profit'],
+            'reason':        f"전년도 영업이익 적자",
+            'annual_year':   annual['year'],
+            'annual_op':     annual['op_profit'],
             'annual_margin': annual['op_margin'],
         }
 
     if len(quarters) < 2:
         return True, 0, {
-            'reason':       'DART 분기 데이터 부족',
-            'annual_year':  annual['year'],
+            'reason':        'DART 분기 데이터 부족',
+            'annual_year':   annual['year'],
             'annual_margin': annual['op_margin'],
         }
 
     latest = quarters[0]
     prev   = quarters[1]
-
     m_latest = latest['op_margin']
     m_prev   = prev['op_margin']
 
     if m_latest <= m_prev:
         return False, 0, {
-            'reason':    '영업이익률 미증가',
-            'q_latest':  latest['period'], 'm_latest':  m_latest,
-            'q_prev':    prev['period'],   'm_prev':    m_prev,
+            'reason':   '영업이익률 미증가',
+            'q_latest': latest['period'], 'm_latest': m_latest,
+            'q_prev':   prev['period'],   'm_prev':   m_prev,
         }
 
     if m_prev <= 0:
@@ -300,10 +256,10 @@ def check_op_margin_filter(ticker: str, debug: bool = False) -> tuple:
     else:                  score = 5
 
     info = {
-        'q_latest':     latest['period'], 'm_latest':  m_latest,
-        'q_prev':       prev['period'],   'm_prev':    m_prev,
-        'change_pct':   change_pct,
-        'annual_year':  annual['year'],
+        'q_latest':      latest['period'], 'm_latest':  m_latest,
+        'q_prev':        prev['period'],   'm_prev':    m_prev,
+        'change_pct':    change_pct,
+        'annual_year':   annual['year'],
         'annual_margin': annual['op_margin'],
     }
     return True, score, info
@@ -325,7 +281,7 @@ def _fetch_naver_basic(ticker: str) -> dict:
         data['_market'] = 'KOSPI' if sosok == '0' else 'KOSDAQ' if sosok == '1' else ''
 
         try:
-            r2   = requests.get(
+            r2  = requests.get(
                 f"https://m.stock.naver.com/api/stock/{ticker}/integration",
                 headers=headers, timeout=5
             )
@@ -361,7 +317,7 @@ def grade_emoji(score_100):
 
 
 # ══════════════════════════════════════════════════════════════
-#  실시간 현재가 (네이버 polling API)
+#  실시간 현재가
 # ══════════════════════════════════════════════════════════════
 
 def get_realtime_price(ticker):
@@ -390,7 +346,7 @@ def get_realtime_price(ticker):
 
 
 # ══════════════════════════════════════════════════════════════
-#  상대강도(RS) — 표시/참고용 (필터 아님)
+#  상대강도(RS)
 # ══════════════════════════════════════════════════════════════
 
 def calc_relative_strength(stock_df, index_df, period=63):
@@ -474,7 +430,7 @@ def _get_investor_via_pykrx(ticker, start, end):
         if not inst_col or not for_col:
             return None
 
-        df_sorted = df.sort_index(ascending=False).head(5)
+        df_sorted    = df.sort_index(ascending=False).head(5)
         inst_vals    = df_sorted[inst_col].astype(int).tolist()
         foreign_vals = df_sorted[for_col].astype(int).tolist()
 
@@ -505,10 +461,10 @@ def _get_investor_via_naver(ticker):
                        'Chrome/120.0.0.0 Safari/537.36'),
         'Accept': ('text/html,application/xhtml+xml,application/xml;q=0.9,'
                    'image/avif,image/webp,*/*;q=0.8'),
-        'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Referer': f'https://finance.naver.com/item/main.naver?code={ticker}',
-        'Connection': 'keep-alive',
+        'Accept-Language':  'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
+        'Accept-Encoding':  'gzip, deflate, br',
+        'Referer':          f'https://finance.naver.com/item/main.naver?code={ticker}',
+        'Connection':       'keep-alive',
     }
 
     urls_to_try = [
@@ -584,14 +540,10 @@ def get_investor_detail(ticker, start, end):
 
 
 # ══════════════════════════════════════════════════════════════
-#  채점
+#  채점 (BASIC)
 # ══════════════════════════════════════════════════════════════
 
 def score_stock(df, inv_df, cols, inst_streak, for_streak):
-    """
-    v3.0 채점 시스템 — 큰 흐름 매크로 위주
-    총점 200점 만점 (8개 항목)
-    """
     df = df.copy()
     df['MA20']     = df['Close'].rolling(20).mean()
     df['Vol_MA20'] = df['Volume'].rolling(20).mean()
@@ -701,7 +653,7 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
     high_14 = df['High'].rolling(14).max()
     denom   = (high_14 - low_14).iloc[-1]
     stoch_k = (cur - low_14.iloc[-1]) / denom * 100 if denom > 0 else 50
-    signal_now  = stoch_k * 0.6 + rsi * 0.4
+    signal_now = stoch_k * 0.6 + rsi * 0.4
     f_score = 0
     if   30 <= signal_now <= 55:  f_score = 25
     elif 25 <= signal_now < 30:   f_score = 18
@@ -747,12 +699,12 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
     meta['rsi']         = round(float(rsi), 1)
 
     # 반복 스파이크 횟수 (참고)
-    spike_count  = 0
-    last_spikes  = []
+    spike_count = 0
+    last_spikes = []
     try:
-        vol_ma20_full = df['Volume'].rolling(20).mean()
+        vol_ma20_full   = df['Volume'].rolling(20).mean()
         spike_mask_full = df['Volume'] >= vol_ma20_full * 2.0
-        spike_dates = df.index[spike_mask_full].tolist()
+        spike_dates     = df.index[spike_mask_full].tolist()
         grouped = []
         for sd in spike_dates:
             if not grouped or (sd - grouped[-1][-1]).days > 5:
@@ -781,7 +733,7 @@ def score_stock(df, inv_df, cols, inst_streak, for_streak):
 
 
 # ══════════════════════════════════════════════════════════════
-#  메인 스캔
+#  메인 스캔 (BASIC)
 # ══════════════════════════════════════════════════════════════
 
 def run_kr_scan():
@@ -806,9 +758,9 @@ def run_kr_scan():
     print(f"🎯 전략: 큰 흐름 매크로 스캔 (v3.0) | TOP {TOP_N} | 임계 {SCORE_THRESHOLD_100}점 (200점→100환산)\n")
 
     print(f"⚡ 시총 사전 필터링 ({MKTCAP_MIN}억↑ ~ {MKTCAP_MAX}억↓)...")
-    mktcap_cache  = {}
-    market_cache  = {}
-    all_tickers   = []
+    mktcap_cache = {}
+    market_cache = {}
+    all_tickers  = []
     try:
         for market in ["KOSPI", "KOSDAQ"]:
             df_cap   = fdr.StockListing(market)
@@ -833,13 +785,13 @@ def run_kr_scan():
         print(f"  ❌ 시총 필터 실패: {e} → 스캔 중단")
         return []
 
-    candidates = []
+    candidates    = []
     log = dict(total=len(all_tickers), penny=0, mktcap=len(all_tickers),
                bottom=0, high_gap=0, sideways=0,
                vol_alive=0, vol_recent=0,
                obv_trend=0, signal_ok=0,
                seforce=0, final=0)
-    lock = threading.Lock()
+    lock          = threading.Lock()
     passed_stage1 = []
 
     def scan_ticker_stage1(ticker):
@@ -869,11 +821,11 @@ def run_kr_scan():
             with lock:
                 log['bottom'] += 1
 
-            long_window = min(len(df), 756)
-            high_long = df['High'].iloc[-long_window:].max()
+            long_window   = min(len(df), 756)
+            high_long     = df['High'].iloc[-long_window:].max()
             if high_long <= 0:
                 return
-            long_gap_pct = (high_long - cur) / high_long * 100
+            long_gap_pct  = (high_long - cur) / high_long * 100
             if long_gap_pct < 30:
                 return
             with lock:
@@ -908,10 +860,10 @@ def run_kr_scan():
             with lock:
                 log['vol_alive'] += 1
 
-            vol_ma20_full   = vol.rolling(20).mean()
-            recent_60_vol   = vol.iloc[-60:]
-            recent_60_ma    = vol_ma20_full.iloc[-60:]
-            spike_mask_60   = recent_60_vol >= recent_60_ma * 2.0
+            vol_ma20_full = vol.rolling(20).mean()
+            recent_60_vol = vol.iloc[-60:]
+            recent_60_ma  = vol_ma20_full.iloc[-60:]
+            spike_mask_60 = recent_60_vol >= recent_60_ma * 2.0
             if not spike_mask_60.any():
                 return
             with lock:
@@ -920,27 +872,27 @@ def run_kr_scan():
             obv = calc_obv(df)
             if len(obv) < 60:
                 return
-            obv_60ago = float(obv.iloc[-60])
-            obv_now_v = float(obv.iloc[-1])
+            obv_60ago     = float(obv.iloc[-60])
+            obv_now_v     = float(obv.iloc[-1])
             obv_60_change = (obv_now_v - obv_60ago) / (abs(obv_60ago) + 1) * 100
             if obv_60_change <= 0:
                 return
             with lock:
                 log['obv_trend'] += 1
 
-            rsi_ser   = calc_rsi(close)
-            rsi_cur   = float(rsi_ser.iloc[-1])
-            low_14    = df['Low'].rolling(14).min().iloc[-1]
-            high_14   = df['High'].rolling(14).max().iloc[-1]
-            denom     = high_14 - low_14
-            stoch_cur = (cur - low_14) / denom * 100 if denom > 0 else 50.0
+            rsi_ser    = calc_rsi(close)
+            rsi_cur    = float(rsi_ser.iloc[-1])
+            low_14     = df['Low'].rolling(14).min().iloc[-1]
+            high_14    = df['High'].rolling(14).max().iloc[-1]
+            denom      = high_14 - low_14
+            stoch_cur  = (cur - low_14) / denom * 100 if denom > 0 else 50.0
             signal_cur = stoch_cur * 0.6 + rsi_cur * 0.4
             if not (20 <= signal_cur <= 85):
                 return
             with lock:
                 log['signal_ok'] += 1
 
-            rs = calc_relative_strength(df, kospi_df)
+            rs       = calc_relative_strength(df, kospi_df)
             vol_ma20 = vol.rolling(20).mean()
 
             with lock:
@@ -988,13 +940,13 @@ def run_kr_scan():
             total_score += op_score
             meta['op_margin_info'] = op_info
 
-            meta['mktcap']        = mktcap
-            meta['rebound_pct']   = round(float(rebound_pct), 1)
-            meta['cur_close']     = int(cur)
-            meta['vol_ratio']     = round(float(cur_vol) / (float(cur_vm20) + 1), 2)
-            meta['rs']            = rs
-            meta['trade']         = calc_trade_levels(df, cur)
-            meta['spike_news']    = []
+            meta['mktcap']      = mktcap
+            meta['rebound_pct'] = round(float(rebound_pct), 1)
+            meta['cur_close']   = int(cur)
+            meta['vol_ratio']   = round(float(cur_vol) / (float(cur_vm20) + 1), 2)
+            meta['rs']          = rs
+            meta['trade']       = calc_trade_levels(df, cur)
+            meta['spike_news']  = []
 
             score_100_check = int(round(total_score / MAX_SCORE * 100))
             if score_100_check >= SCORE_THRESHOLD_100:
@@ -1005,19 +957,19 @@ def run_kr_scan():
 
     print(f"\n📊 [필터 현황 — v3.5 큰 흐름 + 영업이익률]")
     for lbl, key in [
-        ("전체", "total"),
-        ("① 동전주 제외", "penny"),
-        ("② 시총 필터", "mktcap"),
-        ("③ 저점대비 0~80%", "bottom"),
-        ("④ 1~3년고점 -30%↑ 하락", "high_gap"),
+        ("전체",                    "total"),
+        ("① 동전주 제외",           "penny"),
+        ("② 시총 필터",             "mktcap"),
+        ("③ 저점대비 0~80%",        "bottom"),
+        ("④ 1~3년고점 -30%↑ 하락",  "high_gap"),
         ("⑤ 장기 횡보 60일↑ (50%↓)", "sideways"),
         ("⑥ 거래량 살아있음 (≥0.7)", "vol_alive"),
-        ("⑦ 60일내 스파이크 1회↑", "vol_recent"),
-        ("⑧ OBV 60일 매집 추세↑", "obv_trend"),
-        ("⑨ 매매신호 20~85", "signal_ok"),
-        ("⑩ 수급 확인", "seforce"),
-        ("⑪ 영업이익률 증가", "opmargin_pass"),
-        ("최종 통과", "final"),
+        ("⑦ 60일내 스파이크 1회↑",  "vol_recent"),
+        ("⑧ OBV 60일 매집 추세↑",   "obv_trend"),
+        ("⑨ 매매신호 20~85",        "signal_ok"),
+        ("⑩ 수급 확인",             "seforce"),
+        ("⑪ 영업이익률 증가",       "opmargin_pass"),
+        ("최종 통과",               "final"),
     ]:
         print(f"  {lbl:<28} {log.get(key, 0):>5}건")
 
@@ -1039,9 +991,9 @@ def run_kr_scan():
         if name == ticker:
             try:
                 for mkt in ["KOSPI", "KOSDAQ"]:
-                    df_lst  = fdr.StockListing(mkt)
-                    col     = 'Code' if 'Code' in df_lst.columns else df_lst.columns[0]
-                    nm_col  = next((c for c in ['Name','name'] if c in df_lst.columns), None)
+                    df_lst = fdr.StockListing(mkt)
+                    col    = 'Code' if 'Code' in df_lst.columns else df_lst.columns[0]
+                    nm_col = next((c for c in ['Name', 'name'] if c in df_lst.columns), None)
                     if nm_col:
                         row = df_lst[df_lst[col].astype(str).str.zfill(6) == ticker]
                         if not row.empty:
@@ -1057,12 +1009,11 @@ def run_kr_scan():
         else:
             print(f"  #{rank} {name}({ticker}) | 실시간가 조회 실패 → 전일 종가 사용: {meta['cur_close']:,}원")
 
-        spike_date_strs = meta.get('last_spikes', [])
+        spike_date_strs    = meta.get('last_spikes', [])
         meta['spike_news'] = fetch_spike_news(ticker, spike_date_strs)
 
-        market = market_cache.get(ticker, '')
-        summary = f"[{market}]" if market else ""
-
+        market       = market_cache.get(ticker, '')
+        summary      = f"[{market}]" if market else ""
         score_100    = int(round(total_score / MAX_SCORE * 100))
         star_count   = min(score_100 // 20, 5)
         stars        = "★" * star_count + "☆" * (5 - star_count)
@@ -1074,31 +1025,31 @@ def run_kr_scan():
         final_picks.append({
             "rank": rank, "name": name, "code": ticker,
             "company_summary": summary, "supply": supply_text,
-            "cur_price": meta.get('cur_close', 0),
-            "score_100": score_100,
-            "score": f"{stars} {score_100}점",
-            "tags": tag_str, "expected_return": f"{expected_ret}%",
+            "cur_price":   meta.get('cur_close', 0),
+            "score_100":   score_100,
+            "score":       f"{stars} {score_100}점",
+            "tags":        tag_str, "expected_return": f"{expected_ret}%",
             "score_detail": breakdown,
             "meta": {
-                "rsi":           meta.get('rsi', 0),
-                "rebound_pct":   meta.get('rebound_pct', 0),
-                "vol_ratio":     meta.get('vol_ratio', 0),
-                "inst_streak":   meta.get('inst_streak', 0),
-                "for_streak":    meta.get('for_streak', 0),
-                "mktcap":        meta.get('mktcap', 0),
-                "green_days":    meta.get('green_days', 0),
-                "signal":        meta.get('signal', 0),
-                "max_spike":     meta.get('max_spike', 0),
-                "rs":            meta.get('rs', 0),
-                "trade":         meta.get('trade', None),
-                "rt_price_used": rt_price is not None,
-                "spike_count":   meta.get('spike_count', 0),
-                "disp20":        meta.get('disp20', 0.0),
-                "disp60":        meta.get('disp60', 0.0),
-                "last_spikes":   meta.get('last_spikes', []),
-                "spike_news":    meta.get('spike_news', []),
-                "sideways_days": meta.get('sideways_days', 0),
-                "high52_gap":    meta.get('high52_gap', 0.0),
+                "rsi":             meta.get('rsi', 0),
+                "rebound_pct":     meta.get('rebound_pct', 0),
+                "vol_ratio":       meta.get('vol_ratio', 0),
+                "inst_streak":     meta.get('inst_streak', 0),
+                "for_streak":      meta.get('for_streak', 0),
+                "mktcap":          meta.get('mktcap', 0),
+                "green_days":      meta.get('green_days', 0),
+                "signal":          meta.get('signal', 0),
+                "max_spike":       meta.get('max_spike', 0),
+                "rs":              meta.get('rs', 0),
+                "trade":           meta.get('trade', None),
+                "rt_price_used":   rt_price is not None,
+                "spike_count":     meta.get('spike_count', 0),
+                "disp20":          meta.get('disp20', 0.0),
+                "disp60":          meta.get('disp60', 0.0),
+                "last_spikes":     meta.get('last_spikes', []),
+                "spike_news":      meta.get('spike_news', []),
+                "sideways_days":   meta.get('sideways_days', 0),
+                "high52_gap":      meta.get('high52_gap', 0.0),
                 "vol_alive_ratio": meta.get('vol_alive_ratio', 0.0),
                 "obv_60_change":   meta.get('obv_60_change', 0.0),
                 "op_margin_info":  meta.get('op_margin_info', {}),
@@ -1120,9 +1071,12 @@ def run_kr_scan():
         json.dump(history_data, f, ensure_ascii=False, indent=4, default=json_safe)
 
     final_output = {
-        "today_picks": final_picks, "scan_label": label,
-        "total_candidates": log['final'], "total_screened": log['total'],
-        "filter_log": log, "base_date": today_str,
+        "today_picks":       final_picks,
+        "scan_label":        label,
+        "total_candidates":  log['final'],
+        "total_screened":    log['total'],
+        "filter_log":        log,
+        "base_date":         today_str,
     }
     with open(DATA_FILE, 'w', encoding='utf-8') as f:
         json.dump(final_output, f, ensure_ascii=False, indent=4, default=json_safe)
@@ -1132,7 +1086,7 @@ def run_kr_scan():
 
 
 # ══════════════════════════════════════════════════════════════
-#  텔레그램 메시지 조립 (기존 그대로)
+#  텔레그램 메시지 조립 (BASIC)
 # ══════════════════════════════════════════════════════════════
 
 def build_telegram_message(picks):
@@ -1148,24 +1102,24 @@ def build_telegram_message(picks):
     ]
 
     for p in picks:
-        chart_url  = f"https://m.stock.naver.com/domestic/stock/{p['code']}/total"
-        trade      = p['meta'].get('trade')
-        rs_val     = p['meta'].get('rs', 0)
-        rt_flag    = "📡 실시간" if p['meta'].get('rt_price_used') else "📋 전일종가"
-        sd         = p.get('score_detail', {})
-        score_100  = p.get('score_100', 0)
+        chart_url = f"https://m.stock.naver.com/domestic/stock/{p['code']}/total"
+        trade     = p['meta'].get('trade')
+        rs_val    = p['meta'].get('rs', 0)
+        rt_flag   = "📡 실시간" if p['meta'].get('rt_price_used') else "📋 전일종가"
+        sd        = p.get('score_detail', {})
+        score_100 = p.get('score_100', 0)
 
         filled = int(score_100 / 10)
         bar    = '█' * filled + '░' * (10 - filled)
 
-        obv60_100    = normalize_score(sd.get('OBV60일매집',  0), 30)
-        gather_100   = normalize_score(sd.get('매집일수',     0), 25)
-        valive_100   = normalize_score(sd.get('거래량살아있음', 0), 25)
-        side_100     = normalize_score(sd.get('횡보기간',     0), 25)
-        gap_100      = normalize_score(sd.get('고점괴리',     0), 25)
-        signal_100   = normalize_score(sd.get('매매신호',     0), 25)
-        spike_100    = normalize_score(sd.get('거래량스파이크', 0), 25)
-        supply_100   = normalize_score(sd.get('수급강도',     0), 20)
+        obv60_100  = normalize_score(sd.get('OBV60일매집',   0), 30)
+        gather_100 = normalize_score(sd.get('매집일수',      0), 25)
+        valive_100 = normalize_score(sd.get('거래량살아있음', 0), 25)
+        side_100   = normalize_score(sd.get('횡보기간',      0), 25)
+        gap_100    = normalize_score(sd.get('고점괴리',      0), 25)
+        signal_100 = normalize_score(sd.get('매매신호',      0), 25)
+        spike_100  = normalize_score(sd.get('거래량스파이크', 0), 25)
+        supply_100 = normalize_score(sd.get('수급강도',      0), 20)
 
         spike_cnt     = p['meta'].get('spike_count', 0)
         disp20_val    = p['meta'].get('disp20', 0.0)
@@ -1176,12 +1130,12 @@ def build_telegram_message(picks):
         obv_60_chg    = p['meta'].get('obv_60_change', 0.0)
         spike_news    = p['meta'].get('spike_news', [])
 
-        macro_raw   = sd.get('OBV60일매집', 0) + sd.get('매집일수', 0) + sd.get('거래량살아있음', 0)
-        macro_100   = int(round(macro_raw / 80 * 100))
-        macro_flag  = "🔥 <b>매크로 매집 강세</b>" if macro_100 >= 70 else ""
+        macro_raw  = sd.get('OBV60일매집', 0) + sd.get('매집일수', 0) + sd.get('거래량살아있음', 0)
+        macro_100  = int(round(macro_raw / 80 * 100))
+        macro_flag = "🔥 <b>매크로 매집 강세</b>" if macro_100 >= 70 else ""
 
-        opmargin_100  = normalize_score(sd.get('영업이익률증가', 0), 20)
-        op_info       = p['meta'].get('op_margin_info', {})
+        opmargin_100 = normalize_score(sd.get('영업이익률증가', 0), 20)
+        op_info      = p['meta'].get('op_margin_info', {})
 
         lines += [
             f"#{p['rank']} <b><a href='{chart_url}'>{p['name']}</a></b> ({p['code']})",
@@ -1248,23 +1202,19 @@ def build_telegram_message(picks):
 
 
 # ══════════════════════════════════════════════════════════════
-#  ★ QUANT VALUE 엔진 (v4.0 신규 추가)
-#  기존 BASIC 엔진 코드와 완전 독립 — 별도 캐시, 별도 DART 호출
+#  ★ QUANT VALUE 엔진 (v4.1)
+#  변경: 중소형 모집단 + 성장률 가중치 UP + CAPM 버그 수정 + 병렬화
 # ══════════════════════════════════════════════════════════════
 
-VALUE_TOP_N      = 3    # v4.0: 2 → 3
-VALUE_UNIVERSE_N = 100    # 시장당 시총 상위
+VALUE_TOP_N       = 3
+# v4.1: 시총 상위N → 중소형 구간 (1000억~1조)
+VALUE_MKTCAP_MIN  = 1000    # 억
+VALUE_MKTCAP_MAX  = 10000   # 억 (1조)
 
-# VALUE 전용 DART 캐시 (BASIC의 _dart_op_margin_cache와 분리)
 _value_dart_cache: dict = {}
 
 
 def _get_value_dart_data(ticker: str) -> dict:
-    """
-    VALUE 전용 DART 조회 — 3년치 분기/연간 통합
-    {(year, label): {'revenue': N, 'op_profit': N}}
-    label: 'Q1','Q2','Q3','Y'
-    """
     if ticker in _value_dart_cache:
         return _value_dart_cache[ticker]
 
@@ -1273,7 +1223,7 @@ def _get_value_dart_data(ticker: str) -> dict:
         _value_dart_cache[ticker] = {}
         return {}
 
-    corp_codes = _load_dart_corp_codes()   # BASIC 공용 캐시 재활용
+    corp_codes = _load_dart_corp_codes()
     corp_code  = corp_codes.get(ticker)
     if not corp_code:
         _value_dart_cache[ticker] = {}
@@ -1295,11 +1245,11 @@ def _get_value_dart_data(ticker: str) -> dict:
             url    = f"{DART_BASE_URL}/fnlttSinglAcntAll.json"
             params = {'crtfc_key': api_key, 'corp_code': corp_code,
                       'bsns_year': str(year), 'reprt_code': reprt_code, 'fs_div': 'CFS'}
-            r = requests.get(url, params=params, timeout=8)
+            r    = requests.get(url, params=params, timeout=8)
             data = r.json()
             if data.get('status') != '000':
                 params['fs_div'] = 'OFS'
-                r = requests.get(url, params=params, timeout=8)
+                r    = requests.get(url, params=params, timeout=8)
                 data = r.json()
                 if data.get('status') != '000':
                     continue
@@ -1326,10 +1276,6 @@ def _get_value_dart_data(ticker: str) -> dict:
 
 
 def _check_4q_yoy(ticker: str) -> tuple:
-    """
-    4시점 매출+영업이익 모두 YoY+ 검증 (흑자 필수)
-    반환: (passed, info_dict)
-    """
     data = _get_value_dart_data(ticker)
     if not data:
         return False, {'reason': 'DART 데이터 없음'}
@@ -1344,9 +1290,9 @@ def _check_4q_yoy(ticker: str) -> tuple:
             cur = data[(year, label)]
             prv = data[prev_key]
             pairs.append({
-                'period':   f"{year}{'Y' if label=='Y' else label}",
-                'cur_rev':  cur['revenue'],  'prev_rev': prv['revenue'],
-                'cur_op':   cur['op_profit'], 'prev_op': prv['op_profit'],
+                'period':   f"{year}{'Y' if label == 'Y' else label}",
+                'cur_rev':  cur['revenue'],   'prev_rev': prv['revenue'],
+                'cur_op':   cur['op_profit'], 'prev_op':  prv['op_profit'],
             })
             if len(pairs) >= 4:
                 break
@@ -1362,8 +1308,8 @@ def _check_4q_yoy(ticker: str) -> tuple:
         if p['cur_op']  <= 0:
             return False, {'reason': f"{p['period']} 영업이익 적자"}
 
-    rev_g = [(p['cur_rev']-p['prev_rev'])/max(abs(p['prev_rev']),1)*100 for p in pairs]
-    op_g  = [(p['cur_op'] -p['prev_op']) /max(abs(p['prev_op']), 1)*100 for p in pairs]
+    rev_g = [(p['cur_rev'] - p['prev_rev']) / max(abs(p['prev_rev']), 1) * 100 for p in pairs]
+    op_g  = [(p['cur_op']  - p['prev_op'])  / max(abs(p['prev_op']),  1) * 100 for p in pairs]
     return True, {
         'pairs':          pairs,
         'avg_rev_growth': round(float(np.mean(rev_g)), 1),
@@ -1373,23 +1319,32 @@ def _check_4q_yoy(ticker: str) -> tuple:
 
 def _calc_capm_residual(stock_df, market_df, period: int = 60) -> tuple:
     """
-    60일 일별 CAPM OLS 회귀 → 누적 잔차(%) + 베타
-    누적잔차 음수 = 시장 대비 이유 없는 언더퍼폼 = 비체계적 저평가
+    60일 CAPM OLS 회귀 → 누적 잔차(%) + 베타
+    v4.1 버그 수정: iloc[-period:] 슬라이싱 제거, 공통 인덱스 기반으로 변경
     """
     try:
-        if len(stock_df) < period or len(market_df) < period:
+        if len(stock_df) < 30 or len(market_df) < 30:
             return 0.0, 1.0
-        s = stock_df['Close'].pct_change().iloc[-period:].dropna()
-        m = market_df['Close'].pct_change().iloc[-period:].dropna()
+
+        s = stock_df['Close'].pct_change().dropna()
+        m = market_df['Close'].pct_change().dropna()
+
+        # 공통 날짜 기준으로 정렬 후 최근 period개
         common = s.index.intersection(m.index)
-        if len(common) < period * 0.7:
+        if len(common) < 30:
             return 0.0, 1.0
-        x, y = m.loc[common].values, s.loc[common].values
+
+        common_recent = common[-period:] if len(common) >= period else common
+        x = m.loc[common_recent].values
+        y = s.loc[common_recent].values
+
         xm, ym = x.mean(), y.mean()
         denom = float(np.sum((x - xm) ** 2))
-        if denom == 0: return 0.0, 1.0
-        beta  = float(np.sum((x - xm) * (y - ym)) / denom)
-        alpha = float(ym - beta * xm)
+        if denom == 0:
+            return 0.0, 1.0
+
+        beta      = float(np.sum((x - xm) * (y - ym)) / denom)
+        alpha     = float(ym - beta * xm)
         cum_resid = float(np.sum(y - (alpha + beta * x)) * 100)
         return cum_resid, beta
     except Exception:
@@ -1397,7 +1352,7 @@ def _calc_capm_residual(stock_df, market_df, period: int = 60) -> tuple:
 
 
 def run_value_scan():
-    """QUANT VALUE 메인 — TOP 2"""
+    """QUANT VALUE 메인 — 중소형 성장주 (v4.1)"""
     if not os.environ.get('DART_API_KEY', ''):
         print("  ⚠️  DART_API_KEY 없음 — VALUE 스캔 건너뜀")
         return []
@@ -1406,10 +1361,10 @@ def run_value_scan():
     start_date = get_start_date(today_str, 90)
 
     print("\n" + "═" * 60)
-    print(f"💎 QUANT VALUE 엔진 — TOP {VALUE_TOP_N}")
+    print(f"💎 QUANT VALUE 엔진 — TOP {VALUE_TOP_N} (중소형 성장주 v4.1)")
     print("═" * 60)
 
-    # ── 모집단 구성 ──────────────────────────────────────────
+    # ── 모집단: 중소형 구간 (1000억~1조) ────────────────────
     universe = []; market_map = {}; mktcap_map = {}
     try:
         for mkt in ["KOSPI", "KOSDAQ"]:
@@ -1419,9 +1374,13 @@ def run_value_scan():
             if not cap_col: continue
             df_lst = df_lst.dropna(subset=[cap_col]).copy()
             df_lst['_c'] = df_lst[cap_col].apply(
-                lambda x: int(x/1e8) if x > 1e6 else int(x))
-            df_lst = df_lst[df_lst['_c'] >= 1000].sort_values('_c', ascending=False)
-            for _, row in df_lst.head(VALUE_UNIVERSE_N).iterrows():
+                lambda x: int(x / 1e8) if x > 1e6 else int(x))
+            # v4.1: 시총 상위N 방식 → 구간 필터 방식
+            df_lst = df_lst[
+                (df_lst['_c'] >= VALUE_MKTCAP_MIN) &
+                (df_lst['_c'] <= VALUE_MKTCAP_MAX)
+            ]
+            for _, row in df_lst.iterrows():
                 t = str(row[cod_col]).zfill(6)
                 universe.append(t)
                 market_map[t] = mkt
@@ -1429,7 +1388,7 @@ def run_value_scan():
     except Exception as e:
         print(f"  ❌ 모집단 실패: {e}"); return []
 
-    print(f"  📊 모집단: {len(universe)}종목")
+    print(f"  📊 모집단: {len(universe)}종목 (시총 {VALUE_MKTCAP_MIN}억~{VALUE_MKTCAP_MAX}억)")
 
     # ── KOSPI 지수 (CAPM 기준) ───────────────────────────────
     mkt_df = None
@@ -1455,18 +1414,31 @@ def run_value_scan():
     except Exception as e:
         print(f"  ⚠️  PER/PBR 실패: {e}")
 
-    # ── 1차: 4분기 YoY+ ──────────────────────────────────────
-    print(f"\n🔍 1차: 4분기 YoY+ 필터...")
-    growth_ok = []
-    for i, t in enumerate(universe):
+    # ── 1차: 4분기 YoY+ 병렬화 ──────────────────────────────
+    print(f"\n🔍 1차: 4분기 YoY+ 필터 (병렬 8스레드)...")
+    growth_ok  = []
+    growth_lock = threading.Lock()
+
+    def _check_yoy_wrapper(t):
         ok, info = _check_4q_yoy(t)
-        if ok: growth_ok.append((t, info))
-        if (i+1) % 50 == 0:
-            print(f"  진행 {i+1}/{len(universe)} | 통과 {len(growth_ok)}")
+        return (t, info) if ok else None
+
+    with ThreadPoolExecutor(max_workers=8) as ex:
+        futs = {ex.submit(_check_yoy_wrapper, t): t for t in universe}
+        done = 0
+        for fut in as_completed(futs):
+            done += 1
+            res = fut.result()
+            if res:
+                with growth_lock:
+                    growth_ok.append(res)
+            if done % 50 == 0:
+                print(f"  진행 {done}/{len(universe)} | 통과 {len(growth_ok)}")
+
     print(f"  → {len(growth_ok)}종목")
     if not growth_ok: return []
 
-    # ── 시장별 PER/PBR 통계 (z-score 기준점) ─────────────────
+    # ── 시장별 PER/PBR 통계 ──────────────────────────────────
     mp = {'KOSPI': [], 'KOSDAQ': []}
     mb = {'KOSPI': [], 'KOSDAQ': []}
     for t in universe:
@@ -1478,19 +1450,22 @@ def run_value_scan():
     per_stat = {m: (float(np.median(v)), float(np.std(v)) or 1) for m, v in mp.items() if v}
     pbr_stat = {m: (float(np.median(v)), float(np.std(v)) or 1) for m, v in mb.items() if v}
 
-    # ── 2차: 채점 ────────────────────────────────────────────
-    print(f"\n🔍 2차: PER/PBR + CAPM 잔차 채점...")
-    cands = []
-    for t, ginfo in growth_ok:
+    # ── 2차: 채점 병렬화 ─────────────────────────────────────
+    print(f"\n🔍 2차: PER/PBR + CAPM 잔차 채점 (병렬 8스레드)...")
+    cands      = []
+    cands_lock = threading.Lock()
+
+    def _score_value_ticker(args):
+        t, ginfo = args
         try:
             per, pbr = per_pbr_map.get(t, (0, 0))
-            if per <= 0 or pbr <= 0: continue
+            if per <= 0 or pbr <= 0: return
 
             df = fdr.DataReader(t, start_date, today_str)
-            if len(df) < 60: continue
+            if len(df) < 60: return
 
             resid, beta = _calc_capm_residual(df, mkt_df)
-            if not (0.3 <= beta <= 2.0): continue
+            if not (0.3 <= beta <= 2.0): return
 
             m = market_map.get(t, 'KOSPI')
             pm, ps = per_stat.get(m, (20, 10))
@@ -1503,34 +1478,44 @@ def run_value_scan():
                 elif z <= 0:    return int(mx * 0.33)
                 return 0
 
-            per_s  = _z2score((per - pm) / ps, 30)
-            pbr_s  = _z2score((pbr - bm) / bs, 30)
-            res_s  = (25 if resid <= -20 else 20 if resid <= -10
-                      else 12 if resid <= -5 else 5 if resid <= 0 else 0)
-            avg_g  = (ginfo['avg_rev_growth'] + ginfo['avg_op_growth']) / 2
-            gr_s   = (15 if avg_g >= 30 else 12 if avg_g >= 20
-                      else 8 if avg_g >= 10 else 4 if avg_g > 0 else 0)
-            total  = per_s + pbr_s + res_s + gr_s
+            # v4.1 가중치: PER 20점, PBR 20점, CAPM 25점, 성장률 35점
+            per_s = _z2score((per - pm) / ps, 20)
+            pbr_s = _z2score((pbr - bm) / bs, 20)
+            res_s = (25 if resid <= -20 else 20 if resid <= -10
+                     else 12 if resid <= -5 else 5 if resid <= 0 else 0)
+            avg_g = (ginfo['avg_rev_growth'] + ginfo['avg_op_growth']) / 2
+            # v4.1 성장률 35점 구간
+            gr_s  = (35 if avg_g >= 50
+                     else 28 if avg_g >= 30
+                     else 20 if avg_g >= 20
+                     else 12 if avg_g >= 10
+                     else 5 if avg_g > 0 else 0)
+            total = per_s + pbr_s + res_s + gr_s
 
             name = t
             try:
-                nd = _fetch_naver_basic(t)
+                nd   = _fetch_naver_basic(t)
                 name = nd.get('stockName') or t
             except Exception: pass
 
-            cands.append({
-                't': t, 'name': name, 'mkt': m,
-                'mktcap': mktcap_map.get(t, 0),
-                'score': total,
-                'bd': {'PER': per_s, 'PBR': pbr_s, 'CAPM잔차': res_s, '성장률': gr_s},
-                'per': round(per,1), 'pbr': round(pbr,2),
-                'per_med': round(pm,1), 'pbr_med': round(bm,2),
-                'beta': round(beta,2), 'resid': round(resid,2),
-                'rev_g': ginfo['avg_rev_growth'], 'op_g': ginfo['avg_op_growth'],
-                'pairs': ginfo['pairs'],
-                'cur': int(df['Close'].iloc[-1]), 'df': df,
-            })
-        except Exception: continue
+            with cands_lock:
+                cands.append({
+                    't': t, 'name': name, 'mkt': m,
+                    'mktcap': mktcap_map.get(t, 0),
+                    'score': total,
+                    'bd': {'PER': per_s, 'PBR': pbr_s, 'CAPM잔차': res_s, '성장률': gr_s},
+                    'per': round(per, 1), 'pbr': round(pbr, 2),
+                    'per_med': round(pm, 1), 'pbr_med': round(bm, 2),
+                    'beta': round(beta, 2), 'resid': round(resid, 2),
+                    'rev_g': ginfo['avg_rev_growth'], 'op_g': ginfo['avg_op_growth'],
+                    'pairs': ginfo['pairs'],
+                    'cur': int(df['Close'].iloc[-1]), 'df': df,
+                })
+        except Exception:
+            pass
+
+    with ThreadPoolExecutor(max_workers=8) as ex:
+        list(ex.map(_score_value_ticker, growth_ok))
 
     cands.sort(key=lambda x: x['score'], reverse=True)
     top = cands[:VALUE_TOP_N]
@@ -1538,12 +1523,12 @@ def run_value_scan():
     print(f"\n💎 [VALUE TOP {VALUE_TOP_N}]")
     final = []
     for rank, c in enumerate(top, 1):
-        rt = get_realtime_price(c['t'])
-        cp = rt if rt else c['cur']
+        rt    = get_realtime_price(c['t'])
+        cp    = rt if rt else c['cur']
         trade = calc_trade_levels(c['df'], cp)
         print(f"  #{rank} {c['name']}({c['t']}) {c['score']}/100점 "
               f"PER {c['per']} PBR {c['pbr']} 잔차 {c['resid']:+.1f}%")
-        # 적정가 계산 (PER·PBR 기반 업종 중앙값 회귀)
+
         fair_per = round(cp * (c['per_med'] / c['per'])) if c['per'] > 0 else 0
         fair_pbr = round(cp * (c['pbr_med'] / c['pbr'])) if c['pbr'] > 0 else 0
         fair_avg = round((fair_per + fair_pbr) / 2) if fair_per and fair_pbr else 0
@@ -1566,14 +1551,13 @@ def run_value_scan():
 
 
 def build_value_message(picks):
-    """VALUE 전용 텔레그램 메시지"""
     if not picks: return ""
     today_str = get_market_date()
     label     = now_label()
 
     lines = [
         f"📈 <b>퀀트투자 TOP {len(picks)} — {ko_date(today_str)} {label}</b>",
-        "<i>4분기 실적개선 + 동종업 저평가 + 비체계적 mispricing</i>",
+        "<i>중소형 4분기 실적개선 + 동종업 저평가 + 비체계적 mispricing</i>",
         "═" * 24,
     ]
     for p in picks:
@@ -1581,10 +1565,10 @@ def build_value_message(picks):
         bd    = p['breakdown']
         trade = p.get('trade')
         rt    = "📡 실시간" if p['rt_price_used'] else "📋 전일종가"
-        bar   = '█' * int(p['total_score']/10) + '░' * (10 - int(p['total_score']/10))
+        bar   = '█' * int(p['total_score'] / 10) + '░' * (10 - int(p['total_score'] / 10))
 
         rf = ("🔥 <b>강한 비체계저평가</b>" if p['cum_resid_pct'] <= -10
-              else "🟢 <b>비체계저평가</b>"  if p['cum_resid_pct'] <= -5 else "")
+              else "🟢 <b>비체계저평가</b>"   if p['cum_resid_pct'] <= -5 else "")
 
         lines += [
             f"#{p['rank']} <b><a href='{chart}'>{p['name']}</a></b> ({p['ticker']}) [{p['market']}]",
@@ -1601,13 +1585,13 @@ def build_value_message(picks):
             f"    매출 avg +{p['avg_rev_growth']}% / 영업이익 avg +{p['avg_op_growth']}%",
         ]
         for pr in p['pairs'][:4]:
-            rv = (pr['cur_rev']-pr['prev_rev'])/max(abs(pr['prev_rev']),1)*100
-            op = (pr['cur_op'] -pr['prev_op']) /max(abs(pr['prev_op']), 1)*100
+            rv = (pr['cur_rev'] - pr['prev_rev']) / max(abs(pr['prev_rev']), 1) * 100
+            op = (pr['cur_op']  - pr['prev_op'])  / max(abs(pr['prev_op']),  1) * 100
             lines.append(f"      {pr['period']}: 매출 +{rv:.1f}% / 영업 +{op:.1f}%")
 
         lines += [
             f"",
-            f"  🎲 <b>비체계적 저평가</b> (CAPM 60일){('  '+rf) if rf else ''}",
+            f"  🎲 <b>비체계적 저평가</b> (CAPM 60일){('  ' + rf) if rf else ''}",
             f"    누적잔차 {p['cum_resid_pct']:+.1f}% | β {p['beta']} → {bd['CAPM잔차']}점",
         ]
         if trade:
@@ -1638,12 +1622,11 @@ if __name__ == "__main__":
     picks = run_kr_scan()
     send_telegram(build_telegram_message(picks))
 
-    # VALUE (TOP 2)
+    # VALUE (TOP 3)
     try:
         value_picks = run_value_scan()
         if value_picks:
             send_telegram(build_value_message(value_picks))
-            # stock_data.json에 value_picks 병합 저장
             if os.path.exists(DATA_FILE):
                 with open(DATA_FILE, 'r', encoding='utf-8') as f:
                     d = json.load(f)

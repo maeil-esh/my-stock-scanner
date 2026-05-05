@@ -5,21 +5,21 @@
             "name": "Groupon, Inc.",
             "code": "GRPN",
             "company_summary": "Groupon, Inc. operates a marketplace that connects consumers to merchants by offering goods and serv...",
-            "cur_price": 15.51,
-            "score_raw": 69,
-            "score_100": 69,
+            "cur_price": 15.08,
+            "score_raw": 64,
+            "score_100": 64,
             "squeeze_level": "⚡ HIGH",
             "score_detail": {
                 "공매도강도": 40,
-                "거래량급증": 5,
+                "거래량급증": 0,
                 "유통주희소": 14,
                 "커버소요일": 10
             },
             "meta": {
                 "float_m": 29.0,
                 "short_pct": 59.4,
-                "vol_spike": 1.02,
-                "rsi": 61.8,
+                "vol_spike": 0.62,
+                "rsi": 58.5,
                 "short_ratio": 9.1,
                 "short_str": "59.4%",
                 "float_str": "29.0M"
@@ -30,7 +30,7 @@
             "name": "Avis Budget Group, Inc.",
             "code": "CAR",
             "company_summary": "Avis Budget Group, Inc., together with its subsidiaries, provides car and truck rentals, car sharing...",
-            "cur_price": 168.29,
+            "cur_price": 160.1,
             "score_raw": 61,
             "score_100": 61,
             "squeeze_level": "⚡ HIGH",
@@ -43,8 +43,8 @@
             "meta": {
                 "float_m": 13.7,
                 "short_pct": 80.6,
-                "vol_spike": 0.35,
-                "rsi": 41.6,
+                "vol_spike": 0.24,
+                "rsi": 41.0,
                 "short_ratio": 2.8,
                 "short_str": "80.6%",
                 "float_str": "13.7M"
@@ -52,10 +52,35 @@
         },
         {
             "rank": 3,
+            "name": "Ocugen, Inc.",
+            "code": "OCGN",
+            "company_summary": "Ocugen, Inc., a biopharmaceutical company, focuses on discovering, developing, and commercializing n...",
+            "cur_price": 1.49,
+            "score_raw": 57,
+            "score_100": 57,
+            "squeeze_level": "⚡ HIGH",
+            "score_detail": {
+                "공매도강도": 17,
+                "거래량급증": 24,
+                "유통주희소": 5,
+                "커버소요일": 10
+            },
+            "meta": {
+                "float_m": 306.9,
+                "short_pct": 21.0,
+                "vol_spike": 4.99,
+                "rsi": 36.5,
+                "short_ratio": 7.4,
+                "short_str": "21.0%",
+                "float_str": "306.9M"
+            }
+        },
+        {
+            "rank": 4,
             "name": "Hertz Global Holdings, Inc",
             "code": "HTZ",
             "company_summary": "Hertz Global Holdings, Inc. operates as a vehicle rental company. It operates through two segments: ...",
-            "cur_price": 5.81,
+            "cur_price": 6.09,
             "score_raw": 53,
             "score_100": 53,
             "squeeze_level": "⚡ HIGH",
@@ -68,65 +93,40 @@
             "meta": {
                 "float_m": 127.4,
                 "short_pct": 44.9,
-                "vol_spike": 0.4,
-                "rsi": 49.1,
+                "vol_spike": 0.38,
+                "rsi": 52.2,
                 "short_ratio": 5.7,
                 "short_str": "44.9%",
                 "float_str": "127.4M"
             }
         },
         {
-            "rank": 4,
-            "name": "GameStop Corporation",
-            "code": "GME",
-            "company_summary": "GameStop Corp., a specialty retailer, provides games, collectibles, and entertainment products throu...",
-            "cur_price": 23.84,
-            "score_raw": 51,
-            "score_100": 51,
-            "squeeze_level": "⚡ HIGH",
-            "score_detail": {
-                "공매도강도": 10,
-                "거래량급증": 25,
-                "유통주희소": 5,
-                "커버소요일": 10
-            },
-            "meta": {
-                "float_m": 408.2,
-                "short_pct": 15.1,
-                "vol_spike": 5.03,
-                "rsi": 46.8,
-                "short_ratio": 9.8,
-                "short_str": "15.1%",
-                "float_str": "408.2M"
-            }
-        },
-        {
             "rank": 5,
-            "name": "Novavax, Inc.",
-            "code": "NVAX",
-            "company_summary": "Novavax, Inc., a biotechnology company, engages in the discovery, development, and commercialization...",
-            "cur_price": 8.03,
-            "score_raw": 47,
-            "score_100": 47,
+            "name": "Upstart Holdings, Inc.",
+            "code": "UPST",
+            "company_summary": "Upstart Holdings, Inc., together with its subsidiaries, operates a cloud-based artificial intelligen...",
+            "cur_price": 31.17,
+            "score_raw": 52,
+            "score_100": 52,
             "squeeze_level": "⚡ HIGH",
             "score_detail": {
-                "공매도강도": 26,
-                "거래량급증": 5,
-                "유통주희소": 5,
-                "커버소요일": 10
+                "공매도강도": 32,
+                "거래량급증": 7,
+                "유통주희소": 3,
+                "커버소요일": 9
             },
             "meta": {
-                "float_m": 140.2,
-                "short_pct": 28.5,
-                "vol_spike": 1.17,
-                "rsi": 41.2,
-                "short_ratio": 12.4,
-                "short_str": "28.5%",
-                "float_str": "140.2M"
+                "float_m": 80.3,
+                "short_pct": 33.4,
+                "vol_spike": 1.44,
+                "rsi": 50.7,
+                "short_ratio": 6.0,
+                "short_str": "33.4%",
+                "float_str": "80.3M"
             }
         }
     ],
     "total_candidates": 30,
     "total_screened": 30,
-    "base_date": "20260505"
+    "base_date": "20260506"
 }

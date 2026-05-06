@@ -3689,5 +3689,144 @@
                 }
             }
         ]
+    },
+    {
+        "date": "20260507",
+        "label": "🔔 장 시작 스캔",
+        "market_regime": "BROAD_BULL",
+        "strategy_used": [
+            "TREND"
+        ],
+        "picks": [
+            {
+                "rank": 1,
+                "name": "인텔리안테크",
+                "code": "189300",
+                "company_summary": "[KOSDAQ]",
+                "supply": "TREND",
+                "cur_price": 153600,
+                "score_100": 97,
+                "score": "★★★★☆ 97점",
+                "tags": "상대강도 / 추세회복 / 20일돌파",
+                "expected_return": "",
+                "score_detail": {
+                    "상대강도": 30,
+                    "추세회복": 25,
+                    "20일돌파": 20,
+                    "거래대금": 12,
+                    "과열제어": 10
+                },
+                "meta": {
+                    "rs": 40.9,
+                    "disp20": 16.7,
+                    "disp60": 22.8,
+                    "ma20_slope": 4.16,
+                    "vol_ratio": 1.81,
+                    "rsi": 65.8,
+                    "breakout20": true,
+                    "near60_high": true,
+                    "high60_gap": -2.8,
+                    "mktcap": 16492,
+                    "trade": {
+                        "entry": 153600,
+                        "stop_loss": 139478,
+                        "target_1": 181842,
+                        "target_2": 200671,
+                        "risk_pct": 9.2,
+                        "reward_pct": 18.4,
+                        "rr_ratio": 2.0,
+                        "atr": 9414.3
+                    },
+                    "rt_price_used": true,
+                    "trend_origin": true
+                }
+            },
+            {
+                "rank": 2,
+                "name": "헥토파이낸셜",
+                "code": "234340",
+                "company_summary": "[KOSDAQ]",
+                "supply": "TREND",
+                "cur_price": 36650,
+                "score_100": 97,
+                "score": "★★★★☆ 97점",
+                "tags": "상대강도 / 추세회복 / 20일돌파",
+                "expected_return": "",
+                "score_detail": {
+                    "상대강도": 30,
+                    "추세회복": 25,
+                    "20일돌파": 20,
+                    "거래대금": 12,
+                    "과열제어": 10
+                },
+                "meta": {
+                    "rs": 46.8,
+                    "disp20": 19.8,
+                    "disp60": 22.2,
+                    "ma20_slope": 6.81,
+                    "vol_ratio": 1.96,
+                    "rsi": 67.7,
+                    "breakout20": true,
+                    "near60_high": false,
+                    "high60_gap": 18.6,
+                    "mktcap": 5120,
+                    "trade": {
+                        "entry": 36650,
+                        "stop_loss": 32975,
+                        "target_1": 44000,
+                        "target_2": 48900,
+                        "risk_pct": 10.0,
+                        "reward_pct": 20.1,
+                        "rr_ratio": 2.0,
+                        "atr": 2450.0
+                    },
+                    "rt_price_used": true,
+                    "trend_origin": true
+                }
+            },
+            {
+                "rank": 3,
+                "name": "미래에셋증권",
+                "code": "006800",
+                "company_summary": "[KOSPI]",
+                "supply": "TREND",
+                "cur_price": 83800,
+                "score_100": 96,
+                "score": "★★★★☆ 96점",
+                "tags": "상대강도 / 추세회복 / 20일돌파",
+                "expected_return": "",
+                "score_detail": {
+                    "상대강도": 30,
+                    "추세회복": 25,
+                    "20일돌파": 20,
+                    "거래대금": 15,
+                    "과열제어": 6
+                },
+                "meta": {
+                    "rs": 55.5,
+                    "disp20": 21.6,
+                    "disp60": 28.0,
+                    "ma20_slope": 2.39,
+                    "vol_ratio": 5.25,
+                    "rsi": 70.1,
+                    "breakout20": true,
+                    "near60_high": true,
+                    "high60_gap": -8.9,
+                    "mktcap": 468917,
+                    "trade": {
+                        "entry": 83800,
+                        "stop_loss": 77414,
+                        "target_1": 96571,
+                        "target_2": 105085,
+                        "risk_pct": 7.6,
+                        "reward_pct": 15.2,
+                        "rr_ratio": 2.0,
+                        "atr": 4257.1
+                    },
+                    "rt_price_used": true,
+                    "trend_origin": true
+                }
+            }
+        ]
     }
 ]

@@ -1,7 +1,14 @@
 """
-engine_kr.py — 국장 바닥반등+거래량 스캐너 (PRO v4.1)
+engine_kr.py — 국장 장세전환형 스캐너 (REGIME ROUTER v5.0)
 실행: python engine_kr.py
 스케줄: 09:41 / 13:23 / 16:43 KST
+
+[v5.0 핵심]
+  ① 시장 국면을 먼저 판단: BROAD_BULL / CONCENTRATED_BULL / BOX / BEAR / UNKNOWN
+  ② 상승장: TREND 엔진 중심 — RS 양수, MA20 회복, 신고가/고점근접 종목
+  ③ 횡보장: VALUE 엔진 중심 — 실적개선+저평가 종목
+  ④ 하락장: DEFENSE 모드 — 매수 후보 전송 중단
+  ⑤ 기존 BASIC 바닥반등 엔진은 반등·관찰 후보용으로 재활용
 
 [변경 이력 v4.1] — QUANT VALUE 엔진 개선
   ① CAPM 잔차 버그 수정 (인덱스 불일치 → 전부 0.0% 문제)
@@ -40,6 +47,17 @@ TOP_N        = 3
 MAX_SCORE    = 220
 MKTCAP_MIN   = 1000
 MKTCAP_MAX   = 30000
+
+# v5.0: 마스터 라우터가 최종 저장을 담당하기 때문에
+# 기존 BASIC 엔진의 내부 저장은 기본적으로 끌 수 있게 한다.
+BASIC_PERSIST_ENABLED = True
+
+# TREND 엔진 설정 — 상승장/쏠림장용
+TREND_TOP_N          = 3
+TREND_MKTCAP_MIN     = 3000      # 억
+TREND_MKTCAP_MAX     = 500000    # 억
+TREND_MAX_UNIVERSE   = 550       # 런타임 보호용
+TREND_SCORE_MIN      = 60
 
 DART_BASE_URL = "https://opendart.fss.or.kr/api"
 
@@ -1090,30 +1108,33 @@ def run_kr_scan():
             }
         })
 
-    history_data = []
-    if os.path.exists(HISTORY_FILE):
-        with open(HISTORY_FILE, 'r', encoding='utf-8') as f:
-            try:
-                history_data = json.load(f)
-            except Exception:
-                history_data = []
-    history_data.append({
-        "date": today_str, "label": label,
-        "picks": final_picks
-    })
-    with open(HISTORY_FILE, 'w', encoding='utf-8') as f:
-        json.dump(history_data, f, ensure_ascii=False, indent=4, default=json_safe)
+    if BASIC_PERSIST_ENABLED:
+        history_data = []
+        if os.path.exists(HISTORY_FILE):
+            with open(HISTORY_FILE, 'r', encoding='utf-8') as f:
+                try:
+                    history_data = json.load(f)
+                except Exception:
+                    history_data = []
+        history_data.append({
+            "date": today_str, "label": label,
+            "picks": final_picks
+        })
+        with open(HISTORY_FILE, 'w', encoding='utf-8') as f:
+            json.dump(history_data, f, ensure_ascii=False, indent=4, default=json_safe)
 
-    final_output = {
-        "today_picks":       final_picks,
-        "scan_label":        label,
-        "total_candidates":  log['final'],
-        "total_screened":    log['total'],
-        "filter_log":        log,
-        "base_date":         today_str,
-    }
-    with open(DATA_FILE, 'w', encoding='utf-8') as f:
-        json.dump(final_output, f, ensure_ascii=False, indent=4, default=json_safe)
+        final_output = {
+            "today_picks":       final_picks,
+            "scan_label":        label,
+            "total_candidates":  log['final'],
+            "total_screened":    log['total'],
+            "filter_log":        log,
+            "base_date":         today_str,
+        }
+        with open(DATA_FILE, 'w', encoding='utf-8') as f:
+            json.dump(final_output, f, ensure_ascii=False, indent=4, default=json_safe)
+    else:
+        print("  ℹ️  BASIC 내부 저장 생략 — 마스터 라우터가 최종 저장")
 
     print(f"\n🏁 완료! TOP {len(final_picks)}종목")
     return final_picks
@@ -1644,30 +1665,672 @@ def build_value_message(picks):
     return "\n".join(lines)
 
 
+
+
 # ══════════════════════════════════════════════════════════════
-#  엔트리포인트
+#  ★ REGIME ROUTER v5.0 — 시장 국면 판단 + 자동 전략 전환
+# ══════════════════════════════════════════════════════════════
+
+REGIME_LABELS = {
+    "BROAD_BULL":        "전체 상승장",
+    "CONCENTRATED_BULL": "쏠림 상승장",
+    "BOX":               "횡보/중립장",
+    "BEAR":              "하락장",
+    "UNKNOWN":           "판단불가",
+}
+
+
+def _safe_float(value, default=0.0):
+    try:
+        if value is None:
+            return default
+        if value != value:  # NaN
+            return default
+        return float(value)
+    except Exception:
+        return default
+
+
+def _load_json_file(path: str, default):
+    if not os.path.exists(path):
+        return default
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception:
+        return default
+
+
+def _fetch_index_df(symbols: list[str], start: str, end: str):
+    for sym in symbols:
+        try:
+            df = fdr.DataReader(sym, start, end)
+            if df is not None and len(df) >= 60:
+                return df
+        except Exception:
+            continue
+    return None
+
+
+def _index_metrics(index_df) -> dict:
+    if index_df is None or index_df.empty or len(index_df) < 60:
+        return {
+            "state": "UNKNOWN", "close": 0.0, "ma20": 0.0, "ma60": 0.0,
+            "ret5": 0.0, "ret20": 0.0, "ma20_slope": 0.0,
+            "dist_ma20": 0.0, "dist_ma60": 0.0,
+        }
+
+    close = index_df['Close']
+    ma20  = close.rolling(20).mean()
+    ma60  = close.rolling(60).mean()
+    cur   = _safe_float(close.iloc[-1])
+    m20   = _safe_float(ma20.iloc[-1])
+    m60   = _safe_float(ma60.iloc[-1])
+    m20_5 = _safe_float(ma20.iloc[-5]) if len(ma20) >= 5 else m20
+
+    ret5  = (cur / _safe_float(close.iloc[-5], cur) - 1) * 100 if len(close) >= 5 else 0.0
+    ret20 = (cur / _safe_float(close.iloc[-20], cur) - 1) * 100 if len(close) >= 20 else 0.0
+    ma20_slope = (m20 / m20_5 - 1) * 100 if m20_5 > 0 else 0.0
+    dist_ma20  = (cur / m20 - 1) * 100 if m20 > 0 else 0.0
+    dist_ma60  = (cur / m60 - 1) * 100 if m60 > 0 else 0.0
+
+    if cur > m20 and m20 > m20_5 and cur > m60:
+        state = "BULL"
+    elif cur < m20 and m20 < m20_5:
+        state = "BEAR"
+    else:
+        state = "BOX"
+
+    return {
+        "state": state,
+        "close": round(cur, 2),
+        "ma20": round(m20, 2),
+        "ma60": round(m60, 2),
+        "ret5": round(ret5, 2),
+        "ret20": round(ret20, 2),
+        "ma20_slope": round(ma20_slope, 2),
+        "dist_ma20": round(dist_ma20, 2),
+        "dist_ma60": round(dist_ma60, 2),
+    }
+
+
+def detect_market_regime() -> dict:
+    """KOSPI/KOSDAQ을 분리 판단하고 최종 장세를 반환."""
+    today_str = get_market_date()
+    start     = get_start_date(today_str, 120)
+
+    kospi_df  = _fetch_index_df(['KS11', '^KS11', 'KOSPI'], start, today_str)
+    kosdaq_df = _fetch_index_df(['KQ11', '^KQ11', 'KOSDAQ'], start, today_str)
+
+    kospi  = _index_metrics(kospi_df)
+    kosdaq = _index_metrics(kosdaq_df)
+
+    k_state = kospi.get('state', 'UNKNOWN')
+    q_state = kosdaq.get('state', 'UNKNOWN')
+
+    if k_state == "UNKNOWN" or q_state == "UNKNOWN":
+        regime = "UNKNOWN"
+    elif k_state == "BULL" and q_state == "BULL":
+        regime = "BROAD_BULL"
+    elif k_state == "BULL" and q_state != "BULL":
+        regime = "CONCENTRATED_BULL"
+    elif k_state == "BEAR" and q_state == "BEAR":
+        regime = "BEAR"
+    else:
+        regime = "BOX"
+
+    return {
+        "regime": regime,
+        "regime_label": REGIME_LABELS.get(regime, regime),
+        "base_date": today_str,
+        "kospi": kospi,
+        "kosdaq": kosdaq,
+    }
+
+
+def _pick_market(p: dict) -> str:
+    return str(p.get('company_summary') or p.get('market') or '').upper()
+
+
+def _basic_pick_is_buyable(p: dict, min_rs: float = 0.0, allow_kosdaq: bool = True,
+                           min_score: int = 60, require_ma20_recover: bool = True) -> bool:
+    meta = p.get('meta', {})
+    rs   = _safe_float(meta.get('rs'), 0.0)
+    disp20 = _safe_float(meta.get('disp20'), 0.0)
+    score  = int(_safe_float(p.get('score_100'), 0))
+    market = _pick_market(p)
+
+    if score < min_score:
+        return False
+    if rs < min_rs:
+        return False
+    if require_ma20_recover and disp20 < 0:
+        return False
+    if not allow_kosdaq and 'KOSDAQ' in market:
+        return False
+    return True
+
+
+def filter_basic_buy_candidates(picks: list[dict], min_rs: float = 0.0,
+                                allow_kosdaq: bool = True,
+                                min_score: int = 60) -> list[dict]:
+    filtered = [p for p in picks if _basic_pick_is_buyable(
+        p, min_rs=min_rs, allow_kosdaq=allow_kosdaq, min_score=min_score)]
+    for i, p in enumerate(filtered, 1):
+        p['rank'] = i
+    return filtered
+
+
+def _normalize_value_for_history(p: dict) -> dict:
+    """VALUE pick을 backtest_kr.py가 읽을 수 있는 최소 구조로 변환."""
+    score = int(_safe_float(p.get('total_score'), 0))
+    stars = "★" * min(score // 20, 5) + "☆" * (5 - min(score // 20, 5))
+    return {
+        "rank": p.get('rank', 0),
+        "name": p.get('name', ''),
+        "code": p.get('ticker', ''),
+        "company_summary": f"[{p.get('market', '')}]",
+        "supply": "VALUE",
+        "cur_price": p.get('cur_price', 0),
+        "score_100": score,
+        "score": f"{stars} {score}점",
+        "tags": "VALUE / 실적개선 / 저평가",
+        "expected_return": "",
+        "score_detail": p.get('breakdown', {}),
+        "meta": {
+            "rs": 0,
+            "disp20": 0,
+            "trade": p.get('trade'),
+            "rt_price_used": p.get('rt_price_used', False),
+            "mktcap": p.get('mktcap', 0),
+            "value_origin": True,
+            "per": p.get('per'),
+            "pbr": p.get('pbr'),
+            "cum_resid_pct": p.get('cum_resid_pct'),
+            "avg_rev_growth": p.get('avg_rev_growth'),
+            "avg_op_growth": p.get('avg_op_growth'),
+        }
+    }
+
+
+def _normalize_trend_for_history(p: dict) -> dict:
+    return p
+
+
+def _history_ready_picks(picks: list[dict]) -> list[dict]:
+    converted = []
+    for p in picks:
+        if 'code' in p:
+            converted.append(_normalize_trend_for_history(p))
+        elif 'ticker' in p:
+            converted.append(_normalize_value_for_history(p))
+    for i, p in enumerate(converted, 1):
+        p['rank'] = i
+    return converted
+
+
+# ─────────────────────────────────────────────────────────────
+#  TREND 엔진 — 상승장/쏠림장용
+# ─────────────────────────────────────────────────────────────
+
+def _trend_score_stock(df, index_df) -> tuple[int, dict, dict] | None:
+    try:
+        if df is None or len(df) < 90 or index_df is None or len(index_df) < 60:
+            return None
+
+        close = df['Close']
+        volume = df['Volume']
+        cur = _safe_float(close.iloc[-1])
+        if cur <= 0:
+            return None
+
+        ma5  = close.rolling(5).mean()
+        ma20 = close.rolling(20).mean()
+        ma60 = close.rolling(60).mean()
+        vol20 = volume.rolling(20).mean()
+
+        ma5_v   = _safe_float(ma5.iloc[-1])
+        ma20_v  = _safe_float(ma20.iloc[-1])
+        ma20_5  = _safe_float(ma20.iloc[-5])
+        ma60_v  = _safe_float(ma60.iloc[-1])
+        vol20_v = _safe_float(vol20.iloc[-1])
+        vol_now = _safe_float(volume.iloc[-1])
+
+        if ma20_v <= 0 or ma60_v <= 0:
+            return None
+
+        rs = calc_relative_strength(df, index_df)
+        disp20 = (cur / ma20_v - 1) * 100
+        disp60 = (cur / ma60_v - 1) * 100
+        ma20_slope = (ma20_v / ma20_5 - 1) * 100 if ma20_5 > 0 else 0.0
+        vol_ratio = vol_now / (vol20_v + 1)
+        high20 = _safe_float(df['High'].iloc[-21:-1].max()) if len(df) >= 21 else _safe_float(df['High'].max())
+        high60 = _safe_float(df['High'].iloc[-61:-1].max()) if len(df) >= 61 else _safe_float(df['High'].max())
+        high60_gap = (high60 - cur) / high60 * 100 if high60 > 0 else 999.0
+        breakout20 = cur > high20 if high20 > 0 else False
+        near60_high = high60_gap <= 7.0
+        rsi = _safe_float(calc_rsi(close).iloc[-1], 50.0)
+
+        # 강제 탈락: 상승장용이므로 시장보다 약하거나 MA20 미회복이면 제외
+        if rs < 0:
+            return None
+        if cur < ma20_v:
+            return None
+        if ma20_slope < 0:
+            return None
+        if vol_ratio < 0.7:
+            return None
+        if rsi > 82:
+            return None
+
+        bd = {}
+        bd['상대강도'] = 30 if rs >= 20 else 24 if rs >= 12 else 18 if rs >= 6 else 12 if rs >= 0 else 0
+        bd['추세회복'] = 25 if (cur > ma5_v > ma20_v > ma60_v) else 20 if (cur > ma20_v > ma60_v) else 12
+        bd['20일돌파'] = 20 if breakout20 else 14 if near60_high else 8 if high60_gap <= 12 else 0
+        bd['거래대금'] = 15 if vol_ratio >= 2.0 else 12 if vol_ratio >= 1.5 else 8 if vol_ratio >= 1.0 else 4
+        bd['과열제어'] = 10 if 45 <= rsi <= 70 else 6 if 35 <= rsi < 45 or 70 < rsi <= 78 else 2
+
+        meta = {
+            "rs": round(float(rs), 1),
+            "disp20": round(float(disp20), 1),
+            "disp60": round(float(disp60), 1),
+            "ma20_slope": round(float(ma20_slope), 2),
+            "vol_ratio": round(float(vol_ratio), 2),
+            "rsi": round(float(rsi), 1),
+            "breakout20": breakout20,
+            "near60_high": near60_high,
+            "high60_gap": round(float(high60_gap), 1),
+        }
+        return int(sum(bd.values())), bd, meta
+    except Exception:
+        return None
+
+
+def run_trend_scan(allow_kosdaq: bool = True, top_n: int = TREND_TOP_N) -> list[dict]:
+    """상승장/쏠림장용 주도주 스캐너."""
+    today_str = get_market_date()
+    start     = get_start_date(today_str, 120)
+
+    print("\n" + "═" * 60)
+    print(f"🚀 TREND 엔진 — TOP {top_n} | allow_kosdaq={allow_kosdaq}")
+    print("═" * 60)
+
+    kospi_df  = _fetch_index_df(['KS11', '^KS11', 'KOSPI'], start, today_str)
+    kosdaq_df = _fetch_index_df(['KQ11', '^KQ11', 'KOSDAQ'], start, today_str)
+
+    universe = []
+    market_map = {}
+    name_map = {}
+    mktcap_map = {}
+
+    try:
+        for mkt in ["KOSPI", "KOSDAQ"]:
+            if mkt == "KOSDAQ" and not allow_kosdaq:
+                continue
+            df_lst = fdr.StockListing(mkt)
+            cap_col = _find_cap_col(df_lst)
+            code_col = 'Code' if 'Code' in df_lst.columns else df_lst.columns[0]
+            name_col = next((c for c in ['Name', 'name'] if c in df_lst.columns), None)
+            if not cap_col:
+                continue
+            df_lst = df_lst.dropna(subset=[cap_col]).copy()
+            df_lst['_cap_억'] = df_lst[cap_col].apply(lambda x: int(x / 1e8) if x > 1e6 else int(x))
+            df_lst = df_lst[(df_lst['_cap_억'] >= TREND_MKTCAP_MIN) & (df_lst['_cap_억'] <= TREND_MKTCAP_MAX)]
+            df_lst = df_lst.sort_values('_cap_억', ascending=False).head(TREND_MAX_UNIVERSE)
+            for _, row in df_lst.iterrows():
+                t = str(row[code_col]).zfill(6)
+                universe.append(t)
+                market_map[t] = mkt
+                name_map[t] = str(row[name_col]) if name_col else t
+                mktcap_map[t] = int(row['_cap_억'])
+    except Exception as e:
+        print(f"  ❌ TREND 모집단 실패: {e}")
+        return []
+
+    print(f"  📊 TREND 모집단: {len(universe)}종목")
+    if not universe:
+        return []
+
+    cands = []
+    lock = threading.Lock()
+
+    def _scan(ticker):
+        try:
+            mkt = market_map.get(ticker, 'KOSPI')
+            idx_df = kosdaq_df if mkt == 'KOSDAQ' else kospi_df
+            df = fdr.DataReader(ticker, start, today_str)
+            if df is None or len(df) < 90:
+                return
+            cur = _safe_float(df['Close'].iloc[-1])
+            if cur < 1000:
+                return
+            scored = _trend_score_stock(df, idx_df)
+            if not scored:
+                return
+            score, bd, meta = scored
+            if score < TREND_SCORE_MIN:
+                return
+            with lock:
+                cands.append((score, ticker, bd, meta, df))
+        except Exception:
+            return
+
+    with ThreadPoolExecutor(max_workers=10) as ex:
+        futs = [ex.submit(_scan, t) for t in universe]
+        done = 0
+        for _ in as_completed(futs):
+            done += 1
+            if done % 150 == 0:
+                print(f"  진행 {done}/{len(universe)} | TREND 후보 {len(cands)}")
+
+    cands.sort(key=lambda x: x[0], reverse=True)
+    top = cands[:top_n]
+
+    final = []
+    for rank, (score, ticker, bd, meta, df) in enumerate(top, 1):
+        rt = get_realtime_price(ticker)
+        cp = rt if rt else int(_safe_float(df['Close'].iloc[-1]))
+        trade = calc_trade_levels(df, cp)
+        mkt = market_map.get(ticker, '')
+        name = name_map.get(ticker, ticker)
+        stars = "★" * min(score // 20, 5) + "☆" * (5 - min(score // 20, 5))
+        tags = " / ".join([k for k, v in sorted(bd.items(), key=lambda x: x[1], reverse=True)[:3] if v > 0])
+        final.append({
+            "rank": rank,
+            "name": name,
+            "code": ticker,
+            "company_summary": f"[{mkt}]" if mkt else "",
+            "supply": "TREND",
+            "cur_price": cp,
+            "score_100": int(score),
+            "score": f"{stars} {int(score)}점",
+            "tags": tags,
+            "expected_return": "",
+            "score_detail": bd,
+            "meta": {
+                **meta,
+                "mktcap": mktcap_map.get(ticker, 0),
+                "trade": trade,
+                "rt_price_used": rt is not None,
+                "trend_origin": True,
+            }
+        })
+        print(f"  #{rank} {name}({ticker}) {score}점 | RS {meta.get('rs', 0):+}% | MA20 {meta.get('disp20', 0):+}%")
+
+    print(f"\n🏁 TREND 완료! TOP {len(final)}종목")
+    return final
+
+
+def build_trend_message(picks: list[dict], regime_info: dict | None = None) -> str:
+    today_str = get_market_date()
+    label = now_label()
+    if not picks:
+        return f"🚀 <b>TREND 엔진 — {ko_date(today_str)} {label}</b>\n━" + "━" * 23 + "\n⚠️ 상승장 조건을 통과한 주도주 없음"
+
+    lines = [
+        f"🚀 <b>상승장 TREND TOP {len(picks)} — {ko_date(today_str)} {label}</b>",
+        "<i>RS 양수 + MA20 회복 + 고점근접/돌파 중심</i>",
+        "═" * 24,
+    ]
+    for p in picks:
+        chart = f"https://m.stock.naver.com/domestic/stock/{p['code']}/total"
+        meta = p.get('meta', {})
+        trade = meta.get('trade')
+        score = int(p.get('score_100', 0))
+        bar = '█' * int(score / 10) + '░' * (10 - int(score / 10))
+        lines += [
+            f"#{p['rank']} <b><a href='{chart}'>{p['name']}</a></b> ({p['code']}) {p.get('company_summary', '')}",
+            f"  <code>{bar}</code> <b>{score}점</b> {p.get('score', '').split(' ')[0] if p.get('score') else ''}",
+            f"  💰 현재가: {p.get('cur_price', 0):,}원 {'📡 실시간' if meta.get('rt_price_used') else '📋 전일종가'}",
+            f"  📊 RS {meta.get('rs', 0):+}% | MA20 {meta.get('disp20', 0):+}% | MA60 {meta.get('disp60', 0):+}%",
+            f"  🔥 거래량 {meta.get('vol_ratio', 0)}배 | RSI {meta.get('rsi', 0)} | 60일고점 이격 {meta.get('high60_gap', 0)}%",
+            f"  🏷 {p.get('tags', '')}",
+        ]
+        if trade:
+            lines += [
+                f"  🎯 진입 {trade['entry']:,}원 / 손절 {trade['stop_loss']:,}원 (-{trade['risk_pct']}%) / 1차 {trade['target_1']:,}원 (+{trade['reward_pct']}%)",
+            ]
+        lines.append("")
+    lines.append("═" * 24)
+    lines.append("💡 <i>TREND: 약한 종목을 싸게 사는 장이 아니라 강한 종목을 추적하는 장</i>")
+    return "\n".join(lines)
+
+
+def build_regime_header(regime_info: dict) -> str:
+    r = regime_info.get('regime', 'UNKNOWN')
+    label = regime_info.get('regime_label', r)
+    k = regime_info.get('kospi', {})
+    q = regime_info.get('kosdaq', {})
+    today_str = regime_info.get('base_date') or get_market_date()
+    lines = [
+        f"🧭 <b>장세 판단 — {ko_date(today_str)} {now_label()}</b>",
+        "━" * 24,
+        f"판단: <b>{label}</b> ({r})",
+        f"KOSPI  {k.get('state', 'NA')} | MA20 {k.get('dist_ma20', 0):+}% | 20일 {k.get('ret20', 0):+}% | MA20기울기 {k.get('ma20_slope', 0):+}%",
+        f"KOSDAQ {q.get('state', 'NA')} | MA20 {q.get('dist_ma20', 0):+}% | 20일 {q.get('ret20', 0):+}% | MA20기울기 {q.get('ma20_slope', 0):+}%",
+    ]
+    return "\n".join(lines)
+
+
+def build_defense_message(regime_info: dict, watch_picks: list[dict] | None = None) -> str:
+    lines = [
+        build_regime_header(regime_info),
+        "",
+        "⛔ <b>DEFENSE 모드</b>",
+        "오늘은 자동 매수 후보를 전송하지 않습니다.",
+        "시장지수 하락 또는 MA20 하락 구간에서는 점수가 높은 낙폭주도 추가 하락할 수 있습니다.",
+    ]
+    if watch_picks:
+        lines += ["", "👀 <b>관찰 후보</b> — 매수 아님"]
+        for p in watch_picks[:3]:
+            meta = p.get('meta', {})
+            lines.append(f"  - {p.get('name')}({p.get('code')}) | {p.get('score_100')}점 | RS {meta.get('rs', 0):+}% | MA20 {meta.get('disp20', 0):+}%")
+    lines += ["", "💡 <i>현금 보유도 전략입니다. 시장 ON 조건 확인 후 재가동합니다.</i>"]
+    return "\n".join(lines)
+
+
+def build_master_message(result: dict) -> str:
+    regime_info = result.get('regime_info', {})
+    regime = regime_info.get('regime', 'UNKNOWN')
+    buy_picks = result.get('buy_picks', [])
+    watch_picks = result.get('watch_picks', [])
+    value_picks = result.get('value_picks', [])
+    trend_picks = result.get('trend_picks', [])
+    notes = result.get('notes', [])
+
+    lines = [build_regime_header(regime_info), ""]
+    if notes:
+        lines.append("📌 <b>전략 판단</b>")
+        for n in notes:
+            lines.append(f"  - {n}")
+        lines.append("")
+
+    if regime == "BEAR":
+        return build_defense_message(regime_info, watch_picks)
+
+    if not buy_picks:
+        lines += [
+            "⚠️ <b>오늘 매수 후보 없음</b>",
+            "조건에 맞는 종목만 전송하도록 제한했습니다.",
+        ]
+    else:
+        lines += [
+            f"✅ <b>매수 후보 {len(buy_picks)}종목</b>",
+            "━" * 24,
+        ]
+        # TREND 형식과 VALUE 형식이 섞일 수 있어 간단 요약형으로 통합
+        for p in buy_picks:
+            if 'code' in p:
+                chart = f"https://m.stock.naver.com/domestic/stock/{p['code']}/total"
+                meta = p.get('meta', {})
+                lines.append(
+                    f"#{p.get('rank')} <b><a href='{chart}'>{p.get('name')}</a></b> ({p.get('code')}) "
+                    f"{p.get('company_summary', '')} | {p.get('score_100')}점 | RS {meta.get('rs', 0):+}% | MA20 {meta.get('disp20', 0):+}%"
+                )
+            elif 'ticker' in p:
+                chart = f"https://m.stock.naver.com/domestic/stock/{p['ticker']}/total"
+                lines.append(
+                    f"#{p.get('rank')} <b><a href='{chart}'>{p.get('name')}</a></b> ({p.get('ticker')}) "
+                    f"[{p.get('market')}] | VALUE {p.get('total_score')}/100점 | PER {p.get('per')} | PBR {p.get('pbr')}"
+                )
+        lines.append("")
+
+    if watch_picks:
+        lines += ["👀 <b>관찰 후보</b> — 매수 조건 미충족", "━" * 24]
+        for p in watch_picks[:3]:
+            meta = p.get('meta', {})
+            lines.append(
+                f"- {p.get('name')}({p.get('code')}) | {p.get('score_100')}점 | RS {meta.get('rs', 0):+}% | MA20 {meta.get('disp20', 0):+}%"
+            )
+        lines.append("")
+
+    if trend_picks:
+        lines += ["", build_trend_message(trend_picks, regime_info)]
+    elif value_picks:
+        msg = build_value_message(value_picks)
+        if msg:
+            lines += ["", msg]
+
+    lines += ["", "💡 <i>v5.0: 장세가 허락할 때만 매수 후보를 전송합니다.</i>"]
+    return "\n".join(lines)
+
+
+def save_master_result(result: dict):
+    today_str = get_market_date()
+    label = now_label()
+    buy_picks = result.get('buy_picks', [])
+    watch_picks = result.get('watch_picks', [])
+    trend_picks = result.get('trend_picks', [])
+    value_picks = result.get('value_picks', [])
+    regime_info = result.get('regime_info', {})
+
+    history_picks = _history_ready_picks(buy_picks)
+
+    final_output = {
+        "today_picks": history_picks,
+        "buy_picks": buy_picks,
+        "watch_picks": watch_picks,
+        "trend_picks": trend_picks,
+        "value_picks": value_picks,
+        "market_regime": regime_info.get('regime', 'UNKNOWN'),
+        "market_regime_label": regime_info.get('regime_label', ''),
+        "regime_info": regime_info,
+        "strategy_used": result.get('strategy_used', []),
+        "notes": result.get('notes', []),
+        "scan_label": label,
+        "total_candidates": len(buy_picks),
+        "total_screened": result.get('total_screened', 0),
+        "filter_log": result.get('filter_log', {}),
+        "base_date": today_str,
+    }
+    with open(DATA_FILE, 'w', encoding='utf-8') as f:
+        json.dump(final_output, f, ensure_ascii=False, indent=4, default=json_safe)
+    print(f"✅ {DATA_FILE} 저장 완료")
+
+    # history는 실제 매수 후보가 있을 때만 추가한다. 관찰 후보는 백테스트 대상에서 제외.
+    if history_picks:
+        history_data = _load_json_file(HISTORY_FILE, [])
+        history_data.append({
+            "date": today_str,
+            "label": label,
+            "market_regime": regime_info.get('regime', 'UNKNOWN'),
+            "strategy_used": result.get('strategy_used', []),
+            "picks": history_picks,
+        })
+        with open(HISTORY_FILE, 'w', encoding='utf-8') as f:
+            json.dump(history_data, f, ensure_ascii=False, indent=4, default=json_safe)
+        print(f"✅ {HISTORY_FILE} 업데이트 완료 ({len(history_picks)}종목)")
+    else:
+        print("ℹ️ 매수 후보 없음 — history.json 추가 생략")
+
+
+def run_master_kr_engine() -> dict:
+    """장세 판단 후 TREND/VALUE/BASIC/DEFENSE 중 필요한 엔진만 실행."""
+    global BASIC_PERSIST_ENABLED
+    BASIC_PERSIST_ENABLED = False
+
+    regime_info = detect_market_regime()
+    regime = regime_info.get('regime', 'UNKNOWN')
+    print("\n" + build_regime_header(regime_info).replace('<b>', '').replace('</b>', ''))
+
+    result = {
+        "regime_info": regime_info,
+        "strategy_used": [],
+        "buy_picks": [],
+        "watch_picks": [],
+        "trend_picks": [],
+        "value_picks": [],
+        "notes": [],
+    }
+
+    try:
+        if regime == "BROAD_BULL":
+            result["strategy_used"] = ["TREND"]
+            result["notes"].append("전체 상승장: 저점매수보다 주도주 추세 추종을 우선합니다.")
+            trend_picks = run_trend_scan(allow_kosdaq=True, top_n=TREND_TOP_N)
+            result["trend_picks"] = trend_picks
+            result["buy_picks"] = trend_picks
+
+        elif regime == "CONCENTRATED_BULL":
+            result["strategy_used"] = ["TREND_KOSPI_ONLY"]
+            result["notes"].append("쏠림 상승장: KOSDAQ 중소형 바닥주는 매수 후보에서 제외합니다.")
+            trend_picks = run_trend_scan(allow_kosdaq=False, top_n=TREND_TOP_N)
+            result["trend_picks"] = trend_picks
+            result["buy_picks"] = trend_picks
+
+        elif regime == "BOX":
+            result["strategy_used"] = ["VALUE", "BASIC_FILTERED"]
+            result["notes"].append("횡보/중립장: 실적개선 VALUE를 우선하고 BASIC은 RS·MA20 필터를 통과한 종목만 허용합니다.")
+
+            value_picks = []
+            try:
+                value_picks = run_value_scan()
+            except Exception as e:
+                import traceback
+                print(f"\n❌ VALUE 엔진 예외: {e}")
+                traceback.print_exc()
+            result["value_picks"] = value_picks
+
+            # VALUE가 있으면 우선 매수 후보로 사용. 없으면 BASIC 필터 후보 사용.
+            if value_picks:
+                result["buy_picks"] = value_picks
+            else:
+                basic_picks = run_kr_scan()
+                result["watch_picks"] = basic_picks
+                result["buy_picks"] = filter_basic_buy_candidates(basic_picks, min_rs=0, allow_kosdaq=True, min_score=65)
+
+        elif regime == "BEAR":
+            result["strategy_used"] = ["DEFENSE"]
+            result["notes"].append("하락장: 자동 매수 후보 전송을 중단합니다.")
+            result["buy_picks"] = []
+            result["watch_picks"] = []
+
+        else:
+            result["strategy_used"] = ["WATCH"]
+            result["notes"].append("시장 판단 불가: 자동 추천을 중단합니다.")
+            result["buy_picks"] = []
+            result["watch_picks"] = []
+
+    finally:
+        BASIC_PERSIST_ENABLED = True
+
+    return result
+
+
+# ══════════════════════════════════════════════════════════════
+#  엔트리포인트 — v5.0 마스터 라우터
 # ══════════════════════════════════════════════════════════════
 
 if __name__ == "__main__":
     send_telegram(fetch_macro_summary())
     send_telegram(build_news_briefing())
 
-    # BASIC (TOP 3)
-    picks = run_kr_scan()
-    send_telegram(build_telegram_message(picks))
-
-    # VALUE (TOP 3)
     try:
-        value_picks = run_value_scan()
-        if value_picks:
-            send_telegram(build_value_message(value_picks))
-            if os.path.exists(DATA_FILE):
-                with open(DATA_FILE, 'r', encoding='utf-8') as f:
-                    d = json.load(f)
-                d['value_picks'] = value_picks
-                with open(DATA_FILE, 'w', encoding='utf-8') as f:
-                    json.dump(d, f, ensure_ascii=False, indent=4, default=json_safe)
+        master_result = run_master_kr_engine()
+        send_telegram(build_master_message(master_result))
+        save_master_result(master_result)
     except Exception as e:
         import traceback
-        print(f"\n❌ VALUE 엔진 예외: {e}")
+        print(f"\n❌ MASTER 엔진 예외: {e}")
         traceback.print_exc()
+        send_telegram(f"❌ <b>KR MASTER 엔진 오류</b>\n{e}")

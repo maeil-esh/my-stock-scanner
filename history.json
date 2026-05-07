@@ -3967,5 +3967,144 @@
                 }
             }
         ]
+    },
+    {
+        "date": "20260507",
+        "label": "🏁 장 마감 스캔",
+        "market_regime": "BROAD_BULL",
+        "strategy_used": [
+            "TREND"
+        ],
+        "picks": [
+            {
+                "rank": 1,
+                "name": "오이솔루션",
+                "code": "138080",
+                "company_summary": "[KOSDAQ]",
+                "supply": "TREND",
+                "cur_price": 54000,
+                "score_100": 100,
+                "score": "★★★★★ 100점",
+                "tags": "상대강도 / 추세회복 / 20일돌파",
+                "expected_return": "",
+                "score_detail": {
+                    "상대강도": 30,
+                    "추세회복": 25,
+                    "20일돌파": 20,
+                    "거래대금": 15,
+                    "과열제어": 10
+                },
+                "meta": {
+                    "rs": 221.4,
+                    "disp20": 24.8,
+                    "disp60": 64.2,
+                    "ma20_slope": 1.63,
+                    "vol_ratio": 4.89,
+                    "rsi": 69.3,
+                    "breakout20": true,
+                    "near60_high": true,
+                    "high60_gap": -6.3,
+                    "mktcap": 6683,
+                    "trade": {
+                        "entry": 54000,
+                        "stop_loss": 46617,
+                        "target_1": 68764,
+                        "target_2": 78607,
+                        "risk_pct": 13.7,
+                        "reward_pct": 27.3,
+                        "rr_ratio": 2.0,
+                        "atr": 4921.4
+                    },
+                    "rt_price_used": true,
+                    "trend_origin": true
+                }
+            },
+            {
+                "rank": 2,
+                "name": "원익IPS",
+                "code": "240810",
+                "company_summary": "[KOSDAQ]",
+                "supply": "TREND",
+                "cur_price": 132900,
+                "score_100": 97,
+                "score": "★★★★☆ 97점",
+                "tags": "상대강도 / 추세회복 / 20일돌파",
+                "expected_return": "",
+                "score_detail": {
+                    "상대강도": 30,
+                    "추세회복": 25,
+                    "20일돌파": 20,
+                    "거래대금": 12,
+                    "과열제어": 10
+                },
+                "meta": {
+                    "rs": 21.3,
+                    "disp20": 9.4,
+                    "disp60": 11.1,
+                    "ma20_slope": 2.21,
+                    "vol_ratio": 1.65,
+                    "rsi": 61.7,
+                    "breakout20": true,
+                    "near60_high": false,
+                    "high60_gap": 7.1,
+                    "mktcap": 65232,
+                    "trade": {
+                        "entry": 132900,
+                        "stop_loss": 124339,
+                        "target_1": 150021,
+                        "target_2": 161435,
+                        "risk_pct": 6.4,
+                        "reward_pct": 12.9,
+                        "rr_ratio": 2.0,
+                        "atr": 5707.1
+                    },
+                    "rt_price_used": true,
+                    "trend_origin": true
+                }
+            },
+            {
+                "rank": 3,
+                "name": "삼성E&A",
+                "code": "028050",
+                "company_summary": "[KOSPI]",
+                "supply": "TREND",
+                "cur_price": 64400,
+                "score_100": 96,
+                "score": "★★★★☆ 96점",
+                "tags": "상대강도 / 추세회복 / 20일돌파",
+                "expected_return": "",
+                "score_detail": {
+                    "상대강도": 30,
+                    "추세회복": 25,
+                    "20일돌파": 20,
+                    "거래대금": 15,
+                    "과열제어": 6
+                },
+                "meta": {
+                    "rs": 57.8,
+                    "disp20": 22.5,
+                    "disp60": 58.3,
+                    "ma20_slope": 5.67,
+                    "vol_ratio": 3.23,
+                    "rsi": 74.6,
+                    "breakout20": true,
+                    "near60_high": true,
+                    "high60_gap": -11.4,
+                    "mktcap": 126224,
+                    "trade": {
+                        "entry": 64400,
+                        "stop_loss": 58726,
+                        "target_1": 75746,
+                        "target_2": 83310,
+                        "risk_pct": 8.8,
+                        "reward_pct": 17.6,
+                        "rr_ratio": 2.0,
+                        "atr": 3782.1
+                    },
+                    "rt_price_used": true,
+                    "trend_origin": true
+                }
+            }
+        ]
     }
 ]

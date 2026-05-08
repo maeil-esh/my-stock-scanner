@@ -4384,5 +4384,144 @@
                 }
             }
         ]
+    },
+    {
+        "date": "20260508",
+        "label": "🏁 장 마감 스캔",
+        "market_regime": "BROAD_BULL",
+        "strategy_used": [
+            "TREND"
+        ],
+        "picks": [
+            {
+                "rank": 1,
+                "name": "한솔테크닉스",
+                "code": "004710",
+                "company_summary": "[KOSPI]",
+                "supply": "TREND",
+                "cur_price": 10840,
+                "score_100": 96,
+                "score": "★★★★☆ 96점",
+                "tags": "상대강도 / 추세회복 / 20일돌파",
+                "expected_return": "",
+                "score_detail": {
+                    "상대강도": 30,
+                    "추세회복": 25,
+                    "20일돌파": 20,
+                    "거래대금": 15,
+                    "과열제어": 6
+                },
+                "meta": {
+                    "rs": 39.6,
+                    "disp20": 41.3,
+                    "disp60": 76.6,
+                    "ma20_slope": 12.81,
+                    "vol_ratio": 2.31,
+                    "rsi": 77.2,
+                    "breakout20": true,
+                    "near60_high": true,
+                    "high60_gap": -15.8,
+                    "mktcap": 3404,
+                    "trade": {
+                        "entry": 10840,
+                        "stop_loss": 9463,
+                        "target_1": 13593,
+                        "target_2": 15429,
+                        "risk_pct": 12.7,
+                        "reward_pct": 25.4,
+                        "rr_ratio": 2.0,
+                        "atr": 917.9
+                    },
+                    "rt_price_used": true,
+                    "trend_origin": true
+                }
+            },
+            {
+                "rank": 2,
+                "name": "에이치엠넥스",
+                "code": "036170",
+                "company_summary": "[KOSDAQ]",
+                "supply": "TREND",
+                "cur_price": 8560,
+                "score_100": 96,
+                "score": "★★★★☆ 96점",
+                "tags": "상대강도 / 추세회복 / 20일돌파",
+                "expected_return": "",
+                "score_detail": {
+                    "상대강도": 30,
+                    "추세회복": 25,
+                    "20일돌파": 20,
+                    "거래대금": 15,
+                    "과열제어": 6
+                },
+                "meta": {
+                    "rs": 442.7,
+                    "disp20": 21.4,
+                    "disp60": 74.4,
+                    "ma20_slope": 12.75,
+                    "vol_ratio": 2.16,
+                    "rsi": 70.5,
+                    "breakout20": true,
+                    "near60_high": true,
+                    "high60_gap": -2.8,
+                    "mktcap": 5142,
+                    "trade": {
+                        "entry": 8560,
+                        "stop_loss": 7250,
+                        "target_1": 11178,
+                        "target_2": 12924,
+                        "risk_pct": 15.3,
+                        "reward_pct": 30.6,
+                        "rr_ratio": 2.0,
+                        "atr": 872.9
+                    },
+                    "rt_price_used": true,
+                    "trend_origin": true
+                }
+            },
+            {
+                "rank": 3,
+                "name": "AP시스템",
+                "code": "265520",
+                "company_summary": "[KOSDAQ]",
+                "supply": "TREND",
+                "cur_price": 29700,
+                "score_100": 96,
+                "score": "★★★★☆ 96점",
+                "tags": "상대강도 / 추세회복 / 20일돌파",
+                "expected_return": "",
+                "score_detail": {
+                    "상대강도": 30,
+                    "추세회복": 25,
+                    "20일돌파": 20,
+                    "거래대금": 15,
+                    "과열제어": 6
+                },
+                "meta": {
+                    "rs": 35.7,
+                    "disp20": 24.4,
+                    "disp60": 32.5,
+                    "ma20_slope": 6.62,
+                    "vol_ratio": 4.94,
+                    "rsi": 77.0,
+                    "breakout20": true,
+                    "near60_high": true,
+                    "high60_gap": -4.0,
+                    "mktcap": 4545,
+                    "trade": {
+                        "entry": 29700,
+                        "stop_loss": 27000,
+                        "target_1": 35100,
+                        "target_2": 38700,
+                        "risk_pct": 9.1,
+                        "reward_pct": 18.2,
+                        "rr_ratio": 2.0,
+                        "atr": 1800.0
+                    },
+                    "rt_price_used": true,
+                    "trend_origin": true
+                }
+            }
+        ]
     }
 ]

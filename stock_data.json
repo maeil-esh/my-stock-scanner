@@ -429,7 +429,7 @@
     "notes": [
         "전체 상승장: 저점매수보다 주도주 추세 추종을 우선합니다."
     ],
-    "scan_label": "🏁 장 마감 스캔",
+    "scan_label": "🌙 미장 스캔",
     "total_candidates": 3,
     "total_screened": 0,
     "filter_log": {},

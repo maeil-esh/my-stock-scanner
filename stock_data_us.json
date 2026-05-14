@@ -1,164 +1,30 @@
 {
-    "today_picks": [
-        {
-            "rank": 1,
-            "name": "Novavax, Inc.",
-            "code": "NVAX",
-            "company_summary": "Novavax, Inc., a biotechnology company, engages in the discovery, development, and commercialization...",
-            "cur_price": 9.23,
-            "score_raw": 48,
-            "score_100": 48,
-            "squeeze_level": "📈 MEDIUM",
-            "score_detail": {
-                "공매도강도": 28,
-                "거래량급증": 5,
-                "유통주희소": 5,
-                "커버소요일": 10
-            },
-            "meta": {
-                "float_m": 141.5,
-                "short_pct": 30.3,
-                "vol_spike": 1.02,
-                "rsi": 55.7,
-                "short_ratio": 15.6,
-                "short_str": "30.3%",
-                "float_str": "141.5M",
-                "setup_pass": true,
-                "price_confirm": true,
-                "buy_candidate": true,
-                "above_ma20": true,
-                "above_ma50": true,
-                "ma20_up": true,
-                "breakout20": false,
-                "dist_ma20": 6.97
-            }
-        },
-        {
-            "rank": 2,
-            "name": "Microvision, Inc.",
-            "code": "MVIS",
-            "company_summary": "MicroVision, Inc. develops and commercializes lidar sensors and perception solutions in the United S...",
-            "cur_price": 0.76,
-            "score_raw": 46,
-            "score_100": 46,
-            "squeeze_level": "📈 MEDIUM",
-            "score_detail": {
-                "공매도강도": 18,
-                "거래량급증": 13,
-                "유통주희소": 5,
-                "커버소요일": 10
-            },
-            "meta": {
-                "float_m": 302.2,
-                "short_pct": 21.1,
-                "vol_spike": 2.68,
-                "rsi": 61.4,
-                "short_ratio": 18.8,
-                "short_str": "21.1%",
-                "float_str": "302.2M",
-                "setup_pass": true,
-                "price_confirm": true,
-                "buy_candidate": true,
-                "above_ma20": true,
-                "above_ma50": true,
-                "ma20_up": true,
-                "breakout20": false,
-                "dist_ma20": 14.11
-            }
-        }
-    ],
-    "buy_picks": [
-        {
-            "rank": 1,
-            "name": "Novavax, Inc.",
-            "code": "NVAX",
-            "company_summary": "Novavax, Inc., a biotechnology company, engages in the discovery, development, and commercialization...",
-            "cur_price": 9.23,
-            "score_raw": 48,
-            "score_100": 48,
-            "squeeze_level": "📈 MEDIUM",
-            "score_detail": {
-                "공매도강도": 28,
-                "거래량급증": 5,
-                "유통주희소": 5,
-                "커버소요일": 10
-            },
-            "meta": {
-                "float_m": 141.5,
-                "short_pct": 30.3,
-                "vol_spike": 1.02,
-                "rsi": 55.7,
-                "short_ratio": 15.6,
-                "short_str": "30.3%",
-                "float_str": "141.5M",
-                "setup_pass": true,
-                "price_confirm": true,
-                "buy_candidate": true,
-                "above_ma20": true,
-                "above_ma50": true,
-                "ma20_up": true,
-                "breakout20": false,
-                "dist_ma20": 6.97
-            }
-        },
-        {
-            "rank": 2,
-            "name": "Microvision, Inc.",
-            "code": "MVIS",
-            "company_summary": "MicroVision, Inc. develops and commercializes lidar sensors and perception solutions in the United S...",
-            "cur_price": 0.76,
-            "score_raw": 46,
-            "score_100": 46,
-            "squeeze_level": "📈 MEDIUM",
-            "score_detail": {
-                "공매도강도": 18,
-                "거래량급증": 13,
-                "유통주희소": 5,
-                "커버소요일": 10
-            },
-            "meta": {
-                "float_m": 302.2,
-                "short_pct": 21.1,
-                "vol_spike": 2.68,
-                "rsi": 61.4,
-                "short_ratio": 18.8,
-                "short_str": "21.1%",
-                "float_str": "302.2M",
-                "setup_pass": true,
-                "price_confirm": true,
-                "buy_candidate": true,
-                "above_ma20": true,
-                "above_ma50": true,
-                "ma20_up": true,
-                "breakout20": false,
-                "dist_ma20": 14.11
-            }
-        }
-    ],
+    "today_picks": [],
+    "buy_picks": [],
     "watch_picks": [
         {
             "rank": 1,
             "name": "Groupon, Inc.",
             "code": "GRPN",
             "company_summary": "Groupon, Inc. operates a marketplace that connects consumers to merchants by offering goods and serv...",
-            "cur_price": 18.38,
-            "score_raw": 64,
-            "score_100": 64,
+            "cur_price": 17.16,
+            "score_raw": 65,
+            "score_100": 65,
             "squeeze_level": "⚡ HIGH",
             "score_detail": {
                 "공매도강도": 40,
                 "거래량급증": 0,
-                "유통주희소": 14,
+                "유통주희소": 15,
                 "커버소요일": 9
             },
             "meta": {
-                "float_m": 26.4,
+                "float_m": 24.2,
                 "short_pct": 59.2,
-                "vol_spike": 0.9,
-                "rsi": 68.2,
+                "vol_spike": 0.59,
+                "rsi": 60.3,
                 "short_ratio": 6.7,
                 "short_str": "59.2%",
-                "float_str": "26.4M",
+                "float_str": "24.2M",
                 "setup_pass": false,
                 "price_confirm": true,
                 "buy_candidate": false,
@@ -166,15 +32,48 @@
                 "above_ma50": true,
                 "ma20_up": true,
                 "breakout20": false,
-                "dist_ma20": 18.01
+                "dist_ma20": 9.6
             }
         },
         {
             "rank": 2,
+            "name": "Microvision, Inc.",
+            "code": "MVIS",
+            "company_summary": "MicroVision, Inc. develops and commercializes lidar sensors and perception solutions in the United S...",
+            "cur_price": 0.6,
+            "score_raw": 60,
+            "score_100": 60,
+            "squeeze_level": "⚡ HIGH",
+            "score_detail": {
+                "공매도강도": 18,
+                "거래량급증": 27,
+                "유통주희소": 5,
+                "커버소요일": 10
+            },
+            "meta": {
+                "float_m": 302.2,
+                "short_pct": 21.1,
+                "vol_spike": 5.55,
+                "rsi": 44.0,
+                "short_ratio": 18.8,
+                "short_str": "21.1%",
+                "float_str": "302.2M",
+                "setup_pass": true,
+                "price_confirm": false,
+                "buy_candidate": false,
+                "above_ma20": false,
+                "above_ma50": false,
+                "ma20_up": true,
+                "breakout20": false,
+                "dist_ma20": -9.57
+            }
+        },
+        {
+            "rank": 3,
             "name": "Avis Budget Group, Inc.",
             "code": "CAR",
             "company_summary": "Avis Budget Group, Inc., together with its subsidiaries, provides car and truck rentals, car sharing...",
-            "cur_price": 148.84,
+            "cur_price": 148.76,
             "score_raw": 58,
             "score_100": 58,
             "squeeze_level": "⚡ HIGH",
@@ -187,7 +86,7 @@
             "meta": {
                 "float_m": 14.6,
                 "short_pct": 62.8,
-                "vol_spike": 0.13,
+                "vol_spike": 0.17,
                 "rsi": 40.3,
                 "short_ratio": 1.1,
                 "short_str": "62.8%",
@@ -199,15 +98,48 @@
                 "above_ma50": false,
                 "ma20_up": false,
                 "breakout20": false,
-                "dist_ma20": -43.86
+                "dist_ma20": -40.52
             }
         },
         {
-            "rank": 3,
+            "rank": 4,
+            "name": "C3.ai, Inc.",
+            "code": "AI",
+            "company_summary": "C3.ai, Inc. operates as an enterprise artificial intelligence application software company. The comp...",
+            "cur_price": 9.03,
+            "score_raw": 54,
+            "score_100": 54,
+            "squeeze_level": "📈 MEDIUM",
+            "score_detail": {
+                "공매도강도": 34,
+                "거래량급증": 5,
+                "유통주희소": 5,
+                "커버소요일": 10
+            },
+            "meta": {
+                "float_m": 135.2,
+                "short_pct": 35.2,
+                "vol_spike": 1.07,
+                "rsi": 49.4,
+                "short_ratio": 10.2,
+                "short_str": "35.2%",
+                "float_str": "135.2M",
+                "setup_pass": true,
+                "price_confirm": false,
+                "buy_candidate": false,
+                "above_ma20": false,
+                "above_ma50": true,
+                "ma20_up": true,
+                "breakout20": false,
+                "dist_ma20": -1.11
+            }
+        },
+        {
+            "rank": 5,
             "name": "Hertz Global Holdings, Inc",
             "code": "HTZ",
             "company_summary": "Hertz Global Holdings, Inc. operates as a vehicle rental company. It operates through two segments: ...",
-            "cur_price": 5.9,
+            "cur_price": 5.83,
             "score_raw": 50,
             "score_100": 50,
             "squeeze_level": "📈 MEDIUM",
@@ -220,8 +152,8 @@
             "meta": {
                 "float_m": 129.2,
                 "short_pct": 41.7,
-                "vol_spike": 0.6,
-                "rsi": 49.2,
+                "vol_spike": 0.35,
+                "rsi": 48.3,
                 "short_ratio": 3.4,
                 "short_str": "41.7%",
                 "float_str": "129.2M",
@@ -232,73 +164,7 @@
                 "above_ma50": true,
                 "ma20_up": false,
                 "breakout20": false,
-                "dist_ma20": -5.96
-            }
-        },
-        {
-            "rank": 4,
-            "name": "C3.ai, Inc.",
-            "code": "AI",
-            "company_summary": "C3.ai, Inc. operates as an enterprise artificial intelligence application software company. The comp...",
-            "cur_price": 8.65,
-            "score_raw": 46,
-            "score_100": 46,
-            "squeeze_level": "📈 MEDIUM",
-            "score_detail": {
-                "공매도강도": 31,
-                "거래량급증": 0,
-                "유통주희소": 5,
-                "커버소요일": 10
-            },
-            "meta": {
-                "float_m": 135.2,
-                "short_pct": 33.1,
-                "vol_spike": 0.75,
-                "rsi": 43.4,
-                "short_ratio": 9.2,
-                "short_str": "33.1%",
-                "float_str": "135.2M",
-                "setup_pass": false,
-                "price_confirm": false,
-                "buy_candidate": false,
-                "above_ma20": false,
-                "above_ma50": false,
-                "ma20_up": true,
-                "breakout20": false,
-                "dist_ma20": -5.42
-            }
-        },
-        {
-            "rank": 5,
-            "name": "Hims & Hers Health, Inc.",
-            "code": "HIMS",
-            "company_summary": "Hims & Hers Health, Inc. operates as a consumer-first health and wellness platform that connects con...",
-            "cur_price": 24.14,
-            "score_raw": 45,
-            "score_100": 45,
-            "squeeze_level": "📈 MEDIUM",
-            "score_detail": {
-                "공매도강도": 36,
-                "거래량급증": 0,
-                "유통주희소": 5,
-                "커버소요일": 4
-            },
-            "meta": {
-                "float_m": 210.9,
-                "short_pct": 37.2,
-                "vol_spike": 0.64,
-                "rsi": 45.4,
-                "short_ratio": 2.7,
-                "short_str": "37.2%",
-                "float_str": "210.9M",
-                "setup_pass": false,
-                "price_confirm": false,
-                "buy_candidate": false,
-                "above_ma20": false,
-                "above_ma50": true,
-                "ma20_up": true,
-                "breakout20": false,
-                "dist_ma20": -13.04
+                "dist_ma20": -6.22
             }
         }
     ],
@@ -307,33 +173,33 @@
     "regime_info": {
         "regime": "RISK_ON",
         "regime_label": "위험선호 ON",
-        "base_date": "20260514",
+        "base_date": "20260515",
         "nasdaq": {
             "symbol": "^IXIC",
             "state": "BULL",
-            "close": 26402.34,
-            "ma20": 25122.5,
-            "ma50": 23419.57,
-            "ret5": 2.31,
-            "ret20": 9.54,
-            "dist_ma20": 5.09,
-            "ma20_slope": 2.29
+            "close": 26635.22,
+            "ma20": 25249.12,
+            "ma50": 23496.13,
+            "ret5": 1.48,
+            "ret20": 8.86,
+            "dist_ma20": 5.49,
+            "ma20_slope": 2.11
         },
         "russell": {
             "symbol": "^RUT",
             "state": "BULL",
-            "close": 2843.93,
-            "ma20": 2804.22,
-            "ma50": 2647.49,
-            "ret5": 0.15,
-            "ret20": 4.57,
-            "dist_ma20": 1.42,
-            "ma20_slope": 1.26
+            "close": 2863.09,
+            "ma20": 2811.39,
+            "ma50": 2652.03,
+            "ret5": 0.07,
+            "ret20": 3.1,
+            "dist_ma20": 1.84,
+            "ma20_slope": 1.1
         },
         "vix": {
             "state": "STABLE",
-            "close": 17.87,
-            "chg": -0.67
+            "close": 17.26,
+            "chg": -3.41
         }
     },
     "strategy_used": [
@@ -342,8 +208,8 @@
     "notes": [
         "공매도·커버소요일·거래량·가격확인 동시 충족 후보만 매수 후보"
     ],
-    "total_candidates": 2,
+    "total_candidates": 0,
     "total_watch": 5,
     "total_screened": 29,
-    "base_date": "20260514"
+    "base_date": "20260515"
 }

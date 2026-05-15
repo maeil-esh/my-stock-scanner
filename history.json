@@ -6330,5 +6330,144 @@
                 }
             }
         ]
+    },
+    {
+        "date": "20260515",
+        "label": "📊 장 중간 스캔",
+        "market_regime": "CONCENTRATED_BULL",
+        "strategy_used": [
+            "TREND_KOSPI_ONLY"
+        ],
+        "picks": [
+            {
+                "rank": 1,
+                "name": "SK네트웍스",
+                "code": "001740",
+                "company_summary": "[KOSPI]",
+                "supply": "TREND",
+                "cur_price": 9350,
+                "score_100": 92,
+                "score": "★★★★☆ 92점",
+                "tags": "상대강도 / 추세회복 / 20일돌파",
+                "expected_return": "",
+                "score_detail": {
+                    "상대강도": 30,
+                    "추세회복": 25,
+                    "20일돌파": 20,
+                    "거래대금": 15,
+                    "과열제어": 2
+                },
+                "meta": {
+                    "rs": 35.8,
+                    "disp20": 47.4,
+                    "disp60": 62.0,
+                    "ma20_slope": 6.75,
+                    "vol_ratio": 8.04,
+                    "rsi": 81.6,
+                    "breakout20": true,
+                    "near60_high": true,
+                    "high60_gap": -15.9,
+                    "mktcap": 14904,
+                    "trade": {
+                        "entry": 9350,
+                        "stop_loss": 8335,
+                        "target_1": 11379,
+                        "target_2": 12732,
+                        "risk_pct": 10.9,
+                        "reward_pct": 21.7,
+                        "rr_ratio": 2.0,
+                        "atr": 676.4
+                    },
+                    "rt_price_used": true,
+                    "trend_origin": true
+                }
+            },
+            {
+                "rank": 2,
+                "name": "DN오토모티브",
+                "code": "007340",
+                "company_summary": "[KOSPI]",
+                "supply": "TREND",
+                "cur_price": 51600,
+                "score_100": 91,
+                "score": "★★★★☆ 91점",
+                "tags": "상대강도 / 추세회복 / 20일돌파",
+                "expected_return": "",
+                "score_detail": {
+                    "상대강도": 30,
+                    "추세회복": 25,
+                    "20일돌파": 14,
+                    "거래대금": 12,
+                    "과열제어": 10
+                },
+                "meta": {
+                    "rs": 32.9,
+                    "disp20": 16.0,
+                    "disp60": 39.6,
+                    "ma20_slope": 6.07,
+                    "vol_ratio": 1.66,
+                    "rsi": 67.4,
+                    "breakout20": false,
+                    "near60_high": true,
+                    "high60_gap": 3.7,
+                    "mktcap": 29109,
+                    "trade": {
+                        "entry": 51600,
+                        "stop_loss": 45733,
+                        "target_1": 63332,
+                        "target_2": 71153,
+                        "risk_pct": 11.4,
+                        "reward_pct": 22.7,
+                        "rr_ratio": 2.0,
+                        "atr": 3910.7
+                    },
+                    "rt_price_used": true,
+                    "trend_origin": true
+                }
+            },
+            {
+                "rank": 3,
+                "name": "신성이엔지",
+                "code": "011930",
+                "company_summary": "[KOSPI]",
+                "supply": "TREND",
+                "cur_price": 41500,
+                "score_100": 80,
+                "score": "★★★★☆ 80점",
+                "tags": "상대강도 / 추세회복 / 거래대금",
+                "expected_return": "",
+                "score_detail": {
+                    "상대강도": 30,
+                    "추세회복": 25,
+                    "20일돌파": 0,
+                    "거래대금": 15,
+                    "과열제어": 10
+                },
+                "meta": {
+                    "rs": 25.2,
+                    "disp20": 3.1,
+                    "disp60": 31.6,
+                    "ma20_slope": 0.71,
+                    "vol_ratio": 2.13,
+                    "rsi": 67.3,
+                    "breakout20": false,
+                    "near60_high": false,
+                    "high60_gap": 16.5,
+                    "mktcap": 8522,
+                    "trade": {
+                        "entry": 41500,
+                        "stop_loss": 40530,
+                        "target_1": 43439,
+                        "target_2": 44732,
+                        "risk_pct": 2.3,
+                        "reward_pct": 4.7,
+                        "rr_ratio": 2.0,
+                        "atr": 646.4
+                    },
+                    "rt_price_used": true,
+                    "trend_origin": true
+                }
+            }
+        ]
     }
 ]

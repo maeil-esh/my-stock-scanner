@@ -7859,5 +7859,144 @@
                 }
             }
         ]
+    },
+    {
+        "date": "20260521",
+        "label": "📊 장 중간 스캔",
+        "market_regime": "CONCENTRATED_BULL",
+        "strategy_used": [
+            "TREND_KOSPI_ONLY"
+        ],
+        "picks": [
+            {
+                "rank": 1,
+                "name": "삼화콘덴서",
+                "code": "001820",
+                "company_summary": "[KOSPI]",
+                "supply": "TREND",
+                "cur_price": 79900,
+                "score_100": 94,
+                "score": "★★★★☆ 94점",
+                "tags": "상대강도 / 추세회복 / 거래대금",
+                "expected_return": "",
+                "score_detail": {
+                    "상대강도": 30,
+                    "추세회복": 25,
+                    "20일돌파": 14,
+                    "거래대금": 15,
+                    "과열제어": 10
+                },
+                "meta": {
+                    "rs": 54.8,
+                    "disp20": 19.6,
+                    "disp60": 34.1,
+                    "ma20_slope": 1.85,
+                    "vol_ratio": 2.58,
+                    "rsi": 69.3,
+                    "breakout20": false,
+                    "near60_high": true,
+                    "high60_gap": 0.7,
+                    "mktcap": 8284,
+                    "trade": {
+                        "entry": 79900,
+                        "stop_loss": 69303,
+                        "target_1": 101092,
+                        "target_2": 115221,
+                        "risk_pct": 13.3,
+                        "reward_pct": 26.5,
+                        "rr_ratio": 2.0,
+                        "atr": 7064.3
+                    },
+                    "rt_price_used": true,
+                    "trend_origin": true
+                }
+            },
+            {
+                "rank": 2,
+                "name": "대덕전자",
+                "code": "353200",
+                "company_summary": "[KOSPI]",
+                "supply": "TREND",
+                "cur_price": 147000,
+                "score_100": 83,
+                "score": "★★★★☆ 83점",
+                "tags": "상대강도 / 추세회복 / 20일돌파",
+                "expected_return": "",
+                "score_detail": {
+                    "상대강도": 30,
+                    "추세회복": 25,
+                    "20일돌파": 14,
+                    "거래대금": 8,
+                    "과열제어": 6
+                },
+                "meta": {
+                    "rs": 109.8,
+                    "disp20": 18.7,
+                    "disp60": 58.9,
+                    "ma20_slope": 7.55,
+                    "vol_ratio": 1.08,
+                    "rsi": 70.2,
+                    "breakout20": false,
+                    "near60_high": true,
+                    "high60_gap": 1.7,
+                    "mktcap": 74125,
+                    "trade": {
+                        "entry": 147000,
+                        "stop_loss": 125025,
+                        "target_1": 190950,
+                        "target_2": 220250,
+                        "risk_pct": 14.9,
+                        "reward_pct": 29.9,
+                        "rr_ratio": 2.0,
+                        "atr": 14650.0
+                    },
+                    "rt_price_used": true,
+                    "trend_origin": true
+                }
+            },
+            {
+                "rank": 3,
+                "name": "대덕",
+                "code": "008060",
+                "company_summary": "[KOSPI]",
+                "supply": "TREND",
+                "cur_price": 20950,
+                "score_100": 83,
+                "score": "★★★★☆ 83점",
+                "tags": "상대강도 / 추세회복 / 20일돌파",
+                "expected_return": "",
+                "score_detail": {
+                    "상대강도": 30,
+                    "추세회복": 25,
+                    "20일돌파": 14,
+                    "거래대금": 4,
+                    "과열제어": 10
+                },
+                "meta": {
+                    "rs": 48.3,
+                    "disp20": 14.4,
+                    "disp60": 40.8,
+                    "ma20_slope": 5.67,
+                    "vol_ratio": 0.9,
+                    "rsi": 69.0,
+                    "breakout20": false,
+                    "near60_high": true,
+                    "high60_gap": 6.3,
+                    "mktcap": 6617,
+                    "trade": {
+                        "entry": 20950,
+                        "stop_loss": 18403,
+                        "target_1": 26043,
+                        "target_2": 29439,
+                        "risk_pct": 12.2,
+                        "reward_pct": 24.3,
+                        "rr_ratio": 2.0,
+                        "atr": 1697.9
+                    },
+                    "rt_price_used": true,
+                    "trend_origin": true
+                }
+            }
+        ]
     }
 ]

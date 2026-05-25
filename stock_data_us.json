@@ -218,13 +218,13 @@
                 "커버소요일": 9
             },
             "meta": {
-                "float_m": 83.0,
+                "float_m": 83.2,
                 "short_pct": 32.3,
                 "vol_spike": 0.67,
                 "rsi": 46.0,
                 "short_ratio": 6.2,
                 "short_str": "32.3%",
-                "float_str": "83.0M",
+                "float_str": "83.2M",
                 "setup_pass": false,
                 "price_confirm": false,
                 "buy_candidate": false,
@@ -241,7 +241,7 @@
     "regime_info": {
         "regime": "RISK_ON",
         "regime_label": "위험선호 ON",
-        "base_date": "20260525",
+        "base_date": "20260526",
         "nasdaq": {
             "symbol": "^IXIC",
             "state": "BULL",
@@ -266,8 +266,8 @@
         },
         "vix": {
             "state": "STABLE",
-            "close": 16.7,
-            "chg": -0.36
+            "close": 16.59,
+            "chg": -0.66
         }
     },
     "strategy_used": [
@@ -279,5 +279,5 @@
     "total_candidates": 1,
     "total_watch": 5,
     "total_screened": 29,
-    "base_date": "20260525"
+    "base_date": "20260526"
 }

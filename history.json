@@ -9110,5 +9110,144 @@
                 }
             }
         ]
+    },
+    {
+        "date": "20260526",
+        "label": "📊 장 중간 스캔",
+        "market_regime": "CONCENTRATED_BULL",
+        "strategy_used": [
+            "TREND_KOSPI_ONLY"
+        ],
+        "picks": [
+            {
+                "rank": 1,
+                "name": "코리아써키트",
+                "code": "007810",
+                "company_summary": "[KOSPI]",
+                "supply": "TREND",
+                "cur_price": 114600,
+                "score_100": 93,
+                "score": "★★★★☆ 93점",
+                "tags": "상대강도 / 추세회복 / 20일돌파",
+                "expected_return": "",
+                "score_detail": {
+                    "상대강도": 30,
+                    "추세회복": 25,
+                    "20일돌파": 20,
+                    "거래대금": 8,
+                    "과열제어": 10
+                },
+                "meta": {
+                    "rs": 53.0,
+                    "disp20": 19.4,
+                    "disp60": 46.5,
+                    "ma20_slope": 1.83,
+                    "vol_ratio": 1.25,
+                    "rsi": 67.0,
+                    "breakout20": true,
+                    "near60_high": true,
+                    "high60_gap": -8.5,
+                    "mktcap": 27699,
+                    "trade": {
+                        "entry": 114600,
+                        "stop_loss": 97328,
+                        "target_1": 149142,
+                        "target_2": 172171,
+                        "risk_pct": 15.1,
+                        "reward_pct": 30.1,
+                        "rr_ratio": 2.0,
+                        "atr": 11514.3
+                    },
+                    "rt_price_used": true,
+                    "trend_origin": true
+                }
+            },
+            {
+                "rank": 2,
+                "name": "해성디에스",
+                "code": "195870",
+                "company_summary": "[KOSPI]",
+                "supply": "TREND",
+                "cur_price": 102500,
+                "score_100": 93,
+                "score": "★★★★☆ 93점",
+                "tags": "상대강도 / 추세회복 / 20일돌파",
+                "expected_return": "",
+                "score_detail": {
+                    "상대강도": 30,
+                    "추세회복": 25,
+                    "20일돌파": 20,
+                    "거래대금": 12,
+                    "과열제어": 6
+                },
+                "meta": {
+                    "rs": 36.5,
+                    "disp20": 22.8,
+                    "disp60": 56.2,
+                    "ma20_slope": 4.67,
+                    "vol_ratio": 1.77,
+                    "rsi": 72.7,
+                    "breakout20": true,
+                    "near60_high": true,
+                    "high60_gap": -5.6,
+                    "mktcap": 17204,
+                    "trade": {
+                        "entry": 102500,
+                        "stop_loss": 88914,
+                        "target_1": 129671,
+                        "target_2": 147785,
+                        "risk_pct": 13.3,
+                        "reward_pct": 26.5,
+                        "rr_ratio": 2.0,
+                        "atr": 9057.1
+                    },
+                    "rt_price_used": true,
+                    "trend_origin": true
+                }
+            },
+            {
+                "rank": 3,
+                "name": "DB하이텍",
+                "code": "000990",
+                "company_summary": "[KOSPI]",
+                "supply": "TREND",
+                "cur_price": 210500,
+                "score_100": 89,
+                "score": "★★★★☆ 89점",
+                "tags": "상대강도 / 추세회복 / 20일돌파",
+                "expected_return": "",
+                "score_detail": {
+                    "상대강도": 30,
+                    "추세회복": 25,
+                    "20일돌파": 20,
+                    "거래대금": 8,
+                    "과열제어": 6
+                },
+                "meta": {
+                    "rs": 87.7,
+                    "disp20": 24.8,
+                    "disp60": 78.2,
+                    "ma20_slope": 7.0,
+                    "vol_ratio": 1.05,
+                    "rsi": 70.5,
+                    "breakout20": true,
+                    "near60_high": true,
+                    "high60_gap": -5.5,
+                    "mktcap": 92012,
+                    "trade": {
+                        "entry": 210500,
+                        "stop_loss": 180446,
+                        "target_1": 270607,
+                        "target_2": 310678,
+                        "risk_pct": 14.3,
+                        "reward_pct": 28.6,
+                        "rr_ratio": 2.0,
+                        "atr": 20035.7
+                    },
+                    "rt_price_used": true,
+                    "trend_origin": true
+                }
+            }
+        ]
     }
 ]

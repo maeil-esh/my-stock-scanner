@@ -1,14 +1,20 @@
 """
-engine_kr.py — 국장 장세전환형 스캐너 (REGIME ROUTER v5.0)
+engine_kr.py — 국장 장세전환형 스캐너 (REGIME ROUTER v5.1 PRE-SIGNAL)
 실행: python engine_kr.py
 스케줄: 09:41 / 13:23 / 16:43 KST
 
-[v5.0 핵심]
+[v5.1 핵심]
   ① 시장 국면을 먼저 판단: BROAD_BULL / CONCENTRATED_BULL / BOX / BEAR / UNKNOWN
   ② 상승장: TREND 엔진 중심 — RS 양수, MA20 회복, 신고가/고점근접 종목
   ③ 횡보장: VALUE 엔진 중심 — 실적개선+저평가 종목
   ④ 하락장: DEFENSE 모드 — 매수 후보 전송 중단
   ⑤ 기존 BASIC 바닥반등 엔진은 반등·관찰 후보용으로 재활용
+  ⑥ PRE_BULL / PRE-SIGNAL 엔진 추가 — MA20 돌파 전 조기 관심후보 감지
+
+[변경 이력 v5.1] — 후행성 보완 PRE-SIGNAL 엔진 추가
+  ① 지수 PRE_BULL 판단 추가: MA20 근접 + 단기반등 + 하락기울기 둔화
+  ② 종목 PRE-SIGNAL 추가: MA20 근접, RS 개선, 20일고점 접근, 거래량 회복
+  ③ BUY와 WATCH 분리: 선행 관심후보는 매수 후보/history 저장에서 제외
 
 [변경 이력 v4.1] — QUANT VALUE 엔진 개선
   ① CAPM 잔차 버그 수정 (인덱스 불일치 → 전부 0.0% 문제)
@@ -58,6 +64,14 @@ TREND_MKTCAP_MIN     = 3000      # 억
 TREND_MKTCAP_MAX     = 500000    # 억
 TREND_MAX_UNIVERSE   = 550       # 런타임 보호용
 TREND_SCORE_MIN      = 60
+
+# PRE-SIGNAL 엔진 설정 — 돌파 전 선행 관심후보용
+# 주의: PRE-SIGNAL은 매수 후보가 아니라 WATCH 전용이다.
+PRE_TOP_N          = 5
+PRE_MKTCAP_MIN     = 1000      # 억
+PRE_MKTCAP_MAX     = 100000    # 억
+PRE_MAX_UNIVERSE   = 800       # 런타임 보호용
+PRE_SCORE_MIN      = 58
 
 DART_BASE_URL = "https://opendart.fss.or.kr/api"
 
@@ -1674,6 +1688,7 @@ def build_value_message(picks):
 REGIME_LABELS = {
     "BROAD_BULL":        "전체 상승장",
     "CONCENTRATED_BULL": "쏠림 상승장",
+    "PRE_BULL":          "상승 전환 조기감지",
     "BOX":               "횡보/중립장",
     "BEAR":              "하락장",
     "UNKNOWN":           "판단불가",
@@ -1713,11 +1728,21 @@ def _fetch_index_df(symbols: list[str], start: str, end: str):
 
 
 def _index_metrics(index_df) -> dict:
+    """지수 상태를 BULL / PRE_BULL / BOX / BEAR로 분류한다.
+
+    기존 v5.0은 MA20 위 + MA20 상승을 확인한 뒤 BULL로 판단해 후행성이 컸다.
+    v5.1은 PRE_BULL을 별도로 둔다.
+      - 지수가 MA20 아래 -3% 이내까지 접근
+      - 최근 5일 수익률이 양수
+      - MA20 하락 기울기가 둔화 또는 완만
+      - 20일 수익률 급락 구간이 아님
+    """
     if index_df is None or index_df.empty or len(index_df) < 60:
         return {
             "state": "UNKNOWN", "close": 0.0, "ma20": 0.0, "ma60": 0.0,
             "ret5": 0.0, "ret20": 0.0, "ma20_slope": 0.0,
-            "dist_ma20": 0.0, "dist_ma60": 0.0,
+            "ma20_slope_prev": 0.0, "slope_delta": 0.0,
+            "dist_ma20": 0.0, "dist_ma60": 0.0, "pre_bull_score": 0,
         }
 
     close = index_df['Close']
@@ -1727,16 +1752,43 @@ def _index_metrics(index_df) -> dict:
     m20   = _safe_float(ma20.iloc[-1])
     m60   = _safe_float(ma60.iloc[-1])
     m20_5 = _safe_float(ma20.iloc[-5]) if len(ma20) >= 5 else m20
+    m20_10 = _safe_float(ma20.iloc[-10]) if len(ma20) >= 10 else m20_5
 
     ret5  = (cur / _safe_float(close.iloc[-5], cur) - 1) * 100 if len(close) >= 5 else 0.0
     ret20 = (cur / _safe_float(close.iloc[-20], cur) - 1) * 100 if len(close) >= 20 else 0.0
     ma20_slope = (m20 / m20_5 - 1) * 100 if m20_5 > 0 else 0.0
+    ma20_slope_prev = (m20_5 / m20_10 - 1) * 100 if m20_10 > 0 else 0.0
+    slope_delta = ma20_slope - ma20_slope_prev
     dist_ma20  = (cur / m20 - 1) * 100 if m20 > 0 else 0.0
     dist_ma60  = (cur / m60 - 1) * 100 if m60 > 0 else 0.0
 
-    if cur > m20 and m20 > m20_5 and cur > m60:
+    # 기존 확인형 상승장
+    bull_cond = cur > m20 and m20 > m20_5 and cur > m60
+
+    # v5.1 선행 상승 전환 감지
+    near_ma20 = -3.0 <= dist_ma20 <= 2.5
+    short_rebound = ret5 > 0.0
+    slope_not_bad = ma20_slope >= -1.2
+    slope_improving = slope_delta >= -0.15  # 악화가 멈추거나 둔화
+    not_deep_selloff = ret20 >= -8.0 and dist_ma60 >= -8.0
+
+    pre_score = 0
+    if near_ma20:       pre_score += 30
+    if short_rebound:   pre_score += 25
+    if slope_not_bad:   pre_score += 20
+    if slope_improving: pre_score += 15
+    if not_deep_selloff: pre_score += 10
+
+    pre_bull_cond = (not bull_cond) and pre_score >= 65
+
+    # 기존 BEAR는 너무 쉽게 켜졌기 때문에, 단기 반등 조짐이 있으면 PRE_BULL을 우선한다.
+    hard_bear_cond = cur < m20 and m20 < m20_5 and ret5 < -1.0 and dist_ma20 < -3.0
+
+    if bull_cond:
         state = "BULL"
-    elif cur < m20 and m20 < m20_5:
+    elif pre_bull_cond:
+        state = "PRE_BULL"
+    elif hard_bear_cond:
         state = "BEAR"
     else:
         state = "BOX"
@@ -1749,10 +1801,12 @@ def _index_metrics(index_df) -> dict:
         "ret5": round(ret5, 2),
         "ret20": round(ret20, 2),
         "ma20_slope": round(ma20_slope, 2),
+        "ma20_slope_prev": round(ma20_slope_prev, 2),
+        "slope_delta": round(slope_delta, 2),
         "dist_ma20": round(dist_ma20, 2),
         "dist_ma60": round(dist_ma60, 2),
+        "pre_bull_score": int(pre_score),
     }
-
 
 def detect_market_regime() -> dict:
     """KOSPI/KOSDAQ을 분리 판단하고 최종 장세를 반환."""
@@ -1776,6 +1830,8 @@ def detect_market_regime() -> dict:
         regime = "CONCENTRATED_BULL"
     elif k_state == "BEAR" and q_state == "BEAR":
         regime = "BEAR"
+    elif k_state in ["PRE_BULL", "BULL"] or q_state in ["PRE_BULL", "BULL"]:
+        regime = "PRE_BULL"
     else:
         regime = "BOX"
 
@@ -1786,7 +1842,6 @@ def detect_market_regime() -> dict:
         "kospi": kospi,
         "kosdaq": kosdaq,
     }
-
 
 def _pick_market(p: dict) -> str:
     return str(p.get('company_summary') or p.get('market') or '').upper()
@@ -1868,6 +1923,287 @@ def _history_ready_picks(picks: list[dict]) -> list[dict]:
         p['rank'] = i
     return converted
 
+
+
+def _dedupe_picks(picks: list[dict]) -> list[dict]:
+    """code/ticker 기준 중복 제거 후 rank 재정렬."""
+    seen = set()
+    out = []
+    for p in picks or []:
+        key = p.get('code') or p.get('ticker') or p.get('name')
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        out.append(p)
+    for i, p in enumerate(out, 1):
+        p['rank'] = i
+    return out
+
+
+def _exclude_codes(picks: list[dict], exclude: set[str]) -> list[dict]:
+    out = []
+    for p in picks or []:
+        code = p.get('code') or p.get('ticker')
+        if code and code in exclude:
+            continue
+        out.append(p)
+    for i, p in enumerate(out, 1):
+        p['rank'] = i
+    return out
+
+
+# ─────────────────────────────────────────────────────────────
+#  PRE-SIGNAL 엔진 — 돌파 전 선행 관심후보용
+# ─────────────────────────────────────────────────────────────
+
+def _pre_signal_score_stock(df, index_df) -> tuple[int, dict, dict] | None:
+    """MA20 확인 돌파 전, 관심후보로만 올릴 종목을 채점한다.
+
+    BUY가 아니라 WATCH 전용이다. 조건을 너무 강하게 잡지 않되,
+    무너지는 종목은 제외한다.
+    """
+    try:
+        if df is None or len(df) < 90 or index_df is None or len(index_df) < 60:
+            return None
+
+        close = df['Close']
+        volume = df['Volume']
+        cur = _safe_float(close.iloc[-1])
+        if cur <= 0:
+            return None
+
+        ma20 = close.rolling(20).mean()
+        ma60 = close.rolling(60).mean()
+        vol20 = volume.rolling(20).mean()
+        vol5 = volume.rolling(5).mean()
+
+        ma20_v = _safe_float(ma20.iloc[-1])
+        ma20_5 = _safe_float(ma20.iloc[-5])
+        ma20_10 = _safe_float(ma20.iloc[-10])
+        ma60_v = _safe_float(ma60.iloc[-1])
+        vol20_v = _safe_float(vol20.iloc[-1])
+        vol5_v = _safe_float(vol5.iloc[-1])
+        vol_now = _safe_float(volume.iloc[-1])
+
+        if ma20_v <= 0 or ma60_v <= 0 or vol20_v <= 0:
+            return None
+
+        disp20 = (cur / ma20_v - 1) * 100
+        disp60 = (cur / ma60_v - 1) * 100
+        ma20_slope = (ma20_v / ma20_5 - 1) * 100 if ma20_5 > 0 else 0.0
+        ma20_slope_prev = (ma20_5 / ma20_10 - 1) * 100 if ma20_10 > 0 else 0.0
+        slope_delta = ma20_slope - ma20_slope_prev
+        ret5 = (cur / _safe_float(close.iloc[-5], cur) - 1) * 100 if len(close) >= 5 else 0.0
+        ret1 = (cur / _safe_float(close.iloc[-2], cur) - 1) * 100 if len(close) >= 2 else 0.0
+        rsi = _safe_float(calc_rsi(close).iloc[-1], 50.0)
+        vol_ratio = vol_now / (vol20_v + 1)
+        vol5_ratio = vol5_v / (vol20_v + 1)
+
+        rs20 = calc_relative_strength(df, index_df, period=20)
+        rs63 = calc_relative_strength(df, index_df, period=63)
+        rs_improve = rs20 - rs63
+
+        high20 = _safe_float(df['High'].iloc[-21:-1].max()) if len(df) >= 21 else _safe_float(df['High'].max())
+        high60 = _safe_float(df['High'].iloc[-61:-1].max()) if len(df) >= 61 else _safe_float(df['High'].max())
+        high20_gap = (high20 - cur) / high20 * 100 if high20 > 0 else 999.0
+        high60_gap = (high60 - cur) / high60 * 100 if high60 > 0 else 999.0
+
+        # 강제 탈락: 선행 관심이라도 무너지는 종목은 제외
+        if not (-3.5 <= disp20 <= 6.0):
+            return None
+        if ret5 < -3.0:
+            return None
+        if ret1 < -7.0:
+            return None
+        if ma20_slope < -1.8:
+            return None
+        if disp60 < -15.0:
+            return None
+        if rsi < 35 or rsi > 72:
+            return None
+        if high20_gap > 10.0:
+            return None
+        if vol_ratio < 0.55 and vol5_ratio < 0.75:
+            return None
+
+        bd = {}
+        bd['MA20근접'] = 20 if -1.0 <= disp20 <= 3.0 else 16 if -3.5 <= disp20 < -1.0 else 12 if 3.0 < disp20 <= 6.0 else 0
+        bd['RS개선'] = 25 if (rs20 >= 5 and rs_improve >= 5) else 20 if (rs20 >= 0 and rs_improve >= 3) else 14 if rs_improve > 0 else 6 if rs20 > -5 else 0
+        bd['고점접근'] = 20 if high20_gap <= 3.0 else 16 if high20_gap <= 5.0 else 10 if high20_gap <= 10.0 else 0
+        bd['거래량회복'] = 15 if (vol_ratio >= 1.2 or vol5_ratio >= 1.2) else 11 if (vol_ratio >= 0.9 or vol5_ratio >= 1.0) else 7 if vol5_ratio >= 0.75 else 0
+        bd['기울기둔화'] = 10 if ma20_slope >= 0 else 8 if slope_delta > 0 else 5 if ma20_slope >= -0.8 else 2
+        bd['과열제어'] = 10 if 40 <= rsi <= 65 else 7 if 35 <= rsi < 40 or 65 < rsi <= 72 else 0
+
+        meta = {
+            "rs": round(float(rs20), 1),
+            "rs63": round(float(rs63), 1),
+            "rs_improve": round(float(rs_improve), 1),
+            "disp20": round(float(disp20), 1),
+            "disp60": round(float(disp60), 1),
+            "ma20_slope": round(float(ma20_slope), 2),
+            "ma20_slope_prev": round(float(ma20_slope_prev), 2),
+            "slope_delta": round(float(slope_delta), 2),
+            "ret5": round(float(ret5), 1),
+            "vol_ratio": round(float(vol_ratio), 2),
+            "vol5_ratio": round(float(vol5_ratio), 2),
+            "rsi": round(float(rsi), 1),
+            "high20_gap": round(float(high20_gap), 1),
+            "high60_gap": round(float(high60_gap), 1),
+            "pre_signal_origin": True,
+        }
+        return int(sum(bd.values())), bd, meta
+    except Exception:
+        return None
+
+
+def run_pre_signal_scan(allow_kosdaq: bool = True, top_n: int = PRE_TOP_N) -> list[dict]:
+    """PRE_BULL/BOX 구간에서 돌파 전 관심후보를 찾는다."""
+    today_str = get_market_date()
+    start     = get_start_date(today_str, 120)
+
+    print("\n" + "═" * 60)
+    print(f"👀 PRE-SIGNAL 엔진 — TOP {top_n} | allow_kosdaq={allow_kosdaq}")
+    print("═" * 60)
+
+    kospi_df  = _fetch_index_df(['KS11', '^KS11', 'KOSPI'], start, today_str)
+    kosdaq_df = _fetch_index_df(['KQ11', '^KQ11', 'KOSDAQ'], start, today_str)
+
+    universe = []
+    market_map = {}
+    name_map = {}
+    mktcap_map = {}
+
+    try:
+        for mkt in ["KOSPI", "KOSDAQ"]:
+            if mkt == "KOSDAQ" and not allow_kosdaq:
+                continue
+            df_lst = fdr.StockListing(mkt)
+            cap_col = _find_cap_col(df_lst)
+            code_col = 'Code' if 'Code' in df_lst.columns else df_lst.columns[0]
+            name_col = next((c for c in ['Name', 'name'] if c in df_lst.columns), None)
+            if not cap_col:
+                continue
+            df_lst = df_lst.dropna(subset=[cap_col]).copy()
+            df_lst['_cap_억'] = df_lst[cap_col].apply(lambda x: int(x / 1e8) if x > 1e6 else int(x))
+            df_lst = df_lst[(df_lst['_cap_억'] >= PRE_MKTCAP_MIN) & (df_lst['_cap_억'] <= PRE_MKTCAP_MAX)]
+            df_lst = df_lst.sort_values('_cap_억', ascending=False).head(PRE_MAX_UNIVERSE)
+            for _, row in df_lst.iterrows():
+                t = str(row[code_col]).zfill(6)
+                universe.append(t)
+                market_map[t] = mkt
+                name_map[t] = str(row[name_col]) if name_col else t
+                mktcap_map[t] = int(row['_cap_억'])
+    except Exception as e:
+        print(f"  ❌ PRE-SIGNAL 모집단 실패: {e}")
+        return []
+
+    print(f"  📊 PRE-SIGNAL 모집단: {len(universe)}종목")
+    if not universe:
+        return []
+
+    cands = []
+    lock = threading.Lock()
+
+    def _scan(ticker):
+        try:
+            mkt = market_map.get(ticker, 'KOSPI')
+            idx_df = kosdaq_df if mkt == 'KOSDAQ' else kospi_df
+            df = fdr.DataReader(ticker, start, today_str)
+            if df is None or len(df) < 90:
+                return
+            cur = _safe_float(df['Close'].iloc[-1])
+            if cur < 1000:
+                return
+            scored = _pre_signal_score_stock(df, idx_df)
+            if not scored:
+                return
+            score, bd, meta = scored
+            if score < PRE_SCORE_MIN:
+                return
+            with lock:
+                cands.append((score, ticker, bd, meta, df))
+        except Exception:
+            return
+
+    with ThreadPoolExecutor(max_workers=10) as ex:
+        futs = [ex.submit(_scan, t) for t in universe]
+        done = 0
+        for _ in as_completed(futs):
+            done += 1
+            if done % 150 == 0:
+                print(f"  진행 {done}/{len(universe)} | PRE 후보 {len(cands)}")
+
+    cands.sort(key=lambda x: x[0], reverse=True)
+    top = cands[:top_n]
+
+    final = []
+    for rank, (score, ticker, bd, meta, df) in enumerate(top, 1):
+        rt = get_realtime_price(ticker)
+        cp = rt if rt else int(_safe_float(df['Close'].iloc[-1]))
+        trade = calc_trade_levels(df, cp)
+        mkt = market_map.get(ticker, '')
+        name = name_map.get(ticker, ticker)
+        stars = "★" * min(score // 20, 5) + "☆" * (5 - min(score // 20, 5))
+        tags = " / ".join([k for k, v in sorted(bd.items(), key=lambda x: x[1], reverse=True)[:3] if v > 0])
+        final.append({
+            "rank": rank,
+            "name": name,
+            "code": ticker,
+            "company_summary": f"[{mkt}]" if mkt else "",
+            "supply": "PRE-SIGNAL",
+            "cur_price": cp,
+            "score_100": int(min(score, 100)),
+            "score": f"{stars} {int(min(score, 100))}점",
+            "tags": tags,
+            "expected_return": "",
+            "score_detail": bd,
+            "meta": {
+                **meta,
+                "mktcap": mktcap_map.get(ticker, 0),
+                "trade": trade,
+                "rt_price_used": rt is not None,
+                "pre_signal_origin": True,
+            }
+        })
+        print(f"  #{rank} {name}({ticker}) {score}점 | RS20 {meta.get('rs', 0):+}% | MA20 {meta.get('disp20', 0):+}% | 고점이격 {meta.get('high20_gap', 0):.1f}%")
+
+    print(f"\n🏁 PRE-SIGNAL 완료! TOP {len(final)}종목")
+    return final
+
+
+def build_pre_signal_message(picks: list[dict]) -> str:
+    today_str = get_market_date()
+    label = now_label()
+    if not picks:
+        return f"👀 <b>PRE-SIGNAL — {ko_date(today_str)} {label}</b>\n━" + "━" * 23 + "\n관심후보 없음"
+
+    lines = [
+        f"👀 <b>선행 관심후보 PRE-SIGNAL TOP {len(picks)} — {ko_date(today_str)} {label}</b>",
+        "<i>MA20 돌파 전 관심후보입니다. 매수 신호가 아닙니다.</i>",
+        "═" * 24,
+    ]
+    for p in picks:
+        chart = f"https://m.stock.naver.com/domestic/stock/{p['code']}/total"
+        meta = p.get('meta', {})
+        trade = meta.get('trade')
+        score = int(p.get('score_100', 0))
+        bar = '█' * int(score / 10) + '░' * (10 - int(score / 10))
+        lines += [
+            f"#{p['rank']} <b><a href='{chart}'>{p['name']}</a></b> ({p['code']}) {p.get('company_summary', '')}",
+            f"  <code>{bar}</code> <b>{score}점</b> {p.get('score', '').split(' ')[0] if p.get('score') else ''}",
+            f"  💰 현재가: {p.get('cur_price', 0):,}원 {'📡 실시간' if meta.get('rt_price_used') else '📋 전일종가'}",
+            f"  📊 RS20 {meta.get('rs', 0):+}% / RS개선 {meta.get('rs_improve', 0):+}% | MA20 {meta.get('disp20', 0):+}%",
+            f"  🔎 20일고점 이격 {meta.get('high20_gap', 0)}% | 거래량 {meta.get('vol_ratio', 0)}배 | RSI {meta.get('rsi', 0)}",
+            f"  🏷 {p.get('tags', '')}",
+        ]
+        if trade:
+            lines.append(
+                f"  🎯 확인진입 참고: 진입 {trade['entry']:,}원 / 손절 {trade['stop_loss']:,}원 (-{trade['risk_pct']}%) / 1차 {trade['target_1']:,}원 (+{trade['reward_pct']}%)"
+            )
+        lines.append("")
+    lines.append("═" * 24)
+    lines.append("💡 <i>PRE-SIGNAL은 선행 감시용입니다. 실제 BUY는 MA20 회복·RS 유지·거래량 확인 후 판단합니다.</i>")
+    return "\n".join(lines)
 
 # ─────────────────────────────────────────────────────────────
 #  TREND 엔진 — 상승장/쏠림장용
@@ -2106,8 +2442,8 @@ def build_regime_header(regime_info: dict) -> str:
         f"🧭 <b>장세 판단 — {ko_date(today_str)} {now_label()}</b>",
         "━" * 24,
         f"판단: <b>{label}</b> ({r})",
-        f"KOSPI  {k.get('state', 'NA')} | MA20 {k.get('dist_ma20', 0):+}% | 20일 {k.get('ret20', 0):+}% | MA20기울기 {k.get('ma20_slope', 0):+}%",
-        f"KOSDAQ {q.get('state', 'NA')} | MA20 {q.get('dist_ma20', 0):+}% | 20일 {q.get('ret20', 0):+}% | MA20기울기 {q.get('ma20_slope', 0):+}%",
+        f"KOSPI  {k.get('state', 'NA')} | MA20 {k.get('dist_ma20', 0):+}% | 5일 {k.get('ret5', 0):+}% | 20일 {k.get('ret20', 0):+}% | 기울기 {k.get('ma20_slope', 0):+}% | PRE {k.get('pre_bull_score', 0)}",
+        f"KOSDAQ {q.get('state', 'NA')} | MA20 {q.get('dist_ma20', 0):+}% | 5일 {q.get('ret5', 0):+}% | 20일 {q.get('ret20', 0):+}% | 기울기 {q.get('ma20_slope', 0):+}% | PRE {q.get('pre_bull_score', 0)}",
     ]
     return "\n".join(lines)
 
@@ -2136,6 +2472,7 @@ def build_master_message(result: dict) -> str:
     watch_picks = result.get('watch_picks', [])
     value_picks = result.get('value_picks', [])
     trend_picks = result.get('trend_picks', [])
+    pre_signal_picks = result.get('pre_signal_picks', [])
     notes = result.get('notes', [])
 
     lines = [build_regime_header(regime_info), ""]
@@ -2151,7 +2488,7 @@ def build_master_message(result: dict) -> str:
     if not buy_picks:
         lines += [
             "⚠️ <b>오늘 매수 후보 없음</b>",
-            "조건에 맞는 종목만 전송하도록 제한했습니다.",
+            "BUY 조건에 맞는 종목만 매수 후보로 분리했습니다.",
         ]
     else:
         lines += [
@@ -2175,9 +2512,24 @@ def build_master_message(result: dict) -> str:
                 )
         lines.append("")
 
-    if watch_picks:
-        lines += ["👀 <b>관찰 후보</b> — 매수 조건 미충족", "━" * 24]
-        for p in watch_picks[:3]:
+    if pre_signal_picks:
+        lines += [
+            "👀 <b>선행 관심후보</b> — 매수 아님",
+            "━" * 24,
+        ]
+        for p in pre_signal_picks[:PRE_TOP_N]:
+            meta = p.get('meta', {})
+            lines.append(
+                f"- {p.get('name')}({p.get('code')}) | {p.get('score_100')}점 | "
+                f"RS20 {meta.get('rs', 0):+}% | MA20 {meta.get('disp20', 0):+}% | 20일고점 {meta.get('high20_gap', 0)}%"
+            )
+        lines.append("")
+
+    # PRE-SIGNAL이 아닌 일반 관찰 후보만 간단 표시
+    general_watch = [p for p in (watch_picks or []) if not p.get('meta', {}).get('pre_signal_origin')]
+    if general_watch:
+        lines += ["👁 <b>일반 관찰 후보</b> — 매수 조건 미충족", "━" * 24]
+        for p in general_watch[:3]:
             meta = p.get('meta', {})
             lines.append(
                 f"- {p.get('name')}({p.get('code')}) | {p.get('score_100')}점 | RS {meta.get('rs', 0):+}% | MA20 {meta.get('disp20', 0):+}%"
@@ -2191,9 +2543,11 @@ def build_master_message(result: dict) -> str:
         if msg:
             lines += ["", msg]
 
-    lines += ["", "💡 <i>v5.0: 장세가 허락할 때만 매수 후보를 전송합니다.</i>"]
-    return "\n".join(lines)
+    if pre_signal_picks:
+        lines += ["", build_pre_signal_message(pre_signal_picks)]
 
+    lines += ["", "💡 <i>v5.1: BUY와 WATCH를 분리합니다. PRE-SIGNAL은 선행 감시용이며 history 저장 대상이 아닙니다.</i>"]
+    return "\n".join(lines)
 
 def save_master_result(result: dict):
     today_str = get_market_date()
@@ -2202,6 +2556,7 @@ def save_master_result(result: dict):
     watch_picks = result.get('watch_picks', [])
     trend_picks = result.get('trend_picks', [])
     value_picks = result.get('value_picks', [])
+    pre_signal_picks = result.get('pre_signal_picks', [])
     regime_info = result.get('regime_info', {})
 
     history_picks = _history_ready_picks(buy_picks)
@@ -2210,6 +2565,7 @@ def save_master_result(result: dict):
         "today_picks": history_picks,
         "buy_picks": buy_picks,
         "watch_picks": watch_picks,
+        "pre_signal_picks": pre_signal_picks,
         "trend_picks": trend_picks,
         "value_picks": value_picks,
         "market_regime": regime_info.get('regime', 'UNKNOWN'),
@@ -2219,6 +2575,8 @@ def save_master_result(result: dict):
         "notes": result.get('notes', []),
         "scan_label": label,
         "total_candidates": len(buy_picks),
+        "total_watch_candidates": len(watch_picks),
+        "total_pre_signal_candidates": len(pre_signal_picks),
         "total_screened": result.get('total_screened', 0),
         "filter_log": result.get('filter_log', {}),
         "base_date": today_str,
@@ -2227,7 +2585,7 @@ def save_master_result(result: dict):
         json.dump(final_output, f, ensure_ascii=False, indent=4, default=json_safe)
     print(f"✅ {DATA_FILE} 저장 완료")
 
-    # history는 실제 매수 후보가 있을 때만 추가한다. 관찰 후보는 백테스트 대상에서 제외.
+    # history는 실제 매수 후보가 있을 때만 추가한다. PRE-SIGNAL/관찰 후보는 백테스트 대상에서 제외.
     if history_picks:
         history_data = _load_json_file(HISTORY_FILE, [])
         history_data.append({
@@ -2243,9 +2601,8 @@ def save_master_result(result: dict):
     else:
         print("ℹ️ 매수 후보 없음 — history.json 추가 생략")
 
-
 def run_master_kr_engine() -> dict:
-    """장세 판단 후 TREND/VALUE/BASIC/DEFENSE 중 필요한 엔진만 실행."""
+    """장세 판단 후 TREND/VALUE/BASIC/DEFENSE/PRE-SIGNAL 중 필요한 엔진만 실행."""
     global BASIC_PERSIST_ENABLED
     BASIC_PERSIST_ENABLED = False
 
@@ -2258,29 +2615,64 @@ def run_master_kr_engine() -> dict:
         "strategy_used": [],
         "buy_picks": [],
         "watch_picks": [],
+        "pre_signal_picks": [],
         "trend_picks": [],
         "value_picks": [],
         "notes": [],
     }
 
+    def _run_pre_safely(allow_kosdaq: bool = True, top_n: int = PRE_TOP_N) -> list[dict]:
+        try:
+            return run_pre_signal_scan(allow_kosdaq=allow_kosdaq, top_n=top_n)
+        except Exception as e:
+            import traceback
+            print(f"\n❌ PRE-SIGNAL 엔진 예외: {e}")
+            traceback.print_exc()
+            return []
+
     try:
         if regime == "BROAD_BULL":
-            result["strategy_used"] = ["TREND"]
+            result["strategy_used"] = ["TREND", "PRE_SIGNAL_WATCH"]
             result["notes"].append("전체 상승장: 저점매수보다 주도주 추세 추종을 우선합니다.")
+            result["notes"].append("단, 후행성을 낮추기 위해 PRE-SIGNAL 관심후보도 별도 표시합니다.")
             trend_picks = run_trend_scan(allow_kosdaq=True, top_n=TREND_TOP_N)
             result["trend_picks"] = trend_picks
             result["buy_picks"] = trend_picks
 
+            pre_picks = _run_pre_safely(allow_kosdaq=True, top_n=PRE_TOP_N)
+            exclude = {p.get('code') for p in trend_picks if p.get('code')}
+            result["pre_signal_picks"] = _exclude_codes(pre_picks, exclude)
+            result["watch_picks"] = result["pre_signal_picks"]
+
         elif regime == "CONCENTRATED_BULL":
-            result["strategy_used"] = ["TREND_KOSPI_ONLY"]
+            result["strategy_used"] = ["TREND_KOSPI_ONLY", "PRE_SIGNAL_KOSPI_WATCH"]
             result["notes"].append("쏠림 상승장: KOSDAQ 중소형 바닥주는 매수 후보에서 제외합니다.")
+            result["notes"].append("KOSPI 중심 PRE-SIGNAL 관심후보를 별도 표시합니다.")
             trend_picks = run_trend_scan(allow_kosdaq=False, top_n=TREND_TOP_N)
             result["trend_picks"] = trend_picks
             result["buy_picks"] = trend_picks
 
+            pre_picks = _run_pre_safely(allow_kosdaq=False, top_n=PRE_TOP_N)
+            exclude = {p.get('code') for p in trend_picks if p.get('code')}
+            result["pre_signal_picks"] = _exclude_codes(pre_picks, exclude)
+            result["watch_picks"] = result["pre_signal_picks"]
+
+        elif regime == "PRE_BULL":
+            result["strategy_used"] = ["PRE_SIGNAL"]
+            result["notes"].append("상승 전환 조기감지: BUY는 보류하고 PRE-SIGNAL 관심후보만 전송합니다.")
+            result["notes"].append("MA20 완전 회복 전 구간이므로 실제 매수 후보/history에는 저장하지 않습니다.")
+            pre_picks = _run_pre_safely(allow_kosdaq=True, top_n=PRE_TOP_N)
+            result["pre_signal_picks"] = pre_picks
+            result["watch_picks"] = pre_picks
+            result["buy_picks"] = []
+
         elif regime == "BOX":
-            result["strategy_used"] = ["VALUE", "BASIC_FILTERED"]
-            result["notes"].append("횡보/중립장: 실적개선 VALUE를 우선하고 BASIC은 RS·MA20 필터를 통과한 종목만 허용합니다.")
+            result["strategy_used"] = ["VALUE", "PRE_SIGNAL", "BASIC_FILTERED"]
+            result["notes"].append("횡보/중립장: 실적개선 VALUE를 우선하되, PRE-SIGNAL로 돌파 전 관심후보를 먼저 잡습니다.")
+            result["notes"].append("BASIC은 RS·MA20 필터를 통과한 종목만 BUY 후보로 허용합니다.")
+
+            pre_picks = _run_pre_safely(allow_kosdaq=True, top_n=PRE_TOP_N)
+            result["pre_signal_picks"] = pre_picks
 
             value_picks = []
             try:
@@ -2294,31 +2686,35 @@ def run_master_kr_engine() -> dict:
             # VALUE가 있으면 우선 매수 후보로 사용. 없으면 BASIC 필터 후보 사용.
             if value_picks:
                 result["buy_picks"] = value_picks
+                result["watch_picks"] = pre_picks
             else:
                 basic_picks = run_kr_scan()
-                result["watch_picks"] = basic_picks
-                result["buy_picks"] = filter_basic_buy_candidates(basic_picks, min_rs=0, allow_kosdaq=True, min_score=65)
+                basic_buy = filter_basic_buy_candidates(basic_picks, min_rs=0, allow_kosdaq=True, min_score=65)
+                result["buy_picks"] = basic_buy
+                exclude = {p.get('code') for p in basic_buy if p.get('code')}
+                result["watch_picks"] = _dedupe_picks(_exclude_codes(pre_picks, exclude) + basic_picks)
 
         elif regime == "BEAR":
             result["strategy_used"] = ["DEFENSE"]
             result["notes"].append("하락장: 자동 매수 후보 전송을 중단합니다.")
             result["buy_picks"] = []
             result["watch_picks"] = []
+            result["pre_signal_picks"] = []
 
         else:
             result["strategy_used"] = ["WATCH"]
             result["notes"].append("시장 판단 불가: 자동 추천을 중단합니다.")
             result["buy_picks"] = []
             result["watch_picks"] = []
+            result["pre_signal_picks"] = []
 
     finally:
         BASIC_PERSIST_ENABLED = True
 
     return result
 
-
 # ══════════════════════════════════════════════════════════════
-#  엔트리포인트 — v5.0 마스터 라우터
+#  엔트리포인트 — v5.1 마스터 라우터
 # ══════════════════════════════════════════════════════════════
 
 if __name__ == "__main__":

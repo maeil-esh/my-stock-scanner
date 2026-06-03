@@ -12233,5 +12233,145 @@
                 }
             }
         ]
+    },
+    {
+        "date": "20260603",
+        "label": "🌙 미장 스캔",
+        "market_regime": "CONCENTRATED_BULL",
+        "strategy_used": [
+            "TREND_KOSPI_ONLY",
+            "PRE_SIGNAL_KOSPI_WATCH"
+        ],
+        "picks": [
+            {
+                "rank": 1,
+                "name": "두산로보틱스",
+                "code": "454910",
+                "company_summary": "[KOSPI]",
+                "supply": "TREND",
+                "cur_price": 166700,
+                "score_100": 90,
+                "score": "★★★★☆ 90점",
+                "tags": "추세회복 / 상대강도 / 20일돌파",
+                "expected_return": "",
+                "score_detail": {
+                    "상대강도": 24,
+                    "추세회복": 25,
+                    "20일돌파": 20,
+                    "거래대금": 15,
+                    "과열제어": 6
+                },
+                "meta": {
+                    "rs": 17.6,
+                    "disp20": 51.2,
+                    "disp60": 72.4,
+                    "ma20_slope": 4.66,
+                    "vol_ratio": 3.39,
+                    "rsi": 76.1,
+                    "breakout20": true,
+                    "near60_high": true,
+                    "high60_gap": -20.1,
+                    "mktcap": 108054,
+                    "trade": {
+                        "entry": 166700,
+                        "stop_loss": 144585,
+                        "target_1": 210928,
+                        "target_2": 240414,
+                        "risk_pct": 13.3,
+                        "reward_pct": 26.5,
+                        "rr_ratio": 2.0,
+                        "atr": 14742.9
+                    },
+                    "rt_price_used": true,
+                    "trend_origin": true
+                }
+            },
+            {
+                "rank": 2,
+                "name": "LG전자우",
+                "code": "066575",
+                "company_summary": "[KOSPI]",
+                "supply": "TREND",
+                "cur_price": 117300,
+                "score_100": 90,
+                "score": "★★★★☆ 90점",
+                "tags": "상대강도 / 추세회복 / 거래대금",
+                "expected_return": "",
+                "score_detail": {
+                    "상대강도": 30,
+                    "추세회복": 25,
+                    "20일돌파": 14,
+                    "거래대금": 15,
+                    "과열제어": 6
+                },
+                "meta": {
+                    "rs": 49.9,
+                    "disp20": 46.0,
+                    "disp60": 88.6,
+                    "ma20_slope": 12.38,
+                    "vol_ratio": 2.62,
+                    "rsi": 73.6,
+                    "breakout20": false,
+                    "near60_high": true,
+                    "high60_gap": 5.7,
+                    "mktcap": 20153,
+                    "trade": {
+                        "entry": 117300,
+                        "stop_loss": 97596,
+                        "target_1": 156707,
+                        "target_2": 182978,
+                        "risk_pct": 16.8,
+                        "reward_pct": 33.6,
+                        "rr_ratio": 2.0,
+                        "atr": 13135.7
+                    },
+                    "rt_price_used": true,
+                    "trend_origin": true
+                }
+            },
+            {
+                "rank": 3,
+                "name": "SK텔레콤",
+                "code": "017670",
+                "company_summary": "[KOSPI]",
+                "supply": "TREND",
+                "cur_price": 125200,
+                "score_100": 84,
+                "score": "★★★★☆ 84점",
+                "tags": "추세회복 / 20일돌파 / 상대강도",
+                "expected_return": "",
+                "score_detail": {
+                    "상대강도": 18,
+                    "추세회복": 25,
+                    "20일돌파": 20,
+                    "거래대금": 15,
+                    "과열제어": 6
+                },
+                "meta": {
+                    "rs": 8.1,
+                    "disp20": 23.3,
+                    "disp60": 37.5,
+                    "ma20_slope": 2.49,
+                    "vol_ratio": 4.87,
+                    "rsi": 76.3,
+                    "breakout20": true,
+                    "near60_high": true,
+                    "high60_gap": -4.1,
+                    "mktcap": 268917,
+                    "trade": {
+                        "entry": 125200,
+                        "stop_loss": 112964,
+                        "target_1": 149671,
+                        "target_2": 165985,
+                        "risk_pct": 9.8,
+                        "reward_pct": 19.5,
+                        "rr_ratio": 2.0,
+                        "atr": 8157.1
+                    },
+                    "rt_price_used": true,
+                    "trend_origin": true
+                }
+            }
+        ]
     }
 ]

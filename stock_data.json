@@ -930,7 +930,7 @@
         "쏠림 상승장: KOSDAQ 중소형 바닥주는 매수 후보에서 제외합니다.",
         "KOSPI 중심 PRE-SIGNAL 관심후보를 별도 표시합니다."
     ],
-    "scan_label": "📊 장 중간 스캔",
+    "scan_label": "🏁 장 마감 스캔",
     "total_candidates": 3,
     "total_watch_candidates": 5,
     "total_pre_signal_candidates": 5,

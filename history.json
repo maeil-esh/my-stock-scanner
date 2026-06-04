@@ -12373,5 +12373,145 @@
                 }
             }
         ]
+    },
+    {
+        "date": "20260604",
+        "label": "📊 장 중간 스캔",
+        "market_regime": "CONCENTRATED_BULL",
+        "strategy_used": [
+            "TREND_KOSPI_ONLY",
+            "PRE_SIGNAL_KOSPI_WATCH"
+        ],
+        "picks": [
+            {
+                "rank": 1,
+                "name": "코리아써키트",
+                "code": "007810",
+                "company_summary": "[KOSPI]",
+                "supply": "TREND",
+                "cur_price": 123500,
+                "score_100": 93,
+                "score": "★★★★☆ 93점",
+                "tags": "상대강도 / 추세회복 / 20일돌파",
+                "expected_return": "",
+                "score_detail": {
+                    "상대강도": 30,
+                    "추세회복": 25,
+                    "20일돌파": 20,
+                    "거래대금": 8,
+                    "과열제어": 10
+                },
+                "meta": {
+                    "rs": 103.2,
+                    "disp20": 21.0,
+                    "disp60": 46.1,
+                    "ma20_slope": 4.93,
+                    "vol_ratio": 1.21,
+                    "rsi": 66.5,
+                    "breakout20": true,
+                    "near60_high": true,
+                    "high60_gap": -0.4,
+                    "mktcap": 29906,
+                    "trade": {
+                        "entry": 123500,
+                        "stop_loss": 102328,
+                        "target_1": 165842,
+                        "target_2": 194071,
+                        "risk_pct": 17.1,
+                        "reward_pct": 34.3,
+                        "rr_ratio": 2.0,
+                        "atr": 14114.3
+                    },
+                    "rt_price_used": true,
+                    "trend_origin": true
+                }
+            },
+            {
+                "rank": 2,
+                "name": "신세계",
+                "code": "004170",
+                "company_summary": "[KOSPI]",
+                "supply": "TREND",
+                "cur_price": 672000,
+                "score_100": 85,
+                "score": "★★★★☆ 85점",
+                "tags": "상대강도 / 추세회복 / 20일돌파",
+                "expected_return": "",
+                "score_detail": {
+                    "상대강도": 30,
+                    "추세회복": 25,
+                    "20일돌파": 20,
+                    "거래대금": 8,
+                    "과열제어": 2
+                },
+                "meta": {
+                    "rs": 39.1,
+                    "disp20": 32.0,
+                    "disp60": 67.1,
+                    "ma20_slope": 6.72,
+                    "vol_ratio": 1.26,
+                    "rsi": 78.3,
+                    "breakout20": true,
+                    "near60_high": true,
+                    "high60_gap": -12.2,
+                    "mktcap": 63093,
+                    "trade": {
+                        "entry": 672000,
+                        "stop_loss": 597160,
+                        "target_1": 821678,
+                        "target_2": 921464,
+                        "risk_pct": 11.1,
+                        "reward_pct": 22.3,
+                        "rr_ratio": 2.0,
+                        "atr": 49892.9
+                    },
+                    "rt_price_used": true,
+                    "trend_origin": true
+                }
+            },
+            {
+                "rank": 3,
+                "name": "롯데쇼핑",
+                "code": "023530",
+                "company_summary": "[KOSPI]",
+                "supply": "TREND",
+                "cur_price": 172000,
+                "score_100": 80,
+                "score": "★★★★☆ 80점",
+                "tags": "상대강도 / 추세회복 / 20일돌파",
+                "expected_return": "",
+                "score_detail": {
+                    "상대강도": 24,
+                    "추세회복": 20,
+                    "20일돌파": 14,
+                    "거래대금": 12,
+                    "과열제어": 10
+                },
+                "meta": {
+                    "rs": 15.9,
+                    "disp20": 11.3,
+                    "disp60": 36.7,
+                    "ma20_slope": 2.68,
+                    "vol_ratio": 1.63,
+                    "rsi": 66.4,
+                    "breakout20": false,
+                    "near60_high": true,
+                    "high60_gap": 3.4,
+                    "mktcap": 48628,
+                    "trade": {
+                        "entry": 172000,
+                        "stop_loss": 151664,
+                        "target_1": 212671,
+                        "target_2": 239785,
+                        "risk_pct": 11.8,
+                        "reward_pct": 23.6,
+                        "rr_ratio": 2.0,
+                        "atr": 13557.1
+                    },
+                    "rt_price_used": true,
+                    "trend_origin": true
+                }
+            }
+        ]
     }
 ]

@@ -1,9 +1,17 @@
 """
-engine_kr.py — 국장 장세전환형 스캐너 (REGIME ROUTER v5.1 PRE-SIGNAL)
+engine_kr.py — 국장 장세전환형 스캐너 (REGIME ROUTER v5.3 CLOSE NEXT)
 실행: python engine_kr.py
 스케줄: 09:41 / 13:23 / 16:43 KST
 
-[v5.1 핵심]
+[v5.3 핵심] — 시간대별 역할 분리 + 종가 NEXT 오버레이
+  ① 아침(09:41): 전일 증시 이슈 + 전일 특이 종목 브리핑
+  ② 장중(13:23): 기존 로직 기반 검토 종목, history 미저장
+  ③ 장마감(16:43): 당일 증시 이슈 + 당일 특이 종목 + NEXT 종가매매 검토 종목
+  ④ NEXT는 기존 장세별 BUY 후보에만 추가 적용하는 익일 대응 오버레이
+  ⑤ 기존 BASIC / VALUE / TREND / PRE-SIGNAL 선별 로직은 유지
+  ⑥ history.json은 NEXT 종가매매 검토 결과만 저장
+
+[v5.1 기존 핵심]
   ① 시장 국면을 먼저 판단: BROAD_BULL / CONCENTRATED_BULL / BOX / BEAR / UNKNOWN
   ② 상승장: TREND 엔진 중심 — RS 양수, MA20 회복, 신고가/고점근접 종목
   ③ 횡보장: VALUE 엔진 중심 — 실적개선+저평가 종목
@@ -2557,6 +2565,9 @@ def save_master_result(result: dict):
     trend_picks = result.get('trend_picks', [])
     value_picks = result.get('value_picks', [])
     pre_signal_picks = result.get('pre_signal_picks', [])
+    next_picks = result.get('next_picks', [])
+    base_buy_picks = result.get('base_buy_picks', [])
+    next_rejected = result.get('next_rejected', [])
     regime_info = result.get('regime_info', {})
 
     history_picks = _history_ready_picks(buy_picks)
@@ -2566,6 +2577,9 @@ def save_master_result(result: dict):
         "buy_picks": buy_picks,
         "watch_picks": watch_picks,
         "pre_signal_picks": pre_signal_picks,
+        "next_picks": next_picks,
+        "base_buy_picks": base_buy_picks,
+        "next_rejected": next_rejected,
         "trend_picks": trend_picks,
         "value_picks": value_picks,
         "market_regime": regime_info.get('regime', 'UNKNOWN'),
@@ -2577,6 +2591,7 @@ def save_master_result(result: dict):
         "total_candidates": len(buy_picks),
         "total_watch_candidates": len(watch_picks),
         "total_pre_signal_candidates": len(pre_signal_picks),
+        "total_next_candidates": len(next_picks),
         "total_screened": result.get('total_screened', 0),
         "filter_log": result.get('filter_log', {}),
         "base_date": today_str,
@@ -2593,6 +2608,7 @@ def save_master_result(result: dict):
             "label": label,
             "market_regime": regime_info.get('regime', 'UNKNOWN'),
             "strategy_used": result.get('strategy_used', []),
+            "selection_mode": "CLOSE_NEXT" if result.get('next_picks') is not None else "BASE",
             "picks": history_picks,
         })
         with open(HISTORY_FILE, 'w', encoding='utf-8') as f:
@@ -2714,19 +2730,785 @@ def run_master_kr_engine() -> dict:
     return result
 
 # ══════════════════════════════════════════════════════════════
-#  엔트리포인트 — v5.1 마스터 라우터
+#  ★ SESSION ROUTER v5.3 — 시간대별 역할 분리 + CLOSE NEXT
+#
+#  09:41  MORNING  : 전일 시장 이슈 + 전일 특이 종목
+#  13:23  INTRADAY : 기존 로직 기반 장중 검토 종목 (history 저장 금지)
+#  16:43  CLOSE    : 당일 시장 이슈 + 당일 특이 종목 + NEXT 종가매매 검토 종목
+#
+#  기존 종목 선별 로직은 변경하지 않는다. CLOSE에서 기존 BUY 후보에 NEXT 오버레이만 추가한다.
+# ══════════════════════════════════════════════════════════════
+
+INTRADAY_DATA_FILE = 'stock_data_intraday.json'
+ANOMALY_TOP_N      = 12
+NEWS_TOP_N         = 8
+
+# NEXT 종가매매 오버레이 — 기존 장세별 BUY 후보를 익일 대응 관점으로 재검증한다.
+# 신규 전종목 추천기가 아니다. 기존 BASIC / VALUE / TREND 선별식을 반드시 먼저 통과해야 한다.
+NEXT_TOP_N              = 3
+NEXT_SCORE_MIN          = 60
+NEXT_MIN_CLOSE_LOCATION = 0.65   # 당일 저가~고가 구간 중 종가 위치
+NEXT_MIN_VOLUME_RATIO   = 0.80   # 당일 거래량 / 직전 20거래일 평균
+NEXT_MAX_DAILY_CHANGE   = 12.0   # 급등 추격 방지
+NEXT_MAX_RET5           = 18.0   # 단기 과열 방지
+NEXT_MAX_DISP20         = 12.0   # MA20 과도 이격 방지
+NEXT_MIN_TURNOVER       = 2_000_000_000  # 근사 거래대금 20억원
+
+# 동일 거래일 스냅샷을 뉴스 날짜 판단과 특이 종목 브리핑이 재사용한다.
+# pykrx/KRX에 불필요한 반복 요청을 보내지 않기 위한 실행 단위 캐시다.
+_pykrx_snapshot_cache: dict[str, pd.DataFrame] = {}
+_pykrx_snapshot_disabled = False
+
+SESSION_MORNING  = 'MORNING'
+SESSION_INTRADAY = 'INTRADAY'
+SESSION_CLOSE    = 'CLOSE'
+
+
+def _kst_now() -> datetime.datetime:
+    """서버 타임존과 무관하게 한국 시간을 반환."""
+    kst = datetime.timezone(datetime.timedelta(hours=9))
+    return datetime.datetime.now(kst)
+
+
+def get_run_session(now: datetime.datetime | None = None) -> str:
+    """실행 시간대 판단. 테스트 시 KR_SCAN_SESSION 환경변수로 강제 지정 가능."""
+    forced = str(os.environ.get('KR_SCAN_SESSION', '')).strip().upper()
+    aliases = {
+        'MORNING': SESSION_MORNING, 'AM': SESSION_MORNING,
+        'INTRADAY': SESSION_INTRADAY, 'DAY': SESSION_INTRADAY,
+        'CLOSE': SESSION_CLOSE, 'AFTER_CLOSE': SESSION_CLOSE, 'PM': SESSION_CLOSE,
+    }
+    if forced in aliases:
+        return aliases[forced]
+
+    now = now or _kst_now()
+    hhmm = now.hour * 100 + now.minute
+    if hhmm < 1130:
+        return SESSION_MORNING
+    if hhmm < 1540:
+        return SESSION_INTRADAY
+    return SESSION_CLOSE
+
+
+def _fmt_kr_market_date(date_str: str) -> str:
+    raw = str(date_str or '').replace('-', '').replace('.', '')
+    if len(raw) >= 8:
+        return f"{raw[:4]}.{raw[4:6]}.{raw[6:8]}"
+    return str(date_str or '')
+
+
+def _date8(value) -> str:
+    if isinstance(value, datetime.datetime):
+        value = value.date()
+    if isinstance(value, datetime.date):
+        return value.strftime('%Y%m%d')
+    return str(value or '').replace('-', '').replace('.', '')[:8]
+
+
+def _pick_col(df: pd.DataFrame, candidates: list[str]):
+    for col in candidates:
+        if col in df.columns:
+            return col
+    return None
+
+
+def _fetch_pykrx_daily_snapshot(date8: str) -> pd.DataFrame:
+    """pykrx 일별 전종목 스냅샷. 인증/소스 장애 시 빈 DataFrame 반환."""
+    global _pykrx_snapshot_disabled
+    if _pykrx_snapshot_disabled:
+        return pd.DataFrame()
+    if date8 in _pykrx_snapshot_cache:
+        return _pykrx_snapshot_cache[date8].copy()
+    try:
+        from pykrx import stock as pkstock
+        ohlcv = pkstock.get_market_ohlcv_by_ticker(date8, market='ALL')
+        if ohlcv is None or ohlcv.empty:
+            return pd.DataFrame()
+        ohlcv = ohlcv.copy()
+        ohlcv.index = ohlcv.index.astype(str).str.zfill(6)
+
+        try:
+            caps = pkstock.get_market_cap_by_ticker(date8, market='ALL')
+            if caps is not None and not caps.empty:
+                caps = caps.copy()
+                caps.index = caps.index.astype(str).str.zfill(6)
+                cap_col = _pick_col(caps, ['시가총액', 'Marcap', 'Market Cap'])
+                if cap_col:
+                    ohlcv['시가총액'] = caps[cap_col]
+        except Exception:
+            pass
+        _pykrx_snapshot_cache[date8] = ohlcv.copy()
+        return ohlcv
+    except Exception as e:
+        print(f"  ⚠️ pykrx 일별 스냅샷 실패({date8}): {e}")
+        _pykrx_snapshot_disabled = True
+        empty = pd.DataFrame()
+        _pykrx_snapshot_cache[date8] = empty
+        return empty.copy()
+
+
+def _find_recent_market_snapshots(anchor_date: datetime.date, count: int = 2) -> list[tuple[str, pd.DataFrame]]:
+    """anchor_date부터 역순으로 실제 거래일 스냅샷을 찾는다."""
+    found = []
+    cursor = anchor_date
+    for _ in range(15):
+        date8 = _date8(cursor)
+        df = _fetch_pykrx_daily_snapshot(date8)
+        if df is not None and not df.empty:
+            vol_col = _pick_col(df, ['거래량', 'Volume'])
+            if vol_col is None or float(pd.to_numeric(df[vol_col], errors='coerce').fillna(0).sum()) > 0:
+                found.append((date8, df))
+                if len(found) >= count:
+                    break
+        cursor -= datetime.timedelta(days=1)
+    return found
+
+
+def _fdr_latest_anomaly_frame() -> tuple[str, pd.DataFrame]:
+    """pykrx 조회 불가 시 FinanceDataReader 최신 KRX 리스팅으로 최소 브리핑 생성."""
+    try:
+        df = fdr.StockListing('KRX')
+        if df is None or df.empty:
+            return '', pd.DataFrame()
+        df = df.copy()
+        code_col = _pick_col(df, ['Code', 'Symbol', 'code'])
+        name_col = _pick_col(df, ['Name', 'name', '종목명'])
+        close_col = _pick_col(df, ['Close', '종가'])
+        change_col = _pick_col(df, ['ChagesRatio', 'ChangeRate', 'ChangesRatio', '등락률'])
+        amount_col = _pick_col(df, ['Amount', '거래대금'])
+        volume_col = _pick_col(df, ['Volume', '거래량'])
+        cap_col = _find_cap_col(df)
+        if not code_col or not name_col or not close_col:
+            return '', pd.DataFrame()
+
+        out = pd.DataFrame(index=df.index)
+        out['code'] = df[code_col].astype(str).str.zfill(6)
+        out['name'] = df[name_col].astype(str)
+        out['close'] = pd.to_numeric(df[close_col], errors='coerce').fillna(0)
+        out['change_pct'] = pd.to_numeric(df[change_col], errors='coerce').fillna(0) if change_col else 0.0
+        out['amount'] = pd.to_numeric(df[amount_col], errors='coerce').fillna(0) if amount_col else 0.0
+        out['volume'] = pd.to_numeric(df[volume_col], errors='coerce').fillna(0) if volume_col else 0.0
+        out['market_cap'] = pd.to_numeric(df[cap_col], errors='coerce').fillna(0) if cap_col else 0.0
+        out['volume_ratio'] = np.nan
+        return str(get_market_date()).replace('-', ''), out
+    except Exception as e:
+        print(f"  ⚠️ FDR 최신 특이 종목 조회 실패: {e}")
+        return '', pd.DataFrame()
+
+
+def _normalize_pykrx_anomaly_frame(cur_df: pd.DataFrame, prev_df: pd.DataFrame | None = None) -> pd.DataFrame:
+    close_col  = _pick_col(cur_df, ['종가', 'Close'])
+    change_col = _pick_col(cur_df, ['등락률', 'ChangeRate', 'ChagesRatio'])
+    amount_col = _pick_col(cur_df, ['거래대금', 'Amount'])
+    volume_col = _pick_col(cur_df, ['거래량', 'Volume'])
+    cap_col    = _pick_col(cur_df, ['시가총액', 'Marcap', 'Market Cap'])
+    if not close_col or not volume_col:
+        return pd.DataFrame()
+
+    out = pd.DataFrame(index=cur_df.index.astype(str).str.zfill(6))
+    out['code'] = out.index
+    out['close'] = pd.to_numeric(cur_df[close_col], errors='coerce').fillna(0).values
+    out['change_pct'] = pd.to_numeric(cur_df[change_col], errors='coerce').fillna(0).values if change_col else 0.0
+    out['amount'] = pd.to_numeric(cur_df[amount_col], errors='coerce').fillna(0).values if amount_col else 0.0
+    out['volume'] = pd.to_numeric(cur_df[volume_col], errors='coerce').fillna(0).values
+    out['market_cap'] = pd.to_numeric(cur_df[cap_col], errors='coerce').fillna(0).values if cap_col else 0.0
+    out['volume_ratio'] = np.nan
+
+    if prev_df is not None and not prev_df.empty:
+        prev_vol_col = _pick_col(prev_df, ['거래량', 'Volume'])
+        if prev_vol_col:
+            prev_vol = pd.to_numeric(prev_df[prev_vol_col], errors='coerce').fillna(0)
+            prev_vol.index = prev_vol.index.astype(str).str.zfill(6)
+            out['prev_volume'] = out['code'].map(prev_vol.to_dict()).fillna(0)
+            out['volume_ratio'] = np.where(out['prev_volume'] > 0, out['volume'] / out['prev_volume'], np.nan)
+    return out
+
+
+def _stock_name_map(codes: list[str]) -> dict[str, str]:
+    names = {}
+    try:
+        from pykrx import stock as pkstock
+        for code in codes:
+            try:
+                names[code] = pkstock.get_market_ticker_name(code) or code
+            except Exception:
+                names[code] = code
+    except Exception:
+        pass
+    return names
+
+
+def _select_anomaly_rows(frame: pd.DataFrame, top_n: int = ANOMALY_TOP_N) -> list[dict]:
+    if frame is None or frame.empty:
+        return []
+    df = frame.copy()
+    for c in ['close', 'change_pct', 'amount', 'volume', 'market_cap', 'volume_ratio']:
+        if c not in df.columns:
+            df[c] = np.nan
+        df[c] = pd.to_numeric(df[c], errors='coerce')
+
+    # 체결이 거의 없는 초저유동성 종목은 브리핑에서 제외한다.
+    df = df[(df['close'].fillna(0) >= 1000) & (df['amount'].fillna(0) >= 5_000_000_000)]
+    if 'market_cap' in df.columns and float(df['market_cap'].fillna(0).max()) > 0:
+        df = df[(df['market_cap'].fillna(0) >= 50_000_000_000)]  # 500억원 이상
+    if df.empty:
+        return []
+
+    df['is_fast_move'] = df['change_pct'].abs() >= 7.0
+    df['is_turnover']  = df['amount'] >= 50_000_000_000
+    df['is_vol_spike'] = df['volume_ratio'].fillna(0) >= 3.0
+    special = df[df['is_fast_move'] | df['is_turnover'] | df['is_vol_spike']].copy()
+    if special.empty:
+        special = df.nlargest(top_n, 'amount').copy()
+
+    # 급등락, 거래량 변화, 거래대금을 함께 반영한 브리핑용 우선순위다.
+    special['brief_score'] = (
+        special['change_pct'].abs().fillna(0) * 2.0
+        + np.minimum(special['volume_ratio'].fillna(0), 10.0) * 3.0
+        + np.log10(np.maximum(special['amount'].fillna(0), 1.0))
+    )
+    special = special.sort_values(['brief_score', 'amount'], ascending=False).head(top_n)
+    name_map = _stock_name_map(special['code'].astype(str).tolist())
+
+    rows = []
+    for _, row in special.iterrows():
+        code = str(row.get('code', '')).zfill(6)
+        tags = []
+        chg = float(row.get('change_pct', 0) or 0)
+        vr = row.get('volume_ratio')
+        amount = float(row.get('amount', 0) or 0)
+        if chg >= 7.0:
+            tags.append('급등')
+        elif chg <= -7.0:
+            tags.append('급락')
+        if pd.notna(vr) and float(vr) >= 3.0:
+            tags.append('거래량급증')
+        if amount >= 50_000_000_000:
+            tags.append('거래대금집중')
+        if not tags:
+            tags.append('거래활발')
+        rows.append({
+            'code': code,
+            'name': str(row.get('name') or name_map.get(code) or code),
+            'close': int(float(row.get('close', 0) or 0)),
+            'change_pct': round(chg, 2),
+            'amount': int(amount),
+            'volume_ratio': round(float(vr), 2) if pd.notna(vr) else None,
+            'tags': tags,
+        })
+    return rows
+
+
+def build_daily_anomaly_message(scope: str = 'PREVIOUS') -> str:
+    """전일 또는 당일 기준 특이 종목 브리핑. 추천 종목 로직과 완전히 분리."""
+    now = _kst_now()
+    is_previous = str(scope).upper() == 'PREVIOUS'
+    anchor = now.date() - datetime.timedelta(days=1) if is_previous else now.date()
+    snapshots = _find_recent_market_snapshots(anchor, count=2)
+
+    source_note = 'pykrx 일별 스냅샷'
+    date8 = ''
+    rows = []
+    if snapshots:
+        date8, cur_df = snapshots[0]
+        prev_df = snapshots[1][1] if len(snapshots) >= 2 else None
+        rows = _select_anomaly_rows(_normalize_pykrx_anomaly_frame(cur_df, prev_df))
+    if not rows:
+        date8, fallback = _fdr_latest_anomaly_frame()
+        rows = _select_anomaly_rows(fallback)
+        source_note = 'FDR 최신 KRX 스냅샷 대체값'
+
+    title = '🌅 <b>전일 특이 종목</b>' if is_previous else '🌙 <b>당일 특이 종목</b>'
+    lines = [f"{title} — {_fmt_kr_market_date(date8)}", '━' * 24]
+    if not rows:
+        lines += ['특이 종목 데이터를 불러오지 못했습니다.', '<i>pykrx 또는 FDR 조회 상태를 확인하세요.</i>']
+        return '\n'.join(lines)
+
+    for idx, row in enumerate(rows, 1):
+        chart = f"https://m.stock.naver.com/domestic/stock/{row['code']}/total"
+        amount_uk = row['amount'] / 100_000_000
+        vr_text = f" | 거래량 {row['volume_ratio']:.1f}배" if row.get('volume_ratio') is not None else ''
+        lines.append(
+            f"#{idx} <b><a href='{chart}'>{row['name']}</a></b> ({row['code']}) "
+            f"{row['change_pct']:+.1f}% | 거래대금 {amount_uk:,.0f}억{vr_text} | {'·'.join(row['tags'])}"
+        )
+    lines += ['', f"<i>기준: {source_note} / 추천이 아니라 이상 움직임 확인용입니다.</i>"]
+    return '\n'.join(lines)
+
+
+def _fetch_naver_finance_headlines(date8: str, limit: int = NEWS_TOP_N) -> list[dict]:
+    """네이버 금융 주요뉴스의 특정 일자 제목을 가져온다. 실패 시 빈 목록."""
+    try:
+        from urllib.parse import urljoin
+        url = f"https://finance.naver.com/news/mainnews.naver?date={date8}"
+        headers = {
+            'User-Agent': 'Mozilla/5.0',
+            'Accept-Language': 'ko-KR,ko;q=0.9',
+            'Referer': 'https://finance.naver.com/',
+        }
+        r = requests.get(url, headers=headers, timeout=8)
+        r.encoding = 'euc-kr'
+        soup = BeautifulSoup(r.text, 'html.parser')
+        anchors = []
+        for selector in ['dd.articleSubject a', '.articleSubject a', '.newsList a', 'a[href*="news_read.naver"]']:
+            anchors.extend(soup.select(selector))
+
+        out = []
+        seen = set()
+        for a in anchors:
+            title = a.get_text(' ', strip=True)
+            href = str(a.get('href') or '')
+            if len(title) < 8 or title in seen:
+                continue
+            if 'news' not in href:
+                continue
+            seen.add(title)
+            out.append({'title': title, 'url': urljoin('https://finance.naver.com', href)})
+            if len(out) >= limit:
+                break
+        return out
+    except Exception as e:
+        print(f"  ⚠️ 네이버 금융 뉴스 실패({date8}): {e}")
+        return []
+
+
+def _resolve_news_market_date(scope: str) -> str:
+    now = _kst_now()
+    is_previous = str(scope).upper() == 'PREVIOUS'
+    anchor = now.date() - datetime.timedelta(days=1) if is_previous else now.date()
+    snapshots = _find_recent_market_snapshots(anchor, count=1)
+    if snapshots:
+        return snapshots[0][0]
+    return str(get_market_date()).replace('-', '')
+
+
+def build_stock_issue_briefing(scope: str = 'PREVIOUS') -> str:
+    """아침은 전일, 장마감은 당일 기준 주요 증시 뉴스. 기존 공통 브리핑은 장애 시 fallback."""
+    is_previous = str(scope).upper() == 'PREVIOUS'
+    date8 = _resolve_news_market_date(scope)
+    headlines = _fetch_naver_finance_headlines(date8, NEWS_TOP_N)
+    title = '🌅 <b>전일 주식 관련 이슈</b>' if is_previous else '🌙 <b>장 마감 주식 관련 이슈</b>'
+    lines = [f"{title} — {_fmt_kr_market_date(date8)}", '━' * 24]
+    if headlines:
+        for idx, item in enumerate(headlines, 1):
+            lines.append(f"{idx}. <a href='{item['url']}'>{item['title']}</a>")
+        lines += ['', '<i>시장 맥락 확인용입니다. 종목 후보 선별 점수에는 반영하지 않습니다.</i>']
+        return '\n'.join(lines)
+
+    # 네이버 특정일 뉴스가 실패한 경우 기존 engine_common 브리핑을 그대로 사용한다.
+    try:
+        fallback = build_news_briefing()
+        if fallback:
+            lines += ['특정 일자 뉴스 조회 실패 — 기존 최신 뉴스 브리핑으로 대체합니다.', '', str(fallback)]
+            return '\n'.join(lines)
+    except Exception as e:
+        print(f"  ⚠️ 기존 뉴스 브리핑 fallback 실패: {e}")
+    lines.append('뉴스 데이터를 불러오지 못했습니다.')
+    return '\n'.join(lines)
+
+
+
+# ══════════════════════════════════════════════════════════════
+#  ★ CLOSE NEXT 오버레이 v5.3 — 종가매매는 익일 대응 후보만
+#
+#  원칙
+#  ① 기존 장세 라우터가 만든 BUY 후보만 입력으로 사용한다.
+#  ② PRE-SIGNAL / WATCH 후보는 승격하지 않는다. 기존 의미를 유지한다.
+#  ③ 종가 위치·거래량·20일 고점 접근·RS·MA20 이격·과열을 재확인한다.
+#  ④ NEXT 통과 종목만 종가매매 검토 및 history 저장 대상으로 사용한다.
+# ══════════════════════════════════════════════════════════════
+
+def _clone_history_ready_pick(p: dict) -> dict | None:
+    """VALUE/TREND/BASIC 형식을 NEXT 공통 구조(code 기반)로 복제한다."""
+    try:
+        import copy
+        cloned = copy.deepcopy(p)
+        converted = _history_ready_picks([cloned])
+        return converted[0] if converted else None
+    except Exception:
+        return None
+
+
+def _next_origin_label(p: dict) -> str:
+    meta = p.get('meta', {}) or {}
+    if meta.get('trend_origin'):
+        return 'TREND'
+    if meta.get('value_origin'):
+        return 'VALUE'
+    # BASIC의 supply 필드는 외인·기관 수급 설명이 들어갈 수 있으므로
+    # 문자열을 그대로 엔진명으로 사용하지 않는다.
+    return 'BASIC'
+
+
+def _score_close_next_candidate(df: pd.DataFrame, index_df, origin: str) -> tuple[int, dict, dict, list[str]] | None:
+    """기존 BUY 후보가 다음 거래일 종가매매 검토에 적합한지 재채점한다.
+
+    이 함수는 신규 후보를 만들지 않는다. 기존 BUY 후보 중 과열 추격과
+    장 막판 약세 종목을 제외하고, 종가가 견조한 후보만 남긴다.
+    """
+    try:
+        if df is None or len(df) < 60:
+            return None
+
+        close = df['Close']
+        high = df['High']
+        low = df['Low']
+        volume = df['Volume']
+        cur = _safe_float(close.iloc[-1])
+        prev_close = _safe_float(close.iloc[-2]) if len(close) >= 2 else cur
+        day_high = _safe_float(high.iloc[-1], cur)
+        day_low = _safe_float(low.iloc[-1], cur)
+        vol_now = _safe_float(volume.iloc[-1])
+        vol20_prev = _safe_float(volume.iloc[-21:-1].mean()) if len(volume) >= 21 else _safe_float(volume.iloc[:-1].mean())
+        ma20 = _safe_float(close.rolling(20).mean().iloc[-1])
+        high20_prev = _safe_float(high.iloc[-21:-1].max()) if len(high) >= 21 else _safe_float(high.iloc[:-1].max())
+        rsi = _safe_float(calc_rsi(close).iloc[-1], 50.0)
+
+        if cur <= 0 or prev_close <= 0 or ma20 <= 0 or vol20_prev <= 0:
+            return None
+
+        change_pct = (cur / prev_close - 1) * 100
+        ret5 = (cur / _safe_float(close.iloc[-6], cur) - 1) * 100 if len(close) >= 6 else 0.0
+        disp20 = (cur / ma20 - 1) * 100
+        vol_ratio = vol_now / (vol20_prev + 1)
+        turnover = cur * vol_now
+        close_location = (cur - day_low) / (day_high - day_low) if day_high > day_low else 0.5
+        high20_gap = (high20_prev - cur) / high20_prev * 100 if high20_prev > 0 else 999.0
+        breakout20 = cur > high20_prev if high20_prev > 0 else False
+        rs20 = calc_relative_strength(df, index_df, period=20) if index_df is not None else 0.0
+
+        reject_reasons = []
+        if cur < 1000:
+            reject_reasons.append('1,000원 미만')
+        if close_location < NEXT_MIN_CLOSE_LOCATION:
+            reject_reasons.append(f'종가위치 {close_location * 100:.0f}%')
+        if change_pct < -1.5:
+            reject_reasons.append(f'당일 약세 {change_pct:+.1f}%')
+        if change_pct > NEXT_MAX_DAILY_CHANGE:
+            reject_reasons.append(f'급등 추격 {change_pct:+.1f}%')
+        if vol_ratio < NEXT_MIN_VOLUME_RATIO:
+            reject_reasons.append(f'거래량 부족 {vol_ratio:.2f}배')
+        if turnover < NEXT_MIN_TURNOVER:
+            reject_reasons.append(f'거래대금 부족 {turnover / 100_000_000:.0f}억')
+        if disp20 < -2.0:
+            reject_reasons.append(f'MA20 미회복 {disp20:+.1f}%')
+        if disp20 > NEXT_MAX_DISP20:
+            reject_reasons.append(f'MA20 과이격 {disp20:+.1f}%')
+        if high20_gap > 10.0:
+            reject_reasons.append(f'20일고점 이격 {high20_gap:.1f}%')
+        if ret5 > NEXT_MAX_RET5:
+            reject_reasons.append(f'5일 과열 {ret5:+.1f}%')
+        if rsi > 78:
+            reject_reasons.append(f'RSI 과열 {rsi:.1f}')
+        if rs20 < -3.0:
+            reject_reasons.append(f'RS20 약세 {rs20:+.1f}%')
+
+        if reject_reasons:
+            return 0, {}, {
+                'change_pct': round(float(change_pct), 1),
+                'close_location': round(float(close_location * 100), 1),
+                'vol_ratio': round(float(vol_ratio), 2),
+                'turnover': int(turnover),
+                'disp20': round(float(disp20), 1),
+                'high20_gap': round(float(high20_gap), 1),
+                'ret5': round(float(ret5), 1),
+                'rsi': round(float(rsi), 1),
+                'rs20': round(float(rs20), 1),
+            }, reject_reasons
+
+        bd = {}
+        bd['종가강도'] = 25 if close_location >= 0.90 else 21 if close_location >= 0.80 else 17 if close_location >= 0.70 else 12
+        bd['당일흐름'] = 15 if 1.0 <= change_pct <= 6.0 else 12 if 0.0 <= change_pct < 1.0 or 6.0 < change_pct <= 9.0 else 7
+        bd['거래량확인'] = 20 if vol_ratio >= 2.0 else 16 if vol_ratio >= 1.5 else 12 if vol_ratio >= 1.0 else 7
+        bd['고점접근'] = 15 if breakout20 else 13 if high20_gap <= 2.0 else 10 if high20_gap <= 5.0 else 6
+        bd['RS20'] = 15 if rs20 >= 8.0 else 12 if rs20 >= 3.0 else 9 if rs20 >= 0.0 else 5
+        bd['MA20위치'] = 10 if 0.0 <= disp20 <= 5.0 else 8 if -2.0 <= disp20 < 0.0 or 5.0 < disp20 <= 8.0 else 5
+
+        origin_bonus = 0
+        if origin == 'TREND':
+            origin_bonus = 5
+        elif origin == 'BASIC':
+            origin_bonus = 3
+        elif origin == 'VALUE':
+            origin_bonus = 2
+        bd['기존엔진확인'] = origin_bonus
+
+        penalty = 0
+        if change_pct > 8.0:
+            penalty += 5
+        if ret5 > 12.0:
+            penalty += 5
+        if rsi > 72.0:
+            penalty += 4
+
+        raw_score = max(0, sum(bd.values()) - penalty)
+        score = int(min(raw_score, 100))
+        meta = {
+            'change_pct': round(float(change_pct), 1),
+            'close_location': round(float(close_location * 100), 1),
+            'vol_ratio': round(float(vol_ratio), 2),
+            'turnover': int(turnover),
+            'disp20': round(float(disp20), 1),
+            'high20_gap': round(float(high20_gap), 1),
+            'breakout20': bool(breakout20),
+            'ret5': round(float(ret5), 1),
+            'rsi': round(float(rsi), 1),
+            'rs20': round(float(rs20), 1),
+            'overheat_penalty': int(penalty),
+            'next_origin': origin,
+        }
+        return score, bd, meta, []
+    except Exception:
+        return None
+
+
+def run_close_next_overlay(master_result: dict, top_n: int = NEXT_TOP_N) -> tuple[list[dict], list[dict]]:
+    """기존 BUY 후보만 NEXT 관점으로 필터링한다. PRE-SIGNAL/WATCH는 승격하지 않는다."""
+    regime_info = master_result.get('regime_info', {}) or {}
+    regime = regime_info.get('regime', 'UNKNOWN')
+    base_buy_picks = master_result.get('buy_picks', []) or []
+
+    print('\n' + '═' * 60)
+    print(f'🌙 CLOSE NEXT 오버레이 — 기존 BUY {len(base_buy_picks)}종목 재검증 | regime={regime}')
+    print('═' * 60)
+
+    if regime in ['BEAR', 'UNKNOWN'] or not base_buy_picks:
+        print('  ℹ️ NEXT 검토 대상 없음')
+        return [], []
+
+    today_str = get_market_date()
+    start = get_start_date(today_str, 120)
+    kospi_df = _fetch_index_df(['KS11', '^KS11', 'KOSPI'], start, today_str)
+    kosdaq_df = _fetch_index_df(['KQ11', '^KQ11', 'KOSDAQ'], start, today_str)
+
+    passed = []
+    rejected = []
+    for source_pick in base_buy_picks:
+        p = _clone_history_ready_pick(source_pick)
+        if not p:
+            continue
+        code = str(p.get('code') or '').zfill(6)
+        if not code or code == '000000':
+            continue
+        market = _pick_market(p)
+        index_df = kosdaq_df if 'KOSDAQ' in market else kospi_df
+        origin = _next_origin_label(p)
+        try:
+            df = fdr.DataReader(code, start, today_str)
+        except Exception as e:
+            rejected.append({'code': code, 'name': p.get('name', code), 'reasons': [f'시세조회 실패: {e}']})
+            continue
+        scored = _score_close_next_candidate(df, index_df, origin)
+        if not scored:
+            rejected.append({'code': code, 'name': p.get('name', code), 'reasons': ['NEXT 계산 불가']})
+            continue
+        next_score, bd, next_meta, reasons = scored
+        if reasons:
+            rejected.append({'code': code, 'name': p.get('name', code), 'reasons': reasons, 'meta': next_meta})
+            print(f"  ⛔ {p.get('name')}({code}) | {' / '.join(reasons)}")
+            continue
+        if next_score < NEXT_SCORE_MIN:
+            rejected.append({'code': code, 'name': p.get('name', code), 'reasons': [f'NEXT 점수 {next_score}점'], 'meta': next_meta})
+            print(f"  ⛔ {p.get('name')}({code}) | NEXT {next_score}점 < {NEXT_SCORE_MIN}")
+            continue
+
+        meta = dict(p.get('meta', {}) or {})
+        base_score = int(_safe_float(p.get('score_100'), 0))
+        cur_price = int(_safe_float(df['Close'].iloc[-1], p.get('cur_price', 0)))
+        trade = calc_trade_levels(df, cur_price)
+        meta.update(next_meta)
+        meta.update({
+            'next_origin': origin,
+            'next_overlay': True,
+            'base_score_100': base_score,
+            'trade': trade,
+            'rt_price_used': False,
+        })
+        p['cur_price'] = cur_price
+        p['base_score_100'] = base_score
+        p['score_100'] = next_score
+        p['score_detail'] = bd
+        p['score'] = f"{'★' * min(next_score // 20, 5)}{'☆' * (5 - min(next_score // 20, 5))} {next_score}점"
+        p['tags'] = ' / '.join([k for k, v in sorted(bd.items(), key=lambda x: x[1], reverse=True)[:3] if v > 0])
+        p['supply'] = f'NEXT-{origin}'
+        p['meta'] = meta
+        passed.append(p)
+        print(f"  ✅ {p.get('name')}({code}) | NEXT {next_score}점 | 종가위치 {next_meta.get('close_location')}% | 거래량 {next_meta.get('vol_ratio')}배 | RS20 {next_meta.get('rs20'):+}%")
+
+    passed.sort(key=lambda x: (x.get('score_100', 0), x.get('meta', {}).get('close_location', 0)), reverse=True)
+    passed = passed[:top_n]
+    for idx, p in enumerate(passed, 1):
+        p['rank'] = idx
+    print(f'🏁 CLOSE NEXT 완료! 통과 {len(passed)}종목 / 제외 {len(rejected)}종목')
+    return passed, rejected
+
+
+def apply_close_next_overlay(master_result: dict) -> dict:
+    """CLOSE 세션 전용 결과. 원본 BUY 후보는 보관하고, NEXT만 실제 종가매매 후보로 교체한다."""
+    import copy
+    result = copy.deepcopy(master_result)
+    result['base_buy_picks'] = copy.deepcopy(master_result.get('buy_picks', []))
+    next_picks, rejected = run_close_next_overlay(master_result)
+    result['next_picks'] = next_picks
+    result['next_rejected'] = rejected
+    result['buy_picks'] = next_picks
+    used = list(result.get('strategy_used', []) or [])
+    if 'CLOSE_NEXT_OVERLAY' not in used:
+        used.append('CLOSE_NEXT_OVERLAY')
+    result['strategy_used'] = used
+    result.setdefault('notes', []).append('종가매매는 기존 BUY 후보 중 NEXT 오버레이를 통과한 익일 대응 후보만 사용합니다.')
+    return result
+
+
+def build_close_next_message(result: dict) -> str:
+    """장마감 텔레그램 메시지: NEXT 종가매매 후보와 PRE-SIGNAL 관찰 목록을 분리한다."""
+    regime_info = result.get('regime_info', {}) or {}
+    next_picks = result.get('next_picks', []) or []
+    base_buy_picks = result.get('base_buy_picks', []) or []
+    rejected = result.get('next_rejected', []) or []
+    pre_picks = result.get('pre_signal_picks', []) or []
+    today_str = get_market_date()
+
+    lines = [
+        f"🌙 <b>NEXT 종가매매 검토 — {ko_date(today_str)} {now_label()}</b>",
+        '<i>기존 장세별 BUY 후보를 익일 대응 관점으로 다시 검증한 목록입니다.</i>',
+        '═' * 24,
+        f"장세: <b>{regime_info.get('regime_label', regime_info.get('regime', 'UNKNOWN'))}</b> | 기존 BUY {len(base_buy_picks)} → NEXT {len(next_picks)}",
+        '',
+    ]
+
+    if not next_picks:
+        lines += [
+            '⚠️ <b>NEXT 종가매매 후보 없음</b>',
+            '종가 강도·거래량·고점 접근·RS·과열 조건을 모두 충족한 종목이 없습니다.',
+            '<i>조건이 없으면 종가매매를 쉬는 것이 원칙입니다.</i>',
+        ]
+    else:
+        for p in next_picks:
+            code = p.get('code', '')
+            chart = f"https://m.stock.naver.com/domestic/stock/{code}/total"
+            meta = p.get('meta', {}) or {}
+            trade = meta.get('trade')
+            amount_uk = _safe_float(meta.get('turnover'), 0) / 100_000_000
+            lines += [
+                f"#{p.get('rank')} <b><a href='{chart}'>{p.get('name')}</a></b> ({code}) {p.get('company_summary', '')}",
+                f"  🌙 NEXT <b>{p.get('score_100', 0)}점</b> | 원본 {meta.get('next_origin', '')} {meta.get('base_score_100', 0)}점",
+                f"  💰 종가 {p.get('cur_price', 0):,}원 | 당일 {meta.get('change_pct', 0):+}% | 거래대금 {amount_uk:,.0f}억",
+                f"  📍 종가위치 {meta.get('close_location', 0)}% | 거래량 {meta.get('vol_ratio', 0)}배 | RS20 {meta.get('rs20', 0):+}%",
+                f"  📐 MA20 {meta.get('disp20', 0):+}% | 20일고점 이격 {meta.get('high20_gap', 0)}% | RSI {meta.get('rsi', 0)}",
+                f"  🏷 {p.get('tags', '')}",
+            ]
+            if trade:
+                lines.append(
+                    f"  🎯 익일 대응: 진입 {trade['entry']:,}원 / 손절 {trade['stop_loss']:,}원 (-{trade['risk_pct']}%) / 1차 {trade['target_1']:,}원 (+{trade['reward_pct']}%)"
+                )
+            lines.append('')
+
+    if rejected:
+        lines += [f"ℹ️ 기존 BUY 후보 중 NEXT 제외 {len(rejected)}종목", '']
+
+    if pre_picks:
+        lines += ['👀 <b>익일 관찰 PRE-SIGNAL</b> — 종가매매 아님']
+        for p in pre_picks[:3]:
+            meta = p.get('meta', {}) or {}
+            lines.append(
+                f"  - {p.get('name')}({p.get('code')}) | PRE {p.get('score_100', 0)}점 | RS20 {meta.get('rs', 0):+}% | MA20 {meta.get('disp20', 0):+}%"
+            )
+        lines.append('')
+
+    lines += [
+        '═' * 24,
+        '💡 <i>NEXT는 신규 추천기가 아닙니다. 기존 BUY 후보 중 익일 대응에 적합한 종목만 남깁니다.</i>',
+    ]
+    return '\n'.join(lines)
+
+def build_session_master_message(result: dict, session: str) -> str:
+    """선별식은 그대로 두고, 시간대별로 결과의 용도를 명확히 표시."""
+    if session == SESSION_INTRADAY:
+        header = [
+            '📡 <b>장중 검토 종목</b>',
+            '<i>기존 로직으로 선별한 실시간 검토 목록입니다. 장중 추격매수 신호가 아닙니다.</i>',
+            '═' * 24,
+        ]
+    else:
+        # CLOSE 세션은 apply_close_next_overlay()를 거친 NEXT 전용 메시지를 사용한다.
+        if 'next_picks' in result:
+            return build_close_next_message(result)
+        header = [
+            '🌙 <b>NEXT 종가매매 검토 준비</b>',
+            '<i>기존 BUY 후보에 NEXT 오버레이를 적용하기 전 결과입니다.</i>',
+            '═' * 24,
+        ]
+    return '\n'.join(header + ['', build_master_message(result)])
+
+
+def save_intraday_snapshot(result: dict):
+    """장중 스캔은 참고용 JSON만 저장하고 history.json에는 넣지 않는다."""
+    payload = {
+        'session': SESSION_INTRADAY,
+        'saved_at_kst': _kst_now().isoformat(),
+        'scan_label': now_label(),
+        'base_date': get_market_date(),
+        'market_regime': result.get('regime_info', {}).get('regime', 'UNKNOWN'),
+        'market_regime_label': result.get('regime_info', {}).get('regime_label', ''),
+        'regime_info': result.get('regime_info', {}),
+        'strategy_used': result.get('strategy_used', []),
+        'notes': result.get('notes', []),
+        'buy_picks': result.get('buy_picks', []),
+        'watch_picks': result.get('watch_picks', []),
+        'pre_signal_picks': result.get('pre_signal_picks', []),
+        'trend_picks': result.get('trend_picks', []),
+        'value_picks': result.get('value_picks', []),
+    }
+    with open(INTRADAY_DATA_FILE, 'w', encoding='utf-8') as f:
+        json.dump(payload, f, ensure_ascii=False, indent=4, default=json_safe)
+    print(f"✅ {INTRADAY_DATA_FILE} 저장 완료 — history.json 미반영")
+
+
+def _send_if_text(message):
+    if message:
+        send_telegram(str(message))
+
+
+def run_scheduled_kr_engine() -> dict:
+    """현재 시간대에 맞는 브리핑 또는 스캔을 실행."""
+    session = get_run_session()
+    print(f"\n🕒 SESSION ROUTER v5.3 → {session} | KST {_kst_now().strftime('%Y-%m-%d %H:%M')}")
+
+    if session == SESSION_MORNING:
+        # 아침에는 전일 복기만 한다. 추천 엔진은 돌리지 않는다.
+        _send_if_text(fetch_macro_summary())
+        _send_if_text(build_stock_issue_briefing('PREVIOUS'))
+        _send_if_text(build_daily_anomaly_message('PREVIOUS'))
+        return {'session': session, 'status': 'briefing_only'}
+
+    if session == SESSION_INTRADAY:
+        # 장중 결과는 검토 목록이며 history 백테스트를 오염시키지 않는다.
+        master_result = run_master_kr_engine()
+        _send_if_text(build_session_master_message(master_result, session))
+        save_intraday_snapshot(master_result)
+        return {'session': session, 'status': 'scan_complete', 'result': master_result}
+
+    # 장 마감 후: 당일 맥락 + 특이 종목 + NEXT 종가매매 후보를 보낸다.
+    # 기존 라우터 BUY 후보를 먼저 만든 뒤, 익일 대응 NEXT 오버레이를 추가 적용한다.
+    _send_if_text(build_stock_issue_briefing('TODAY'))
+    _send_if_text(build_daily_anomaly_message('TODAY'))
+    master_result = run_master_kr_engine()
+    close_result = apply_close_next_overlay(master_result)
+    _send_if_text(build_close_next_message(close_result))
+    save_master_result(close_result)
+    return {'session': SESSION_CLOSE, 'status': 'scan_complete', 'result': close_result}
+
+
+# ══════════════════════════════════════════════════════════════
+#  엔트리포인트 — v5.3 시간대별 라우터 + CLOSE NEXT
 # ══════════════════════════════════════════════════════════════
 
 if __name__ == "__main__":
-    send_telegram(fetch_macro_summary())
-    send_telegram(build_news_briefing())
-
     try:
-        master_result = run_master_kr_engine()
-        send_telegram(build_master_message(master_result))
-        save_master_result(master_result)
+        run_scheduled_kr_engine()
     except Exception as e:
         import traceback
-        print(f"\n❌ MASTER 엔진 예외: {e}")
+        print(f"\n❌ SESSION ROUTER 예외: {e}")
         traceback.print_exc()
-        send_telegram(f"❌ <b>KR MASTER 엔진 오류</b>\n{e}")
+        send_telegram(f"❌ <b>KR SESSION ROUTER 오류</b>\n{e}")

@@ -865,7 +865,7 @@
         "KOSPI 중심 PRE-SIGNAL 관심후보를 별도 표시합니다.",
         "종가매매는 기존 BUY 후보 중 NEXT 오버레이를 통과한 익일 대응 후보만 사용합니다."
     ],
-    "scan_label": "🏁 장 마감 스캔",
+    "scan_label": "🌙 미장 스캔",
     "total_candidates": 0,
     "total_watch_candidates": 5,
     "total_pre_signal_candidates": 5,

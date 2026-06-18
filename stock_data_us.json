@@ -7,7 +7,7 @@
             "name": "Groupon, Inc.",
             "code": "GRPN",
             "company_summary": "Groupon, Inc. operates a marketplace that connects consumers to merchants by offering goods and serv...",
-            "cur_price": 17.26,
+            "cur_price": 16.56,
             "score_raw": 64,
             "score_100": 64,
             "squeeze_level": "⚡ HIGH",
@@ -20,8 +20,8 @@
             "meta": {
                 "float_m": 19.5,
                 "short_pct": 56.3,
-                "vol_spike": 0.75,
-                "rsi": 50.2,
+                "vol_spike": 0.54,
+                "rsi": 46.5,
                 "short_ratio": 5.8,
                 "short_str": "56.3%",
                 "float_str": "19.5M",
@@ -32,7 +32,7 @@
                 "above_ma50": true,
                 "ma20_up": false,
                 "breakout20": false,
-                "dist_ma20": -4.9
+                "dist_ma20": -8.54
             }
         },
         {
@@ -40,7 +40,7 @@
             "name": "Avis Budget Group, Inc.",
             "code": "CAR",
             "company_summary": "Avis Budget Group, Inc., together with its subsidiaries, provides car and truck rentals, car sharing...",
-            "cur_price": 185.49,
+            "cur_price": 180.88,
             "score_raw": 62,
             "score_100": 62,
             "squeeze_level": "⚡ HIGH",
@@ -53,8 +53,8 @@
             "meta": {
                 "float_m": 14.6,
                 "short_pct": 58.5,
-                "vol_spike": 0.32,
-                "rsi": 50.9,
+                "vol_spike": 0.42,
+                "rsi": 48.6,
                 "short_ratio": 3.7,
                 "short_str": "58.5%",
                 "float_str": "14.6M",
@@ -65,7 +65,7 @@
                 "above_ma50": false,
                 "ma20_up": true,
                 "breakout20": false,
-                "dist_ma20": 6.61
+                "dist_ma20": 3.08
             }
         },
         {
@@ -73,32 +73,32 @@
             "name": "Hertz Global Holdings, Inc",
             "code": "HTZ",
             "company_summary": "Hertz Global Holdings, Inc. operates as a vehicle rental company. It operates through two segments: ...",
-            "cur_price": 4.99,
-            "score_raw": 53,
-            "score_100": 53,
-            "squeeze_level": "📈 MEDIUM",
+            "cur_price": 4.83,
+            "score_raw": 59,
+            "score_100": 59,
+            "squeeze_level": "⚡ HIGH",
             "score_detail": {
                 "공매도강도": 40,
-                "거래량급증": 0,
+                "거래량급증": 5,
                 "유통주희소": 5,
                 "커버소요일": 8
             },
             "meta": {
                 "float_m": 129.2,
                 "short_pct": 43.5,
-                "vol_spike": 0.87,
-                "rsi": 42.1,
+                "vol_spike": 1.08,
+                "rsi": 38.9,
                 "short_ratio": 5.9,
                 "short_str": "43.5%",
                 "float_str": "129.2M",
-                "setup_pass": false,
+                "setup_pass": true,
                 "price_confirm": false,
                 "buy_candidate": false,
                 "above_ma20": false,
                 "above_ma50": false,
                 "ma20_up": false,
                 "breakout20": false,
-                "dist_ma20": -3.03
+                "dist_ma20": -6.05
             }
         },
         {
@@ -106,7 +106,7 @@
             "name": "C3.ai, Inc.",
             "code": "AI",
             "company_summary": "C3.ai, Inc. operates as an enterprise artificial intelligence application software company. The comp...",
-            "cur_price": 10.93,
+            "cur_price": 10.29,
             "score_raw": 51,
             "score_100": 51,
             "squeeze_level": "📈 MEDIUM",
@@ -119,52 +119,52 @@
             "meta": {
                 "float_m": 129.8,
                 "short_pct": 36.9,
-                "vol_spike": 0.84,
-                "rsi": 59.7,
+                "vol_spike": 0.87,
+                "rsi": 50.5,
                 "short_ratio": 9.9,
                 "short_str": "36.9%",
                 "float_str": "129.8M",
                 "setup_pass": false,
-                "price_confirm": true,
+                "price_confirm": false,
                 "buy_candidate": false,
-                "above_ma20": true,
+                "above_ma20": false,
                 "above_ma50": true,
                 "ma20_up": true,
                 "breakout20": false,
-                "dist_ma20": 5.16
+                "dist_ma20": -1.69
             }
         },
         {
             "rank": 5,
-            "name": "Hims & Hers Health, Inc.",
-            "code": "HIMS",
-            "company_summary": "Hims & Hers Health, Inc. operates as a consumer-first health and wellness platform that connects con...",
-            "cur_price": 31.47,
-            "score_raw": 45,
-            "score_100": 45,
+            "name": "Upstart Holdings, Inc.",
+            "code": "UPST",
+            "company_summary": "Upstart Holdings, Inc., together with its subsidiaries, operates a cloud-based artificial intelligen...",
+            "cur_price": 30.46,
+            "score_raw": 50,
+            "score_100": 50,
             "squeeze_level": "📈 MEDIUM",
             "score_detail": {
                 "공매도강도": 31,
-                "거래량급증": 5,
-                "유통주희소": 5,
-                "커버소요일": 4
+                "거래량급증": 6,
+                "유통주희소": 3,
+                "커버소요일": 8
             },
             "meta": {
-                "float_m": 210.9,
-                "short_pct": 32.6,
-                "vol_spike": 1.04,
-                "rsi": 63.6,
-                "short_ratio": 2.8,
-                "short_str": "32.6%",
-                "float_str": "210.9M",
-                "setup_pass": false,
-                "price_confirm": true,
+                "float_m": 82.2,
+                "short_pct": 33.1,
+                "vol_spike": 1.33,
+                "rsi": 48.7,
+                "short_ratio": 5.4,
+                "short_str": "33.1%",
+                "float_str": "82.2M",
+                "setup_pass": true,
+                "price_confirm": false,
                 "buy_candidate": false,
-                "above_ma20": true,
-                "above_ma50": true,
+                "above_ma20": false,
+                "above_ma50": false,
                 "ma20_up": true,
-                "breakout20": true,
-                "dist_ma20": 18.29
+                "breakout20": false,
+                "dist_ma20": -2.07
             }
         }
     ],
@@ -173,33 +173,33 @@
     "regime_info": {
         "regime": "NEUTRAL",
         "regime_label": "중립/선별장",
-        "base_date": "20260617",
+        "base_date": "20260618",
         "nasdaq": {
             "symbol": "^IXIC",
             "state": "BOX",
-            "close": 26376.34,
-            "ma20": 26355.55,
-            "ma50": 25394.58,
-            "ret5": 4.79,
-            "ret20": 1.95,
-            "dist_ma20": 0.08,
-            "ma20_slope": -0.11
+            "close": 26021.66,
+            "ma20": 26363.1,
+            "ma50": 25474.66,
+            "ret5": 0.82,
+            "ret20": -0.95,
+            "dist_ma20": -1.3,
+            "ma20_slope": 0.03
         },
         "russell": {
             "symbol": "^RUT",
             "state": "BULL",
-            "close": 2939.19,
-            "ma20": 2890.04,
-            "ma50": 2816.78,
-            "ret5": 3.66,
-            "ret20": 6.99,
-            "dist_ma20": 1.7,
-            "ma20_slope": 0.86
+            "close": 2917.98,
+            "ma20": 2898.58,
+            "ma50": 2824.24,
+            "ret5": -0.1,
+            "ret20": 3.57,
+            "dist_ma20": 0.67,
+            "ma20_slope": 1.02
         },
         "vix": {
             "state": "STABLE",
-            "close": 16.41,
-            "chg": 1.3
+            "close": 18.44,
+            "chg": 12.37
         }
     },
     "strategy_used": [
@@ -211,5 +211,5 @@
     "total_candidates": 0,
     "total_watch": 5,
     "total_screened": 29,
-    "base_date": "20260617"
+    "base_date": "20260618"
 }

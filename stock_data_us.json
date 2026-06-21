@@ -18,7 +18,7 @@
             "meta": {
                 "float_m": 14.6,
                 "short_pct": 58.5,
-                "vol_spike": 1.09,
+                "vol_spike": 1.12,
                 "rsi": 52.4,
                 "short_ratio": 3.7,
                 "short_str": "58.5%",
@@ -51,7 +51,7 @@
             "meta": {
                 "float_m": 82.2,
                 "short_pct": 33.1,
-                "vol_spike": 1.09,
+                "vol_spike": 1.1,
                 "rsi": 54.7,
                 "short_ratio": 5.4,
                 "short_str": "33.1%",
@@ -86,7 +86,7 @@
             "meta": {
                 "float_m": 14.6,
                 "short_pct": 58.5,
-                "vol_spike": 1.09,
+                "vol_spike": 1.12,
                 "rsi": 52.4,
                 "short_ratio": 3.7,
                 "short_str": "58.5%",
@@ -119,7 +119,7 @@
             "meta": {
                 "float_m": 82.2,
                 "short_pct": 33.1,
-                "vol_spike": 1.09,
+                "vol_spike": 1.1,
                 "rsi": 54.7,
                 "short_ratio": 5.4,
                 "short_str": "33.1%",
@@ -152,13 +152,13 @@
                 "커버소요일": 8
             },
             "meta": {
-                "float_m": 19.5,
+                "float_m": 19.4,
                 "short_pct": 56.3,
-                "vol_spike": 0.83,
+                "vol_spike": 0.84,
                 "rsi": 44.7,
                 "short_ratio": 5.8,
                 "short_str": "56.3%",
-                "float_str": "19.5M",
+                "float_str": "19.4M",
                 "setup_pass": false,
                 "price_confirm": false,
                 "buy_candidate": false,
@@ -185,13 +185,13 @@
                 "커버소요일": 10
             },
             "meta": {
-                "float_m": 316.9,
+                "float_m": 316.8,
                 "short_pct": 24.6,
-                "vol_spike": 4.93,
+                "vol_spike": 4.94,
                 "rsi": 39.2,
                 "short_ratio": 10.7,
                 "short_str": "24.6%",
-                "float_str": "316.9M",
+                "float_str": "316.8M",
                 "setup_pass": true,
                 "price_confirm": false,
                 "buy_candidate": false,
@@ -218,13 +218,13 @@
                 "커버소요일": 8
             },
             "meta": {
-                "float_m": 129.2,
+                "float_m": 129.3,
                 "short_pct": 43.5,
-                "vol_spike": 1.29,
+                "vol_spike": 1.38,
                 "rsi": 45.1,
                 "short_ratio": 5.9,
                 "short_str": "43.5%",
-                "float_str": "129.2M",
+                "float_str": "129.3M",
                 "setup_pass": true,
                 "price_confirm": false,
                 "buy_candidate": false,
@@ -253,7 +253,7 @@
             "meta": {
                 "float_m": 129.8,
                 "short_pct": 36.9,
-                "vol_spike": 0.62,
+                "vol_spike": 0.79,
                 "rsi": 50.6,
                 "short_ratio": 9.9,
                 "short_str": "36.9%",
@@ -270,35 +270,35 @@
         },
         {
             "rank": 5,
-            "name": "Hims & Hers Health, Inc.",
-            "code": "HIMS",
-            "company_summary": "Hims & Hers Health, Inc. operates as a consumer-first health and wellness platform that connects con...",
-            "cur_price": 35.47,
-            "score_raw": 49,
-            "score_100": 49,
+            "name": "Novavax, Inc.",
+            "code": "NVAX",
+            "company_summary": "Novavax, Inc., a biotechnology company, engages in the discovery, development, and commercialization...",
+            "cur_price": 9.13,
+            "score_raw": 50,
+            "score_100": 50,
             "squeeze_level": "📈 MEDIUM",
             "score_detail": {
-                "공매도강도": 31,
-                "거래량급증": 8,
+                "공매도강도": 26,
+                "거래량급증": 9,
                 "유통주희소": 5,
-                "커버소요일": 4
+                "커버소요일": 10
             },
             "meta": {
-                "float_m": 210.9,
-                "short_pct": 32.6,
-                "vol_spike": 1.72,
-                "rsi": 71.2,
-                "short_ratio": 2.8,
-                "short_str": "32.6%",
-                "float_str": "210.9M",
-                "setup_pass": false,
-                "price_confirm": true,
+                "float_m": 141.5,
+                "short_pct": 28.1,
+                "vol_spike": 1.89,
+                "rsi": 47.8,
+                "short_ratio": 7.3,
+                "short_str": "28.1%",
+                "float_str": "141.5M",
+                "setup_pass": true,
+                "price_confirm": false,
                 "buy_candidate": false,
-                "above_ma20": true,
+                "above_ma20": false,
                 "above_ma50": true,
                 "ma20_up": true,
-                "breakout20": true,
-                "dist_ma20": 28.06
+                "breakout20": false,
+                "dist_ma20": -5.11
             }
         }
     ],
@@ -307,7 +307,7 @@
     "regime_info": {
         "regime": "RISK_ON",
         "regime_label": "위험선호 ON",
-        "base_date": "20260619",
+        "base_date": "20260622",
         "nasdaq": {
             "symbol": "^IXIC",
             "state": "BULL",
@@ -345,5 +345,5 @@
     "total_candidates": 2,
     "total_watch": 5,
     "total_screened": 29,
-    "base_date": "20260619"
+    "base_date": "20260622"
 }

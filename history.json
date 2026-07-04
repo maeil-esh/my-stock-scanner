@@ -13543,6 +13543,19 @@
           },
           "rt_price_used": true,
           "trend_origin": true
+        },
+        "actual": {
+          "entry_price": 2203000.0,
+          "max_price": 2489000.0,
+          "max_ret": 13.0,
+          "days_to_max": 0,
+          "close_20d": 1487000.0,
+          "close_ret": -32.5,
+          "days_fetched": 20,
+          "target1_hit": false,
+          "target2_hit": false,
+          "win": true,
+          "backtest_date": "20260704"
         }
       },
       {
@@ -13586,6 +13599,19 @@
           },
           "rt_price_used": true,
           "trend_origin": true
+        },
+        "actual": {
+          "entry_price": 143700.0,
+          "max_price": 153300.0,
+          "max_ret": 6.7,
+          "days_to_max": 1,
+          "close_20d": 78800.0,
+          "close_ret": -45.2,
+          "days_fetched": 20,
+          "target1_hit": false,
+          "target2_hit": false,
+          "win": false,
+          "backtest_date": "20260704"
         }
       },
       {
@@ -13629,6 +13655,19 @@
           },
           "rt_price_used": true,
           "trend_origin": true
+        },
+        "actual": {
+          "entry_price": 124400.0,
+          "max_price": 138400.0,
+          "max_ret": 11.3,
+          "days_to_max": 1,
+          "close_20d": 73100.0,
+          "close_ret": -41.2,
+          "days_fetched": 20,
+          "target1_hit": false,
+          "target2_hit": false,
+          "win": true,
+          "backtest_date": "20260704"
         }
       }
     ]
@@ -13683,6 +13722,19 @@
           },
           "rt_price_used": true,
           "trend_origin": true
+        },
+        "actual": {
+          "entry_price": 2203000.0,
+          "max_price": 2489000.0,
+          "max_ret": 13.0,
+          "days_to_max": 0,
+          "close_20d": 1487000.0,
+          "close_ret": -32.5,
+          "days_fetched": 20,
+          "target1_hit": false,
+          "target2_hit": false,
+          "win": true,
+          "backtest_date": "20260704"
         }
       },
       {
@@ -13726,6 +13778,19 @@
           },
           "rt_price_used": true,
           "trend_origin": true
+        },
+        "actual": {
+          "entry_price": 124400.0,
+          "max_price": 138400.0,
+          "max_ret": 11.3,
+          "days_to_max": 1,
+          "close_20d": 73100.0,
+          "close_ret": -41.2,
+          "days_fetched": 20,
+          "target1_hit": false,
+          "target2_hit": false,
+          "win": true,
+          "backtest_date": "20260704"
         }
       },
       {
@@ -13769,6 +13834,19 @@
           },
           "rt_price_used": true,
           "trend_origin": true
+        },
+        "actual": {
+          "entry_price": 165800.0,
+          "max_price": 185900.0,
+          "max_ret": 12.1,
+          "days_to_max": 0,
+          "close_20d": 97300.0,
+          "close_ret": -41.3,
+          "days_fetched": 20,
+          "target1_hit": false,
+          "target2_hit": false,
+          "win": true,
+          "backtest_date": "20260704"
         }
       }
     ]
@@ -13823,6 +13901,19 @@
           },
           "rt_price_used": true,
           "trend_origin": true
+        },
+        "actual": {
+          "entry_price": 2203000.0,
+          "max_price": 2489000.0,
+          "max_ret": 13.0,
+          "days_to_max": 0,
+          "close_20d": 1487000.0,
+          "close_ret": -32.5,
+          "days_fetched": 20,
+          "target1_hit": false,
+          "target2_hit": false,
+          "win": true,
+          "backtest_date": "20260704"
         }
       },
       {
@@ -13866,6 +13957,19 @@
           },
           "rt_price_used": true,
           "trend_origin": true
+        },
+        "actual": {
+          "entry_price": 124400.0,
+          "max_price": 138400.0,
+          "max_ret": 11.3,
+          "days_to_max": 1,
+          "close_20d": 73100.0,
+          "close_ret": -41.2,
+          "days_fetched": 20,
+          "target1_hit": false,
+          "target2_hit": false,
+          "win": true,
+          "backtest_date": "20260704"
         }
       },
       {
@@ -13909,6 +14013,19 @@
           },
           "rt_price_used": true,
           "trend_origin": true
+        },
+        "actual": {
+          "entry_price": 165800.0,
+          "max_price": 185900.0,
+          "max_ret": 12.1,
+          "days_to_max": 0,
+          "close_20d": 97300.0,
+          "close_ret": -41.3,
+          "days_fetched": 20,
+          "target1_hit": false,
+          "target2_hit": false,
+          "win": true,
+          "backtest_date": "20260704"
         }
       }
     ]
@@ -13963,6 +14080,19 @@
           },
           "rt_price_used": true,
           "trend_origin": true
+        },
+        "actual": {
+          "entry_price": 166700.0,
+          "max_price": 170000.0,
+          "max_ret": 2.0,
+          "days_to_max": 0,
+          "close_20d": 89300.0,
+          "close_ret": -46.4,
+          "days_fetched": 20,
+          "target1_hit": false,
+          "target2_hit": false,
+          "win": false,
+          "backtest_date": "20260704"
         }
       },
       {
@@ -14006,6 +14136,19 @@
           },
           "rt_price_used": true,
           "trend_origin": true
+        },
+        "actual": {
+          "entry_price": 117300.0,
+          "max_price": 138400.0,
+          "max_ret": 18.0,
+          "days_to_max": 0,
+          "close_20d": 70300.0,
+          "close_ret": -40.1,
+          "days_fetched": 20,
+          "target1_hit": false,
+          "target2_hit": false,
+          "win": true,
+          "backtest_date": "20260704"
         }
       },
       {
@@ -14049,6 +14192,19 @@
           },
           "rt_price_used": true,
           "trend_origin": true
+        },
+        "actual": {
+          "entry_price": 125200.0,
+          "max_price": 139500.0,
+          "max_ret": 11.4,
+          "days_to_max": 0,
+          "close_20d": 88600.0,
+          "close_ret": -29.2,
+          "days_fetched": 20,
+          "target1_hit": false,
+          "target2_hit": false,
+          "win": true,
+          "backtest_date": "20260704"
         }
       }
     ]
@@ -14103,6 +14259,19 @@
           },
           "rt_price_used": true,
           "trend_origin": true
+        },
+        "actual": {
+          "entry_price": 166700.0,
+          "max_price": 170000.0,
+          "max_ret": 2.0,
+          "days_to_max": 0,
+          "close_20d": 89300.0,
+          "close_ret": -46.4,
+          "days_fetched": 20,
+          "target1_hit": false,
+          "target2_hit": false,
+          "win": false,
+          "backtest_date": "20260704"
         }
       },
       {
@@ -14146,6 +14315,19 @@
           },
           "rt_price_used": true,
           "trend_origin": true
+        },
+        "actual": {
+          "entry_price": 117300.0,
+          "max_price": 138400.0,
+          "max_ret": 18.0,
+          "days_to_max": 0,
+          "close_20d": 70300.0,
+          "close_ret": -40.1,
+          "days_fetched": 20,
+          "target1_hit": false,
+          "target2_hit": false,
+          "win": true,
+          "backtest_date": "20260704"
         }
       },
       {
@@ -14189,6 +14371,19 @@
           },
           "rt_price_used": true,
           "trend_origin": true
+        },
+        "actual": {
+          "entry_price": 125200.0,
+          "max_price": 139500.0,
+          "max_ret": 11.4,
+          "days_to_max": 0,
+          "close_20d": 88600.0,
+          "close_ret": -29.2,
+          "days_fetched": 20,
+          "target1_hit": false,
+          "target2_hit": false,
+          "win": true,
+          "backtest_date": "20260704"
         }
       }
     ]
@@ -14243,6 +14438,19 @@
           },
           "rt_price_used": true,
           "trend_origin": true
+        },
+        "actual": {
+          "entry_price": 166700.0,
+          "max_price": 170000.0,
+          "max_ret": 2.0,
+          "days_to_max": 0,
+          "close_20d": 89300.0,
+          "close_ret": -46.4,
+          "days_fetched": 20,
+          "target1_hit": false,
+          "target2_hit": false,
+          "win": false,
+          "backtest_date": "20260704"
         }
       },
       {
@@ -14286,6 +14494,19 @@
           },
           "rt_price_used": true,
           "trend_origin": true
+        },
+        "actual": {
+          "entry_price": 117300.0,
+          "max_price": 138400.0,
+          "max_ret": 18.0,
+          "days_to_max": 0,
+          "close_20d": 70300.0,
+          "close_ret": -40.1,
+          "days_fetched": 20,
+          "target1_hit": false,
+          "target2_hit": false,
+          "win": true,
+          "backtest_date": "20260704"
         }
       },
       {
@@ -14329,6 +14550,19 @@
           },
           "rt_price_used": true,
           "trend_origin": true
+        },
+        "actual": {
+          "entry_price": 125200.0,
+          "max_price": 139500.0,
+          "max_ret": 11.4,
+          "days_to_max": 0,
+          "close_20d": 88600.0,
+          "close_ret": -29.2,
+          "days_fetched": 20,
+          "target1_hit": false,
+          "target2_hit": false,
+          "win": true,
+          "backtest_date": "20260704"
         }
       }
     ]
@@ -14383,6 +14617,19 @@
           },
           "rt_price_used": true,
           "trend_origin": true
+        },
+        "actual": {
+          "entry_price": 157900.0,
+          "max_price": 165500.0,
+          "max_ret": 4.8,
+          "days_to_max": 0,
+          "close_20d": 83300.0,
+          "close_ret": -47.2,
+          "days_fetched": 20,
+          "target1_hit": false,
+          "target2_hit": false,
+          "win": false,
+          "backtest_date": "20260704"
         }
       },
       {
@@ -14426,6 +14673,19 @@
           },
           "rt_price_used": true,
           "trend_origin": true
+        },
+        "actual": {
+          "entry_price": 102100.0,
+          "max_price": 107800.0,
+          "max_ret": 5.6,
+          "days_to_max": 0,
+          "close_20d": 68800.0,
+          "close_ret": -32.6,
+          "days_fetched": 20,
+          "target1_hit": false,
+          "target2_hit": false,
+          "win": false,
+          "backtest_date": "20260704"
         }
       },
       {
@@ -14469,6 +14729,19 @@
           },
           "rt_price_used": true,
           "trend_origin": true
+        },
+        "actual": {
+          "entry_price": 108900.0,
+          "max_price": 120000.0,
+          "max_ret": 10.2,
+          "days_to_max": 0,
+          "close_20d": 87400.0,
+          "close_ret": -19.7,
+          "days_fetched": 20,
+          "target1_hit": false,
+          "target2_hit": false,
+          "win": true,
+          "backtest_date": "20260704"
         }
       }
     ]
@@ -14523,6 +14796,19 @@
           },
           "rt_price_used": true,
           "trend_origin": true
+        },
+        "actual": {
+          "entry_price": 157900.0,
+          "max_price": 165500.0,
+          "max_ret": 4.8,
+          "days_to_max": 0,
+          "close_20d": 83300.0,
+          "close_ret": -47.2,
+          "days_fetched": 20,
+          "target1_hit": false,
+          "target2_hit": false,
+          "win": false,
+          "backtest_date": "20260704"
         }
       },
       {
@@ -14566,6 +14852,19 @@
           },
           "rt_price_used": true,
           "trend_origin": true
+        },
+        "actual": {
+          "entry_price": 102100.0,
+          "max_price": 107800.0,
+          "max_ret": 5.6,
+          "days_to_max": 0,
+          "close_20d": 68800.0,
+          "close_ret": -32.6,
+          "days_fetched": 20,
+          "target1_hit": false,
+          "target2_hit": false,
+          "win": false,
+          "backtest_date": "20260704"
         }
       },
       {
@@ -14609,6 +14908,19 @@
           },
           "rt_price_used": true,
           "trend_origin": true
+        },
+        "actual": {
+          "entry_price": 108900.0,
+          "max_price": 120000.0,
+          "max_ret": 10.2,
+          "days_to_max": 0,
+          "close_20d": 87400.0,
+          "close_ret": -19.7,
+          "days_fetched": 20,
+          "target1_hit": false,
+          "target2_hit": false,
+          "win": true,
+          "backtest_date": "20260704"
         }
       }
     ]
@@ -14663,6 +14975,19 @@
           },
           "rt_price_used": true,
           "trend_origin": true
+        },
+        "actual": {
+          "entry_price": 157900.0,
+          "max_price": 165500.0,
+          "max_ret": 4.8,
+          "days_to_max": 0,
+          "close_20d": 83300.0,
+          "close_ret": -47.2,
+          "days_fetched": 20,
+          "target1_hit": false,
+          "target2_hit": false,
+          "win": false,
+          "backtest_date": "20260704"
         }
       },
       {
@@ -14706,6 +15031,19 @@
           },
           "rt_price_used": true,
           "trend_origin": true
+        },
+        "actual": {
+          "entry_price": 102100.0,
+          "max_price": 107800.0,
+          "max_ret": 5.6,
+          "days_to_max": 0,
+          "close_20d": 68800.0,
+          "close_ret": -32.6,
+          "days_fetched": 20,
+          "target1_hit": false,
+          "target2_hit": false,
+          "win": false,
+          "backtest_date": "20260704"
         }
       },
       {
@@ -14749,6 +15087,19 @@
           },
           "rt_price_used": true,
           "trend_origin": true
+        },
+        "actual": {
+          "entry_price": 108900.0,
+          "max_price": 120000.0,
+          "max_ret": 10.2,
+          "days_to_max": 0,
+          "close_20d": 87400.0,
+          "close_ret": -19.7,
+          "days_fetched": 20,
+          "target1_hit": false,
+          "target2_hit": false,
+          "win": true,
+          "backtest_date": "20260704"
         }
       }
     ]
@@ -14803,6 +15154,19 @@
           },
           "rt_price_used": true,
           "trend_origin": true
+        },
+        "actual": {
+          "entry_price": 122300.0,
+          "max_price": 148300.0,
+          "max_ret": 21.3,
+          "days_to_max": 6,
+          "close_20d": 80200.0,
+          "close_ret": -34.4,
+          "days_fetched": 20,
+          "target1_hit": false,
+          "target2_hit": false,
+          "win": true,
+          "backtest_date": "20260704"
         }
       },
       {
@@ -14846,6 +15210,19 @@
           },
           "rt_price_used": true,
           "trend_origin": true
+        },
+        "actual": {
+          "entry_price": 659000.0,
+          "max_price": 792000.0,
+          "max_ret": 20.2,
+          "days_to_max": 10,
+          "close_20d": 732000.0,
+          "close_ret": 11.1,
+          "days_fetched": 20,
+          "target1_hit": false,
+          "target2_hit": false,
+          "win": true,
+          "backtest_date": "20260704"
         }
       },
       {
@@ -14889,6 +15266,19 @@
           },
           "rt_price_used": true,
           "trend_origin": true
+        },
+        "actual": {
+          "entry_price": 172000.0,
+          "max_price": 211000.0,
+          "max_ret": 22.7,
+          "days_to_max": 9,
+          "close_20d": 168500.0,
+          "close_ret": -2.0,
+          "days_fetched": 20,
+          "target1_hit": false,
+          "target2_hit": false,
+          "win": true,
+          "backtest_date": "20260704"
         }
       }
     ]
@@ -14943,6 +15333,19 @@
           },
           "rt_price_used": true,
           "trend_origin": true
+        },
+        "actual": {
+          "entry_price": 659000.0,
+          "max_price": 792000.0,
+          "max_ret": 20.2,
+          "days_to_max": 10,
+          "close_20d": 732000.0,
+          "close_ret": 11.1,
+          "days_fetched": 20,
+          "target1_hit": false,
+          "target2_hit": false,
+          "win": true,
+          "backtest_date": "20260704"
         }
       },
       {
@@ -14986,6 +15389,19 @@
           },
           "rt_price_used": true,
           "trend_origin": true
+        },
+        "actual": {
+          "entry_price": 122300.0,
+          "max_price": 148300.0,
+          "max_ret": 21.3,
+          "days_to_max": 6,
+          "close_20d": 80200.0,
+          "close_ret": -34.4,
+          "days_fetched": 20,
+          "target1_hit": false,
+          "target2_hit": false,
+          "win": true,
+          "backtest_date": "20260704"
         }
       },
       {
@@ -15029,6 +15445,19 @@
           },
           "rt_price_used": true,
           "trend_origin": true
+        },
+        "actual": {
+          "entry_price": 172000.0,
+          "max_price": 211000.0,
+          "max_ret": 22.7,
+          "days_to_max": 9,
+          "close_20d": 168500.0,
+          "close_ret": -2.0,
+          "days_fetched": 20,
+          "target1_hit": false,
+          "target2_hit": false,
+          "win": true,
+          "backtest_date": "20260704"
         }
       }
     ]
@@ -15083,6 +15512,19 @@
           },
           "rt_price_used": true,
           "trend_origin": true
+        },
+        "actual": {
+          "entry_price": 659000.0,
+          "max_price": 792000.0,
+          "max_ret": 20.2,
+          "days_to_max": 10,
+          "close_20d": 732000.0,
+          "close_ret": 11.1,
+          "days_fetched": 20,
+          "target1_hit": false,
+          "target2_hit": false,
+          "win": true,
+          "backtest_date": "20260704"
         }
       },
       {
@@ -15126,6 +15568,19 @@
           },
           "rt_price_used": true,
           "trend_origin": true
+        },
+        "actual": {
+          "entry_price": 122300.0,
+          "max_price": 148300.0,
+          "max_ret": 21.3,
+          "days_to_max": 6,
+          "close_20d": 80200.0,
+          "close_ret": -34.4,
+          "days_fetched": 20,
+          "target1_hit": false,
+          "target2_hit": false,
+          "win": true,
+          "backtest_date": "20260704"
         }
       },
       {
@@ -15169,6 +15624,19 @@
           },
           "rt_price_used": true,
           "trend_origin": true
+        },
+        "actual": {
+          "entry_price": 172000.0,
+          "max_price": 211000.0,
+          "max_ret": 22.7,
+          "days_to_max": 9,
+          "close_20d": 168500.0,
+          "close_ret": -2.0,
+          "days_fetched": 20,
+          "target1_hit": false,
+          "target2_hit": false,
+          "win": true,
+          "backtest_date": "20260704"
         }
       }
     ]
@@ -15223,6 +15691,19 @@
           },
           "rt_price_used": true,
           "trend_origin": true
+        },
+        "actual": {
+          "entry_price": 173000.0,
+          "max_price": 211000.0,
+          "max_ret": 22.0,
+          "days_to_max": 8,
+          "close_20d": 167300.0,
+          "close_ret": -3.3,
+          "days_fetched": 20,
+          "target1_hit": false,
+          "target2_hit": false,
+          "win": true,
+          "backtest_date": "20260704"
         }
       },
       {
@@ -15266,6 +15747,19 @@
           },
           "rt_price_used": true,
           "trend_origin": true
+        },
+        "actual": {
+          "entry_price": 146500.0,
+          "max_price": 222000.0,
+          "max_ret": 51.5,
+          "days_to_max": 9,
+          "close_20d": 179400.0,
+          "close_ret": 22.5,
+          "days_fetched": 20,
+          "target1_hit": true,
+          "target2_hit": true,
+          "win": true,
+          "backtest_date": "20260704"
         }
       },
       {
@@ -15309,6 +15803,19 @@
           },
           "rt_price_used": true,
           "trend_origin": true
+        },
+        "actual": {
+          "entry_price": 117700.0,
+          "max_price": 148300.0,
+          "max_ret": 26.0,
+          "days_to_max": 5,
+          "close_20d": 80200.0,
+          "close_ret": -31.9,
+          "days_fetched": 20,
+          "target1_hit": false,
+          "target2_hit": false,
+          "win": true,
+          "backtest_date": "20260704"
         }
       }
     ]
@@ -15363,6 +15870,19 @@
           },
           "rt_price_used": true,
           "trend_origin": true
+        },
+        "actual": {
+          "entry_price": 146500.0,
+          "max_price": 222000.0,
+          "max_ret": 51.5,
+          "days_to_max": 9,
+          "close_20d": 179400.0,
+          "close_ret": 22.5,
+          "days_fetched": 20,
+          "target1_hit": true,
+          "target2_hit": true,
+          "win": true,
+          "backtest_date": "20260704"
         }
       },
       {
@@ -15406,6 +15926,19 @@
           },
           "rt_price_used": true,
           "trend_origin": true
+        },
+        "actual": {
+          "entry_price": 173000.0,
+          "max_price": 211000.0,
+          "max_ret": 22.0,
+          "days_to_max": 8,
+          "close_20d": 167300.0,
+          "close_ret": -3.3,
+          "days_fetched": 20,
+          "target1_hit": false,
+          "target2_hit": false,
+          "win": true,
+          "backtest_date": "20260704"
         }
       },
       {
@@ -15449,6 +15982,19 @@
           },
           "rt_price_used": true,
           "trend_origin": true
+        },
+        "actual": {
+          "entry_price": 650000.0,
+          "max_price": 792000.0,
+          "max_ret": 21.8,
+          "days_to_max": 9,
+          "close_20d": 706000.0,
+          "close_ret": 8.6,
+          "days_fetched": 20,
+          "target1_hit": false,
+          "target2_hit": false,
+          "win": true,
+          "backtest_date": "20260704"
         }
       }
     ]
@@ -15503,6 +16049,19 @@
           },
           "rt_price_used": true,
           "trend_origin": true
+        },
+        "actual": {
+          "entry_price": 146500.0,
+          "max_price": 222000.0,
+          "max_ret": 51.5,
+          "days_to_max": 9,
+          "close_20d": 179400.0,
+          "close_ret": 22.5,
+          "days_fetched": 20,
+          "target1_hit": true,
+          "target2_hit": true,
+          "win": true,
+          "backtest_date": "20260704"
         }
       },
       {
@@ -15546,6 +16105,19 @@
           },
           "rt_price_used": true,
           "trend_origin": true
+        },
+        "actual": {
+          "entry_price": 173000.0,
+          "max_price": 211000.0,
+          "max_ret": 22.0,
+          "days_to_max": 8,
+          "close_20d": 167300.0,
+          "close_ret": -3.3,
+          "days_fetched": 20,
+          "target1_hit": false,
+          "target2_hit": false,
+          "win": true,
+          "backtest_date": "20260704"
         }
       },
       {
@@ -15589,6 +16161,19 @@
           },
           "rt_price_used": true,
           "trend_origin": true
+        },
+        "actual": {
+          "entry_price": 650000.0,
+          "max_price": 792000.0,
+          "max_ret": 21.8,
+          "days_to_max": 9,
+          "close_20d": 706000.0,
+          "close_ret": 8.6,
+          "days_fetched": 20,
+          "target1_hit": false,
+          "target2_hit": false,
+          "win": true,
+          "backtest_date": "20260704"
         }
       }
     ]

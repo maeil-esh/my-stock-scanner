@@ -13,33 +13,33 @@
     "regime_info": {
         "regime": "BEAR",
         "regime_label": "하락장",
-        "base_date": "20260708",
+        "base_date": "20260709",
         "kospi": {
             "state": "BEAR",
-            "close": 7246.79,
-            "ma20": 8356.85,
-            "ma60": 7636.63,
-            "ret5": -5.25,
-            "ret20": -6.66,
-            "ma20_slope": -0.26,
-            "ma20_slope_prev": -0.98,
-            "slope_delta": 0.72,
-            "dist_ma20": -13.28,
-            "dist_ma60": -5.1,
-            "pre_bull_score": 45
+            "close": 7453.48,
+            "ma20": 8341.33,
+            "ma60": 7663.2,
+            "ret5": -7.85,
+            "ret20": -8.25,
+            "ma20_slope": -0.4,
+            "ma20_slope_prev": -1.15,
+            "slope_delta": 0.75,
+            "dist_ma20": -10.64,
+            "dist_ma60": -2.74,
+            "pre_bull_score": 35
         },
         "kosdaq": {
             "state": "BEAR",
-            "close": 785.0,
-            "ma20": 927.56,
-            "ma60": 1063.29,
-            "ret5": -9.43,
-            "ret20": -21.26,
-            "ma20_slope": -2.63,
-            "ma20_slope_prev": -4.13,
-            "slope_delta": 1.5,
-            "dist_ma20": -15.37,
-            "dist_ma60": -26.17,
+            "close": 814.45,
+            "ma20": 918.43,
+            "ma60": 1058.63,
+            "ret5": -6.21,
+            "ret20": -20.85,
+            "ma20_slope": -2.91,
+            "ma20_slope_prev": -3.58,
+            "slope_delta": 0.67,
+            "dist_ma20": -11.32,
+            "dist_ma60": -23.07,
             "pre_bull_score": 15
         }
     },
@@ -58,5 +58,5 @@
     "total_next_candidates": 0,
     "total_screened": 0,
     "filter_log": {},
-    "base_date": "20260708"
+    "base_date": "20260709"
 }

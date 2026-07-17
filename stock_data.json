@@ -13,7 +13,7 @@
     "regime_info": {
         "regime": "BEAR",
         "regime_label": "하락장",
-        "base_date": "20260716",
+        "base_date": "20260717",
         "kospi": {
             "state": "BEAR",
             "close": 6820.6,
@@ -58,5 +58,5 @@
     "total_next_candidates": 0,
     "total_screened": 0,
     "filter_log": {},
-    "base_date": "20260716"
+    "base_date": "20260717"
 }

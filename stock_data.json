@@ -13,34 +13,34 @@
     "regime_info": {
         "regime": "BEAR",
         "regime_label": "하락장",
-        "base_date": "20260729",
+        "base_date": "20260730",
         "kospi": {
             "state": "BEAR",
-            "close": 5663.24,
-            "ma20": 7091.15,
-            "ma60": 7749.3,
-            "ret5": -20.2,
-            "ret20": -31.8,
-            "ma20_slope": -6.02,
-            "ma20_slope_prev": -6.17,
-            "slope_delta": 0.16,
-            "dist_ma20": -20.14,
-            "dist_ma60": -26.92,
+            "close": 5668.85,
+            "ma20": 6959.42,
+            "ma60": 7733.8,
+            "ret5": -15.27,
+            "ret20": -25.88,
+            "ma20_slope": -6.37,
+            "ma20_slope_prev": -6.26,
+            "slope_delta": -0.12,
+            "dist_ma20": -18.54,
+            "dist_ma60": -26.7,
             "pre_bull_score": 15
         },
         "kosdaq": {
             "state": "BEAR",
-            "close": 662.68,
-            "ma20": 794.49,
-            "ma60": 969.72,
-            "ret5": -16.15,
-            "ret20": -28.69,
-            "ma20_slope": -4.19,
-            "ma20_slope_prev": -5.15,
-            "slope_delta": 0.96,
-            "dist_ma20": -16.59,
-            "dist_ma60": -31.66,
-            "pre_bull_score": 15
+            "close": 653.5,
+            "ma20": 780.7,
+            "ma60": 960.74,
+            "ret5": -12.66,
+            "ret20": -24.6,
+            "ma20_slope": -5.05,
+            "ma20_slope_prev": -4.81,
+            "slope_delta": -0.24,
+            "dist_ma20": -16.29,
+            "dist_ma60": -31.98,
+            "pre_bull_score": 0
         }
     },
     "strategy_used": [
@@ -51,12 +51,12 @@
         "하락장: 자동 매수 후보 전송을 중단합니다.",
         "종가매매는 기존 BUY 후보 중 NEXT 오버레이를 통과한 익일 대응 후보만 사용합니다."
     ],
-    "scan_label": "🌙 미장 스캔",
+    "scan_label": "🏁 장 마감 스캔",
     "total_candidates": 0,
     "total_watch_candidates": 0,
     "total_pre_signal_candidates": 0,
     "total_next_candidates": 0,
     "total_screened": 0,
     "filter_log": {},
-    "base_date": "20260729"
+    "base_date": "20260730"
 }

@@ -7,21 +7,21 @@
             "name": "Avis Budget Group, Inc.",
             "code": "CAR",
             "company_summary": "Avis Budget Group, Inc., together with its subsidiaries, provides car and truck rentals, car sharing...",
-            "cur_price": 154.85,
-            "score_raw": 75,
-            "score_100": 75,
+            "cur_price": 152.0,
+            "score_raw": 74,
+            "score_100": 74,
             "squeeze_level": "⚡ HIGH",
             "score_detail": {
                 "공매도강도": 40,
-                "거래량급증": 8,
+                "거래량급증": 7,
                 "유통주희소": 17,
                 "커버소요일": 10
             },
             "meta": {
                 "float_m": 14.6,
                 "short_pct": 55.8,
-                "vol_spike": 1.66,
-                "rsi": 43.1,
+                "vol_spike": 1.52,
+                "rsi": 41.0,
                 "short_ratio": 8.0,
                 "short_str": "55.8%",
                 "float_str": "14.6M",
@@ -32,7 +32,7 @@
                 "above_ma50": false,
                 "ma20_up": true,
                 "breakout20": false,
-                "dist_ma20": -2.5
+                "dist_ma20": -4.44
             }
         },
         {
@@ -40,7 +40,7 @@
             "name": "Groupon, Inc.",
             "code": "GRPN",
             "company_summary": "Groupon, Inc. operates a marketplace that connects consumers to merchants by offering goods and serv...",
-            "cur_price": 27.22,
+            "cur_price": 27.89,
             "score_raw": 66,
             "score_100": 66,
             "squeeze_level": "⚡ HIGH",
@@ -53,8 +53,8 @@
             "meta": {
                 "float_m": 17.9,
                 "short_pct": 59.9,
-                "vol_spike": 0.76,
-                "rsi": 57.7,
+                "vol_spike": 0.79,
+                "rsi": 59.5,
                 "short_ratio": 7.9,
                 "short_str": "59.9%",
                 "float_str": "17.9M",
@@ -65,7 +65,7 @@
                 "above_ma50": true,
                 "ma20_up": true,
                 "breakout20": false,
-                "dist_ma20": 2.64
+                "dist_ma20": 4.73
             }
         },
         {
@@ -73,87 +73,54 @@
             "name": "Hertz Global Holdings, Inc",
             "code": "HTZ",
             "company_summary": "Hertz Global Holdings, Inc. operates as a vehicle rental company. It operates through two segments: ...",
-            "cur_price": 1.67,
-            "score_raw": 55,
-            "score_100": 55,
-            "squeeze_level": "⚡ HIGH",
+            "cur_price": 1.65,
+            "score_raw": 49,
+            "score_100": 49,
+            "squeeze_level": "📈 MEDIUM",
             "score_detail": {
                 "공매도강도": 40,
-                "거래량급증": 5,
+                "거래량급증": 0,
                 "유통주희소": 5,
                 "커버소요일": 4
             },
             "meta": {
                 "float_m": 129.3,
                 "short_pct": 73.9,
-                "vol_spike": 1.13,
-                "rsi": 27.3,
+                "vol_spike": 0.42,
+                "rsi": 27.1,
                 "short_ratio": 3.3,
                 "short_str": "73.9%",
                 "float_str": "129.3M",
-                "setup_pass": true,
+                "setup_pass": false,
                 "price_confirm": false,
                 "buy_candidate": false,
                 "above_ma20": false,
                 "above_ma50": false,
                 "ma20_up": false,
                 "breakout20": false,
-                "dist_ma20": -13.45
+                "dist_ma20": -13.26
             }
         },
         {
             "rank": 4,
-            "name": "Hims & Hers Health, Inc.",
-            "code": "HIMS",
-            "company_summary": "Hims & Hers Health, Inc. operates as a consumer-first health and wellness platform that connects con...",
-            "cur_price": 25.0,
-            "score_raw": 51,
-            "score_100": 51,
-            "squeeze_level": "📈 MEDIUM",
-            "score_detail": {
-                "공매도강도": 30,
-                "거래량급증": 10,
-                "유통주희소": 5,
-                "커버소요일": 5
-            },
-            "meta": {
-                "float_m": 210.6,
-                "short_pct": 31.9,
-                "vol_spike": 2.0,
-                "rsi": 33.4,
-                "short_ratio": 3.7,
-                "short_str": "31.9%",
-                "float_str": "210.6M",
-                "setup_pass": true,
-                "price_confirm": false,
-                "buy_candidate": false,
-                "above_ma20": false,
-                "above_ma50": false,
-                "ma20_up": false,
-                "breakout20": false,
-                "dist_ma20": -25.42
-            }
-        },
-        {
-            "rank": 5,
             "name": "Upstart Holdings, Inc.",
             "code": "UPST",
             "company_summary": "Upstart Holdings, Inc., together with its subsidiaries, operates a cloud-based artificial intelligen...",
-            "cur_price": 26.6,
-            "score_raw": 49,
-            "score_100": 49,
+            "cur_price": 27.04,
+            "score_raw": 48,
+            "score_100": 48,
             "squeeze_level": "📈 MEDIUM",
             "score_detail": {
                 "공매도강도": 29,
-                "거래량급증": 7,
+                "거래량급증": 5,
                 "유통주희소": 3,
                 "커버소요일": 9
             },
             "meta": {
                 "float_m": 82.2,
                 "short_pct": 31.4,
-                "vol_spike": 1.41,
-                "rsi": 33.0,
+                "vol_spike": 1.1,
+                "rsi": 35.7,
                 "short_ratio": 6.0,
                 "short_str": "31.4%",
                 "float_str": "82.2M",
@@ -164,7 +131,40 @@
                 "above_ma50": false,
                 "ma20_up": false,
                 "breakout20": false,
-                "dist_ma20": -13.36
+                "dist_ma20": -10.66
+            }
+        },
+        {
+            "rank": 5,
+            "name": "Hims & Hers Health, Inc.",
+            "code": "HIMS",
+            "company_summary": "Hims & Hers Health, Inc. operates as a consumer-first health and wellness platform that connects con...",
+            "cur_price": 27.04,
+            "score_raw": 46,
+            "score_100": 46,
+            "squeeze_level": "📈 MEDIUM",
+            "score_detail": {
+                "공매도강도": 30,
+                "거래량급증": 5,
+                "유통주희소": 5,
+                "커버소요일": 5
+            },
+            "meta": {
+                "float_m": 210.6,
+                "short_pct": 31.9,
+                "vol_spike": 1.01,
+                "rsi": 39.5,
+                "short_ratio": 3.7,
+                "short_str": "31.9%",
+                "float_str": "210.6M",
+                "setup_pass": true,
+                "price_confirm": false,
+                "buy_candidate": false,
+                "above_ma20": false,
+                "above_ma50": false,
+                "ma20_up": false,
+                "breakout20": false,
+                "dist_ma20": -18.05
             }
         }
     ],
@@ -173,33 +173,33 @@
     "regime_info": {
         "regime": "RISK_OFF",
         "regime_label": "위험회피 OFF",
-        "base_date": "20260730",
+        "base_date": "20260731",
         "nasdaq": {
             "symbol": "^IXIC",
             "state": "BEAR",
-            "close": 24442.94,
-            "ma20": 25661.25,
-            "ma50": 25977.73,
-            "ret5": -2.76,
-            "ret20": -6.13,
-            "dist_ma20": -4.75,
-            "ma20_slope": -0.67
+            "close": 25122.18,
+            "ma20": 25615.35,
+            "ma50": 25958.36,
+            "ret5": 0.59,
+            "ret20": -2.75,
+            "dist_ma20": -1.93,
+            "ma20_slope": -0.77
         },
         "russell": {
             "symbol": "^RUT",
             "state": "BEAR",
-            "close": 2906.31,
-            "ma20": 2966.33,
-            "ma50": 2936.39,
-            "ret5": -1.15,
-            "ret20": -3.53,
-            "dist_ma20": -2.02,
-            "ma20_slope": -0.53
+            "close": 2946.1,
+            "ma20": 2963.0,
+            "ma50": 2939.81,
+            "ret5": 0.55,
+            "ret20": -1.67,
+            "dist_ma20": -0.57,
+            "ma20_slope": -0.51
         },
         "vix": {
             "state": "STABLE",
-            "close": 20.66,
-            "chg": 13.45
+            "close": 17.09,
+            "chg": -17.28
         }
     },
     "strategy_used": [
@@ -211,5 +211,5 @@
     "total_candidates": 0,
     "total_watch": 5,
     "total_screened": 29,
-    "base_date": "20260730"
+    "base_date": "20260731"
 }

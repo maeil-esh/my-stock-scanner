@@ -22,8 +22,8 @@
                 "과열제어": 10
             },
             "meta": {
-                "rs": 9.3,
-                "rs63": 1.4,
+                "rs": 9.7,
+                "rs63": 1.8,
                 "rs_improve": 7.9,
                 "disp20": 1.8,
                 "disp60": 2.2,
@@ -37,7 +37,7 @@
                 "high20_gap": 2.8,
                 "high60_gap": 12.5,
                 "pre_signal_origin": true,
-                "mktcap": 9281,
+                "mktcap": 9335,
                 "trade": {
                     "entry": 26250,
                     "stop_loss": 24905,
@@ -71,8 +71,8 @@
                 "과열제어": 10
             },
             "meta": {
-                "rs": 18.2,
-                "rs63": 12.7,
+                "rs": 18.6,
+                "rs63": 13.1,
                 "rs_improve": 5.5,
                 "disp20": 2.4,
                 "disp60": 7.9,
@@ -86,7 +86,7 @@
                 "high20_gap": 1.9,
                 "high60_gap": 6.2,
                 "pre_signal_origin": true,
-                "mktcap": 5746,
+                "mktcap": 5802,
                 "trade": {
                     "entry": 6250,
                     "stop_loss": 5803,
@@ -120,8 +120,8 @@
                 "과열제어": 10
             },
             "meta": {
-                "rs": 13.3,
-                "rs63": 3.5,
+                "rs": 13.7,
+                "rs63": 3.9,
                 "rs_improve": 9.8,
                 "disp20": 2.4,
                 "disp60": 5.1,
@@ -135,7 +135,7 @@
                 "high20_gap": 1.2,
                 "high60_gap": 6.4,
                 "pre_signal_origin": true,
-                "mktcap": 3502,
+                "mktcap": 3488,
                 "trade": {
                     "entry": 9570,
                     "stop_loss": 9159,
@@ -169,8 +169,8 @@
                 "과열제어": 10
             },
             "meta": {
-                "rs": 13.1,
-                "rs63": -8.9,
+                "rs": 13.5,
+                "rs63": -8.5,
                 "rs_improve": 22.0,
                 "disp20": 2.8,
                 "disp60": -1.0,
@@ -184,7 +184,7 @@
                 "high20_gap": 1.3,
                 "high60_gap": 21.2,
                 "pre_signal_origin": true,
-                "mktcap": 2238,
+                "mktcap": 2278,
                 "trade": {
                     "entry": 10360,
                     "stop_loss": 10024,
@@ -218,9 +218,9 @@
                 "과열제어": 10
             },
             "meta": {
-                "rs": 11.0,
-                "rs63": 0.1,
-                "rs_improve": 10.9,
+                "rs": 11.4,
+                "rs63": 0.4,
+                "rs_improve": 11.0,
                 "disp20": 2.9,
                 "disp60": 0.5,
                 "ma20_slope": 0.45,
@@ -233,7 +233,7 @@
                 "high20_gap": 1.2,
                 "high60_gap": 10.7,
                 "pre_signal_origin": true,
-                "mktcap": 1522,
+                "mktcap": 1532,
                 "trade": {
                     "entry": 7660,
                     "stop_loss": 7323,
@@ -269,8 +269,8 @@
                 "과열제어": 10
             },
             "meta": {
-                "rs": 9.3,
-                "rs63": 1.4,
+                "rs": 9.7,
+                "rs63": 1.8,
                 "rs_improve": 7.9,
                 "disp20": 1.8,
                 "disp60": 2.2,
@@ -284,7 +284,7 @@
                 "high20_gap": 2.8,
                 "high60_gap": 12.5,
                 "pre_signal_origin": true,
-                "mktcap": 9281,
+                "mktcap": 9335,
                 "trade": {
                     "entry": 26250,
                     "stop_loss": 24905,
@@ -318,8 +318,8 @@
                 "과열제어": 10
             },
             "meta": {
-                "rs": 18.2,
-                "rs63": 12.7,
+                "rs": 18.6,
+                "rs63": 13.1,
                 "rs_improve": 5.5,
                 "disp20": 2.4,
                 "disp60": 7.9,
@@ -333,7 +333,7 @@
                 "high20_gap": 1.9,
                 "high60_gap": 6.2,
                 "pre_signal_origin": true,
-                "mktcap": 5746,
+                "mktcap": 5802,
                 "trade": {
                     "entry": 6250,
                     "stop_loss": 5803,
@@ -367,8 +367,8 @@
                 "과열제어": 10
             },
             "meta": {
-                "rs": 13.3,
-                "rs63": 3.5,
+                "rs": 13.7,
+                "rs63": 3.9,
                 "rs_improve": 9.8,
                 "disp20": 2.4,
                 "disp60": 5.1,
@@ -382,7 +382,7 @@
                 "high20_gap": 1.2,
                 "high60_gap": 6.4,
                 "pre_signal_origin": true,
-                "mktcap": 3502,
+                "mktcap": 3488,
                 "trade": {
                     "entry": 9570,
                     "stop_loss": 9159,
@@ -416,8 +416,8 @@
                 "과열제어": 10
             },
             "meta": {
-                "rs": 13.1,
-                "rs63": -8.9,
+                "rs": 13.5,
+                "rs63": -8.5,
                 "rs_improve": 22.0,
                 "disp20": 2.8,
                 "disp60": -1.0,
@@ -431,7 +431,7 @@
                 "high20_gap": 1.3,
                 "high60_gap": 21.2,
                 "pre_signal_origin": true,
-                "mktcap": 2238,
+                "mktcap": 2278,
                 "trade": {
                     "entry": 10360,
                     "stop_loss": 10024,
@@ -465,9 +465,9 @@
                 "과열제어": 10
             },
             "meta": {
-                "rs": 11.0,
-                "rs63": 0.1,
-                "rs_improve": 10.9,
+                "rs": 11.4,
+                "rs63": 0.4,
+                "rs_improve": 11.0,
                 "disp20": 2.9,
                 "disp60": 0.5,
                 "ma20_slope": 0.45,
@@ -480,7 +480,7 @@
                 "high20_gap": 1.2,
                 "high60_gap": 10.7,
                 "pre_signal_origin": true,
-                "mktcap": 1522,
+                "mktcap": 1532,
                 "trade": {
                     "entry": 7660,
                     "stop_loss": 7323,
@@ -508,30 +508,30 @@
         "base_date": "20260805",
         "kospi": {
             "state": "PRE_BULL",
-            "close": 6626.18,
-            "ma20": 6675.35,
-            "ma60": 7674.68,
-            "ret5": 18.46,
-            "ret20": -8.56,
-            "ma20_slope": -4.03,
+            "close": 6598.26,
+            "ma20": 6673.96,
+            "ma60": 7674.22,
+            "ret5": 17.96,
+            "ret20": -8.95,
+            "ma20_slope": -4.05,
             "ma20_slope_prev": -7.81,
-            "slope_delta": 3.78,
-            "dist_ma20": -0.74,
-            "dist_ma60": -13.66,
+            "slope_delta": 3.76,
+            "dist_ma20": -1.13,
+            "dist_ma60": -14.02,
             "pre_bull_score": 70
         },
         "kosdaq": {
             "state": "BOX",
-            "close": 798.43,
-            "ma20": 761.4,
-            "ma60": 930.69,
-            "ret5": 23.83,
-            "ret20": 1.71,
-            "ma20_slope": -2.42,
+            "close": 799.59,
+            "ma20": 761.46,
+            "ma60": 930.7,
+            "ret5": 24.01,
+            "ret20": 1.86,
+            "ma20_slope": -2.41,
             "ma20_slope_prev": -5.9,
             "slope_delta": 3.49,
-            "dist_ma20": 4.86,
-            "dist_ma60": -14.21,
+            "dist_ma20": 5.01,
+            "dist_ma60": -14.09,
             "pre_bull_score": 40
         }
     },
@@ -544,7 +544,7 @@
         "MA20 완전 회복 전 구간이므로 실제 매수 후보/history에는 저장하지 않습니다.",
         "종가매매는 기존 BUY 후보 중 NEXT 오버레이를 통과한 익일 대응 후보만 사용합니다."
     ],
-    "scan_label": "🏁 장 마감 스캔",
+    "scan_label": "🌙 미장 스캔",
     "total_candidates": 0,
     "total_watch_candidates": 5,
     "total_pre_signal_candidates": 5,

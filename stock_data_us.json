@@ -1,27 +1,95 @@
 {
-    "today_picks": [],
-    "buy_picks": [],
+    "today_picks": [
+        {
+            "rank": 1,
+            "name": "Hertz Global Holdings, Inc",
+            "code": "HTZ",
+            "company_summary": "Hertz Global Holdings, Inc. operates as a vehicle rental company. It operates through two segments: ...",
+            "cur_price": 2.45,
+            "score_raw": 64,
+            "score_100": 64,
+            "squeeze_level": "⚡ HIGH",
+            "score_detail": {
+                "공매도강도": 40,
+                "거래량급증": 14,
+                "유통주희소": 5,
+                "커버소요일": 4
+            },
+            "meta": {
+                "float_m": 161.9,
+                "short_pct": 73.9,
+                "vol_spike": 2.86,
+                "rsi": 56.5,
+                "short_ratio": 3.3,
+                "short_str": "73.9%",
+                "float_str": "161.9M",
+                "setup_pass": true,
+                "price_confirm": true,
+                "buy_candidate": true,
+                "above_ma20": true,
+                "above_ma50": false,
+                "ma20_up": true,
+                "breakout20": false,
+                "dist_ma20": 32.58
+            }
+        }
+    ],
+    "buy_picks": [
+        {
+            "rank": 1,
+            "name": "Hertz Global Holdings, Inc",
+            "code": "HTZ",
+            "company_summary": "Hertz Global Holdings, Inc. operates as a vehicle rental company. It operates through two segments: ...",
+            "cur_price": 2.45,
+            "score_raw": 64,
+            "score_100": 64,
+            "squeeze_level": "⚡ HIGH",
+            "score_detail": {
+                "공매도강도": 40,
+                "거래량급증": 14,
+                "유통주희소": 5,
+                "커버소요일": 4
+            },
+            "meta": {
+                "float_m": 161.9,
+                "short_pct": 73.9,
+                "vol_spike": 2.86,
+                "rsi": 56.5,
+                "short_ratio": 3.3,
+                "short_str": "73.9%",
+                "float_str": "161.9M",
+                "setup_pass": true,
+                "price_confirm": true,
+                "buy_candidate": true,
+                "above_ma20": true,
+                "above_ma50": false,
+                "ma20_up": true,
+                "breakout20": false,
+                "dist_ma20": 32.58
+            }
+        }
+    ],
     "watch_picks": [
         {
             "rank": 1,
             "name": "Groupon, Inc.",
             "code": "GRPN",
             "company_summary": "Groupon, Inc. operates a marketplace that connects consumers to merchants by offering goods and serv...",
-            "cur_price": 22.95,
-            "score_raw": 74,
-            "score_100": 74,
+            "cur_price": 21.87,
+            "score_raw": 73,
+            "score_100": 73,
             "squeeze_level": "⚡ HIGH",
             "score_detail": {
                 "공매도강도": 40,
-                "거래량급증": 8,
+                "거래량급증": 7,
                 "유통주희소": 15,
                 "커버소요일": 10
             },
             "meta": {
                 "float_m": 20.5,
                 "short_pct": 59.9,
-                "vol_spike": 1.72,
-                "rsi": 40.1,
+                "vol_spike": 1.44,
+                "rsi": 37.0,
                 "short_ratio": 7.9,
                 "short_str": "59.9%",
                 "float_str": "20.5M",
@@ -29,10 +97,10 @@
                 "price_confirm": false,
                 "buy_candidate": false,
                 "above_ma20": false,
-                "above_ma50": true,
+                "above_ma50": false,
                 "ma20_up": false,
                 "breakout20": false,
-                "dist_ma20": -14.21
+                "dist_ma20": -17.67
             }
         },
         {
@@ -40,7 +108,7 @@
             "name": "Avis Budget Group, Inc.",
             "code": "CAR",
             "company_summary": "Avis Budget Group, Inc., together with its subsidiaries, provides car and truck rentals, car sharing...",
-            "cur_price": 138.61,
+            "cur_price": 140.66,
             "score_raw": 67,
             "score_100": 67,
             "squeeze_level": "⚡ HIGH",
@@ -53,8 +121,8 @@
             "meta": {
                 "float_m": 12.9,
                 "short_pct": 56.5,
-                "vol_spike": 0.56,
-                "rsi": 36.6,
+                "vol_spike": 0.55,
+                "rsi": 39.0,
                 "short_ratio": 8.0,
                 "short_str": "56.5%",
                 "float_str": "12.9M",
@@ -65,106 +133,106 @@
                 "above_ma50": false,
                 "ma20_up": false,
                 "breakout20": false,
-                "dist_ma20": -9.24
+                "dist_ma20": -7.32
             }
         },
         {
             "rank": 3,
-            "name": "Hertz Global Holdings, Inc",
-            "code": "HTZ",
-            "company_summary": "Hertz Global Holdings, Inc. operates as a vehicle rental company. It operates through two segments: ...",
-            "cur_price": 2.12,
-            "score_raw": 59,
-            "score_100": 59,
-            "squeeze_level": "⚡ HIGH",
-            "score_detail": {
-                "공매도강도": 40,
-                "거래량급증": 9,
-                "유통주희소": 5,
-                "커버소요일": 4
-            },
-            "meta": {
-                "float_m": 163.4,
-                "short_pct": 73.9,
-                "vol_spike": 1.91,
-                "rsi": 48.5,
-                "short_ratio": 3.3,
-                "short_str": "73.9%",
-                "float_str": "163.4M",
-                "setup_pass": true,
-                "price_confirm": false,
-                "buy_candidate": false,
-                "above_ma20": true,
-                "above_ma50": false,
-                "ma20_up": false,
-                "breakout20": false,
-                "dist_ma20": 16.64
-            }
-        },
-        {
-            "rank": 4,
-            "name": "Microvision, Inc.",
-            "code": "MVIS",
-            "company_summary": "MicroVision, Inc. develops and commercializes lidar sensors and perception solutions in the United S...",
-            "cur_price": 3.72,
-            "score_raw": 47,
-            "score_100": 47,
+            "name": "Hims & Hers Health, Inc.",
+            "code": "HIMS",
+            "company_summary": "Hims & Hers Health, Inc. operates as a consumer-first health and wellness platform that connects con...",
+            "cur_price": 30.51,
+            "score_raw": 48,
+            "score_100": 48,
             "squeeze_level": "📈 MEDIUM",
             "score_detail": {
-                "공매도강도": 13,
-                "거래량급증": 10,
-                "유통주희소": 15,
-                "커버소요일": 7
+                "공매도강도": 30,
+                "거래량급증": 7,
+                "유통주희소": 5,
+                "커버소요일": 5
             },
             "meta": {
-                "float_m": 23.4,
-                "short_pct": 17.1,
-                "vol_spike": 2.19,
-                "rsi": 40.8,
-                "short_ratio": 5.1,
-                "short_str": "17.1%",
-                "float_str": "23.4M",
-                "setup_pass": false,
+                "float_m": 210.7,
+                "short_pct": 31.9,
+                "vol_spike": 1.45,
+                "rsi": 48.4,
+                "short_ratio": 3.7,
+                "short_str": "31.9%",
+                "float_str": "210.7M",
+                "setup_pass": true,
                 "price_confirm": false,
                 "buy_candidate": false,
                 "above_ma20": false,
                 "above_ma50": false,
                 "ma20_up": false,
                 "breakout20": false,
-                "dist_ma20": -7.7
+                "dist_ma20": -1.45
+            }
+        },
+        {
+            "rank": 4,
+            "name": "C3.ai, Inc.",
+            "code": "AI",
+            "company_summary": "C3.ai, Inc. operates as an enterprise artificial intelligence application software company in North ...",
+            "cur_price": 10.63,
+            "score_raw": 44,
+            "score_100": 44,
+            "squeeze_level": "📈 MEDIUM",
+            "score_detail": {
+                "공매도강도": 29,
+                "거래량급증": 0,
+                "유통주희소": 5,
+                "커버소요일": 10
+            },
+            "meta": {
+                "float_m": 135.3,
+                "short_pct": 31.1,
+                "vol_spike": 0.99,
+                "rsi": 70.9,
+                "short_ratio": 7.6,
+                "short_str": "31.1%",
+                "float_str": "135.3M",
+                "setup_pass": false,
+                "price_confirm": true,
+                "buy_candidate": false,
+                "above_ma20": true,
+                "above_ma50": true,
+                "ma20_up": true,
+                "breakout20": true,
+                "dist_ma20": 15.43
             }
         },
         {
             "rank": 5,
-            "name": "Hims & Hers Health, Inc.",
-            "code": "HIMS",
-            "company_summary": "Hims & Hers Health, Inc. operates as a consumer-first health and wellness platform that connects con...",
-            "cur_price": 31.77,
-            "score_raw": 46,
-            "score_100": 46,
+            "name": "Upstart Holdings, Inc.",
+            "code": "UPST",
+            "company_summary": "Upstart Holdings, Inc., together with its subsidiaries, operates a cloud-based artificial intelligen...",
+            "cur_price": 29.89,
+            "score_raw": 43,
+            "score_100": 43,
             "squeeze_level": "📈 MEDIUM",
             "score_detail": {
-                "공매도강도": 30,
-                "거래량급증": 5,
-                "유통주희소": 5,
-                "커버소요일": 5
+                "공매도강도": 29,
+                "거래량급증": 0,
+                "유통주희소": 4,
+                "커버소요일": 9
             },
             "meta": {
-                "float_m": 209.7,
-                "short_pct": 31.9,
-                "vol_spike": 1.13,
-                "rsi": 51.4,
-                "short_ratio": 3.7,
-                "short_str": "31.9%",
-                "float_str": "209.7M",
-                "setup_pass": true,
+                "float_m": 79.3,
+                "short_pct": 31.4,
+                "vol_spike": 0.85,
+                "rsi": 50.0,
+                "short_ratio": 6.0,
+                "short_str": "31.4%",
+                "float_str": "79.3M",
+                "setup_pass": false,
                 "price_confirm": false,
                 "buy_candidate": false,
                 "above_ma20": true,
-                "above_ma50": true,
+                "above_ma50": false,
                 "ma20_up": false,
                 "breakout20": false,
-                "dist_ma20": 1.86
+                "dist_ma20": 2.99
             }
         }
     ],
@@ -173,33 +241,33 @@
     "regime_info": {
         "regime": "RISK_ON",
         "regime_label": "위험선호 ON",
-        "base_date": "20260811",
+        "base_date": "20260812",
         "nasdaq": {
             "symbol": "^IXIC",
             "state": "BULL",
-            "close": 26605.36,
-            "ma20": 25709.14,
-            "ma50": 25935.44,
-            "ret5": 0.08,
-            "ret20": 1.91,
-            "dist_ma20": 3.49,
-            "ma20_slope": 0.35
+            "close": 26445.45,
+            "ma20": 25726.06,
+            "ma50": 25924.9,
+            "ret5": 0.31,
+            "ret20": 0.67,
+            "dist_ma20": 2.8,
+            "ma20_slope": 0.32
         },
         "russell": {
             "symbol": "^RUT",
             "state": "BULL",
-            "close": 3017.4,
-            "ma20": 2970.74,
-            "ma50": 2959.18,
-            "ret5": -0.64,
-            "ret20": 1.78,
-            "dist_ma20": 1.57,
-            "ma20_slope": 0.33
+            "close": 3027.12,
+            "ma20": 2973.86,
+            "ma50": 2961.34,
+            "ret5": 0.26,
+            "ret20": 1.71,
+            "dist_ma20": 1.79,
+            "ma20_slope": 0.32
         },
         "vix": {
             "state": "STABLE",
-            "close": 15.46,
-            "chg": 3.76
+            "close": 15.28,
+            "chg": -1.16
         }
     },
     "strategy_used": [
@@ -208,8 +276,8 @@
     "notes": [
         "공매도·커버소요일·거래량·가격확인 동시 충족 후보만 매수 후보"
     ],
-    "total_candidates": 0,
+    "total_candidates": 1,
     "total_watch": 5,
     "total_screened": 29,
-    "base_date": "20260811"
+    "base_date": "20260812"
 }

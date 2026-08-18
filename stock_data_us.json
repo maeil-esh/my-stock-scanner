@@ -7,7 +7,7 @@
             "name": "Avis Budget Group, Inc.",
             "code": "CAR",
             "company_summary": "Avis Budget Group, Inc., together with its subsidiaries, provides car and truck rentals, car sharing...",
-            "cur_price": 141.3,
+            "cur_price": 137.62,
             "score_raw": 67,
             "score_100": 67,
             "squeeze_level": "⚡ HIGH",
@@ -20,8 +20,8 @@
             "meta": {
                 "float_m": 14.9,
                 "short_pct": 57.1,
-                "vol_spike": 0.58,
-                "rsi": 41.9,
+                "vol_spike": 0.49,
+                "rsi": 38.0,
                 "short_ratio": 9.6,
                 "short_str": "57.1%",
                 "float_str": "14.9M",
@@ -32,7 +32,7 @@
                 "above_ma50": false,
                 "ma20_up": false,
                 "breakout20": false,
-                "dist_ma20": -4.32
+                "dist_ma20": -6.61
             }
         },
         {
@@ -40,7 +40,7 @@
             "name": "Groupon, Inc.",
             "code": "GRPN",
             "company_summary": "Groupon, Inc. operates a marketplace that connects consumers to merchants by offering goods and serv...",
-            "cur_price": 20.3,
+            "cur_price": 20.22,
             "score_raw": 65,
             "score_100": 65,
             "squeeze_level": "⚡ HIGH",
@@ -53,8 +53,8 @@
             "meta": {
                 "float_m": 20.6,
                 "short_pct": 55.1,
-                "vol_spike": 0.9,
-                "rsi": 32.8,
+                "vol_spike": 0.81,
+                "rsi": 33.4,
                 "short_ratio": 9.2,
                 "short_str": "55.1%",
                 "float_str": "20.6M",
@@ -65,7 +65,7 @@
                 "above_ma50": false,
                 "ma20_up": false,
                 "breakout20": false,
-                "dist_ma20": -19.9
+                "dist_ma20": -19.04
             }
         },
         {
@@ -73,7 +73,7 @@
             "name": "Hertz Global Holdings, Inc",
             "code": "HTZ",
             "company_summary": "Hertz Global Holdings, Inc. operates as a vehicle rental company. It operates through two segments: ...",
-            "cur_price": 2.16,
+            "cur_price": 2.08,
             "score_raw": 52,
             "score_100": 52,
             "squeeze_level": "📈 MEDIUM",
@@ -86,8 +86,8 @@
             "meta": {
                 "float_m": 139.7,
                 "short_pct": 59.8,
-                "vol_spike": 0.48,
-                "rsi": 48.4,
+                "vol_spike": 0.34,
+                "rsi": 46.8,
                 "short_ratio": 4.8,
                 "short_str": "59.8%",
                 "float_str": "139.7M",
@@ -98,7 +98,7 @@
                 "above_ma50": false,
                 "ma20_up": true,
                 "breakout20": false,
-                "dist_ma20": 10.27
+                "dist_ma20": 5.57
             }
         },
         {
@@ -106,7 +106,7 @@
             "name": "C3.ai, Inc.",
             "code": "AI",
             "company_summary": "C3.ai, Inc. operates as an enterprise artificial intelligence application software company in North ...",
-            "cur_price": 9.7,
+            "cur_price": 9.87,
             "score_raw": 46,
             "score_100": 46,
             "squeeze_level": "📈 MEDIUM",
@@ -120,7 +120,7 @@
                 "float_m": 138.9,
                 "short_pct": 32.4,
                 "vol_spike": 0.6,
-                "rsi": 51.7,
+                "rsi": 54.3,
                 "short_ratio": 8.8,
                 "short_str": "32.4%",
                 "float_str": "138.9M",
@@ -131,7 +131,7 @@
                 "above_ma50": true,
                 "ma20_up": true,
                 "breakout20": false,
-                "dist_ma20": 2.87
+                "dist_ma20": 3.97
             }
         },
         {
@@ -139,7 +139,7 @@
             "name": "Ocugen, Inc.",
             "code": "OCGN",
             "company_summary": "Ocugen, Inc., a biopharmaceutical company, focuses on discovering, developing, and commercializing n...",
-            "cur_price": 1.38,
+            "cur_price": 1.34,
             "score_raw": 43,
             "score_100": 43,
             "squeeze_level": "📈 MEDIUM",
@@ -152,19 +152,19 @@
             "meta": {
                 "float_m": 333.4,
                 "short_pct": 29.9,
-                "vol_spike": 0.54,
-                "rsi": 55.2,
+                "vol_spike": 0.57,
+                "rsi": 51.3,
                 "short_ratio": 19.1,
                 "short_str": "29.9%",
                 "float_str": "333.4M",
                 "setup_pass": false,
-                "price_confirm": false,
+                "price_confirm": true,
                 "buy_candidate": false,
                 "above_ma20": true,
                 "above_ma50": true,
-                "ma20_up": false,
+                "ma20_up": true,
                 "breakout20": false,
-                "dist_ma20": 7.12
+                "dist_ma20": 3.86
             }
         }
     ],
@@ -173,33 +173,33 @@
     "regime_info": {
         "regime": "RISK_ON",
         "regime_label": "위험선호 ON",
-        "base_date": "20260818",
+        "base_date": "20260819",
         "nasdaq": {
             "symbol": "^IXIC",
             "state": "BULL",
-            "close": 26644.91,
-            "ma20": 25905.36,
-            "ma50": 25902.9,
-            "ret5": 0.75,
-            "ret20": 3.13,
-            "dist_ma20": 2.85,
-            "ma20_slope": 0.7
+            "close": 26289.71,
+            "ma20": 25926.17,
+            "ma50": 25964.35,
+            "ret5": -1.12,
+            "ret20": 3.02,
+            "dist_ma20": 1.4,
+            "ma20_slope": 0.45
         },
         "russell": {
             "symbol": "^RUT",
             "state": "BULL",
-            "close": 3057.54,
-            "ma20": 2992.3,
-            "ma50": 2972.49,
-            "ret5": 1.0,
-            "ret20": 2.35,
-            "dist_ma20": 2.18,
-            "ma20_slope": 0.62
+            "close": 3017.89,
+            "ma20": 2994.49,
+            "ma50": 2971.85,
+            "ret5": -0.91,
+            "ret20": 1.88,
+            "dist_ma20": 0.78,
+            "ma20_slope": 0.55
         },
         "vix": {
             "state": "STABLE",
-            "close": 15.19,
-            "chg": 6.6
+            "close": 15.84,
+            "chg": 4.28
         }
     },
     "strategy_used": [
@@ -211,5 +211,5 @@
     "total_candidates": 0,
     "total_watch": 5,
     "total_screened": 29,
-    "base_date": "20260818"
+    "base_date": "20260819"
 }

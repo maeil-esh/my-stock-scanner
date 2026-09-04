@@ -305,147 +305,131 @@
                 "vol_alive_ratio": 3.43,
                 "obv_60_change": 231.74,
                 "op_margin_info": {
-                    "reason": "영업이익률 미증가",
-                    "q_latest": "20262Q",
-                    "m_latest": -4.8,
-                    "q_prev": "20261Q",
-                    "m_prev": 0.32
+                    "reason": "전년도 연간 데이터 없음"
                 }
             }
         },
         {
             "rank": 7,
-            "name": "CJ ENM",
-            "code": "035760",
-            "company_summary": "[KOSDAQ]",
+            "name": "사조산업",
+            "code": "007160",
+            "company_summary": "[KOSPI]",
             "supply": "정보없음",
-            "cur_price": 33050,
-            "score_100": 66,
-            "score": "★★★☆☆ 66점",
-            "tags": "OBV60일매집 / 매매신호 / 고점괴리",
-            "expected_return": "14.9%",
+            "cur_price": 50300,
+            "score_100": 61,
+            "score": "★★★☆☆ 61점",
+            "tags": "OBV60일매집 / 매매신호 / 횡보기간",
+            "expected_return": "14.2%",
             "score_detail": {
-                "OBV60일매집": 25,
+                "OBV60일매집": 30,
                 "매집일수": 15,
                 "거래량살아있음": 15,
-                "횡보기간": 10,
-                "고점괴리": 20,
+                "횡보기간": 20,
+                "고점괴리": 10,
                 "매매신호": 25,
-                "거래량스파이크": 15,
+                "거래량스파이크": 20,
                 "수급강도": 0,
-                "영업이익률증가": 20
+                "영업이익률증가": 0
             },
             "meta": {
-                "rsi": 50.2,
-                "rebound_pct": 17.6,
-                "vol_ratio": 0.86,
+                "rsi": 51.2,
+                "rebound_pct": 28.5,
+                "vol_ratio": 0.12,
                 "inst_streak": 0,
                 "for_streak": 0,
-                "mktcap": 7247,
+                "mktcap": 2515,
                 "green_days": 51,
-                "signal": 54.5,
-                "max_spike": 3.1,
-                "rs": 0.3,
+                "signal": 49.8,
+                "max_spike": 6.5,
+                "rs": 31.9,
                 "trade": {
-                    "entry": 33050,
-                    "stop_loss": 30617,
-                    "target_1": 37914,
-                    "target_2": 41157,
-                    "risk_pct": 7.4,
-                    "reward_pct": 14.7,
+                    "entry": 50300,
+                    "stop_loss": 47830,
+                    "target_1": 55239,
+                    "target_2": 58532,
+                    "risk_pct": 4.9,
+                    "reward_pct": 9.8,
                     "rr_ratio": 2.0,
-                    "atr": 1621.4
+                    "atr": 1646.4
                 },
                 "rt_price_used": true,
-                "spike_count": 6,
-                "disp20": -1.6,
-                "disp60": 0.5,
+                "spike_count": 8,
+                "disp20": -1.1,
+                "disp60": 5.6,
                 "last_spikes": [
-                    "2026-05-15",
-                    "2026-07-09",
-                    "2026-08-31"
+                    "2026-07-06",
+                    "2026-08-12",
+                    "2026-08-28"
                 ],
                 "spike_news": [],
-                "sideways_days": 60,
-                "high52_gap": 58.7,
-                "vol_alive_ratio": 1.04,
-                "obv_60_change": 32.73,
+                "sideways_days": 120,
+                "high52_gap": 30.9,
+                "vol_alive_ratio": 1.13,
+                "obv_60_change": 85.36,
                 "op_margin_info": {
-                    "q_latest": "20262Q",
-                    "m_latest": 2.78,
-                    "q_prev": "20261Q",
-                    "m_prev": 0.11,
-                    "change_pct": 2427.3,
-                    "annual_year": 2025,
-                    "annual_margin": 2.59
+                    "reason": "전년도 연간 데이터 없음"
                 }
             }
         },
         {
             "rank": 8,
-            "name": "마크로젠",
-            "code": "038290",
+            "name": "톱텍",
+            "code": "108230",
             "company_summary": "[KOSDAQ]",
             "supply": "정보없음",
-            "cur_price": 12300,
-            "score_100": 65,
-            "score": "★★★☆☆ 65점",
-            "tags": "OBV60일매집 / 거래량스파이크 / 영업이익률증가",
-            "expected_return": "14.8%",
+            "cur_price": 3305,
+            "score_100": 60,
+            "score": "★★★☆☆ 60점",
+            "tags": "OBV60일매집 / 거래량살아있음 / 거래량스파이크",
+            "expected_return": "14.0%",
             "score_detail": {
                 "OBV60일매집": 30,
                 "매집일수": 15,
-                "거래량살아있음": 10,
+                "거래량살아있음": 25,
                 "횡보기간": 10,
-                "고점괴리": 15,
+                "고점괴리": 10,
                 "매매신호": 18,
                 "거래량스파이크": 25,
                 "수급강도": 0,
-                "영업이익률증가": 20
+                "영업이익률증가": 0
             },
             "meta": {
-                "rsi": 48.7,
-                "rebound_pct": 17.8,
-                "vol_ratio": 0.11,
+                "rsi": 58.1,
+                "rebound_pct": 29.6,
+                "vol_ratio": 1.32,
                 "inst_streak": 0,
                 "for_streak": 0,
-                "mktcap": 1333,
-                "green_days": 51,
-                "signal": 27.7,
-                "max_spike": 10.0,
-                "rs": 17.7,
+                "mktcap": 1256,
+                "green_days": 54,
+                "signal": 55.0,
+                "max_spike": 15.5,
+                "rs": 11.9,
                 "trade": {
-                    "entry": 12300,
-                    "stop_loss": 11396,
-                    "target_1": 14106,
-                    "target_2": 15310,
-                    "risk_pct": 7.3,
-                    "reward_pct": 14.7,
+                    "entry": 3305,
+                    "stop_loss": 2808,
+                    "target_1": 4298,
+                    "target_2": 4960,
+                    "risk_pct": 15.0,
+                    "reward_pct": 30.0,
                     "rr_ratio": 2.0,
-                    "atr": 602.1
+                    "atr": 331.1
                 },
                 "rt_price_used": true,
-                "spike_count": 5,
-                "disp20": -2.2,
-                "disp60": 0.6,
+                "spike_count": 8,
+                "disp20": 5.7,
+                "disp60": 8.4,
                 "last_spikes": [
                     "2026-05-11",
-                    "2026-07-14",
-                    "2026-08-20"
+                    "2026-06-23",
+                    "2026-08-28"
                 ],
                 "spike_news": [],
                 "sideways_days": 60,
-                "high52_gap": 41.1,
-                "vol_alive_ratio": 0.92,
-                "obv_60_change": 33668.76,
+                "high52_gap": 37.2,
+                "vol_alive_ratio": 9.67,
+                "obv_60_change": 3732.97,
                 "op_margin_info": {
-                    "q_latest": "20262Q",
-                    "m_latest": 1.37,
-                    "q_prev": "20261Q",
-                    "m_prev": -1.12,
-                    "change_pct": 100.0,
-                    "annual_year": 2025,
-                    "annual_margin": 0.09
+                    "reason": "전년도 연간 데이터 없음"
                 }
             }
         }
@@ -757,11 +741,7 @@
                 "vol_alive_ratio": 3.43,
                 "obv_60_change": 231.74,
                 "op_margin_info": {
-                    "reason": "영업이익률 미증가",
-                    "q_latest": "20262Q",
-                    "m_latest": -4.8,
-                    "q_prev": "20261Q",
-                    "m_prev": 0.32
+                    "reason": "전년도 연간 데이터 없음"
                 }
             }
         }
@@ -838,7 +818,7 @@
         "BASIC은 RS·MA20 필터를 통과한 종목만 BUY 후보로 허용합니다.",
         "종가매매는 기존 BUY 후보 중 NEXT 오버레이를 통과한 익일 대응 후보만 사용합니다."
     ],
-    "scan_label": "🏁 장 마감 스캔",
+    "scan_label": "🌙 미장 스캔",
     "total_candidates": 0,
     "total_watch_candidates": 8,
     "total_pre_signal_candidates": 5,

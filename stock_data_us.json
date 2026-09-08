@@ -16,13 +16,13 @@
                 "커버소요일": 10
             },
             "meta": {
-                "float_m": 138.5,
+                "float_m": 138.6,
                 "short_pct": 32.6,
                 "vol_spike": 1.36,
                 "rsi": 55.0,
                 "short_ratio": 9.7,
                 "short_str": "32.6%",
-                "float_str": "138.5M",
+                "float_str": "138.6M",
                 "setup_pass": true,
                 "price_confirm": true,
                 "buy_candidate": true,
@@ -51,13 +51,13 @@
                 "커버소요일": 10
             },
             "meta": {
-                "float_m": 138.5,
+                "float_m": 138.6,
                 "short_pct": 32.6,
                 "vol_spike": 1.36,
                 "rsi": 55.0,
                 "short_ratio": 9.7,
                 "short_str": "32.6%",
-                "float_str": "138.5M",
+                "float_str": "138.6M",
                 "setup_pass": true,
                 "price_confirm": true,
                 "buy_candidate": true,
@@ -241,7 +241,7 @@
     "regime_info": {
         "regime": "NEUTRAL",
         "regime_label": "중립/선별장",
-        "base_date": "20260907",
+        "base_date": "20260908",
         "nasdaq": {
             "symbol": "^IXIC",
             "state": "BOX",
@@ -266,8 +266,8 @@
         },
         "vix": {
             "state": "STABLE",
-            "close": 14.53,
-            "chg": 1.47
+            "close": 15.3,
+            "chg": 5.3
         }
     },
     "strategy_used": [
@@ -279,5 +279,5 @@
     "total_candidates": 1,
     "total_watch": 5,
     "total_screened": 29,
-    "base_date": "20260907"
+    "base_date": "20260908"
 }

@@ -13,7 +13,7 @@
     "regime_info": {
         "regime": "PRE_BULL",
         "regime_label": "상승 전환 조기감지",
-        "base_date": "20260909",
+        "base_date": "20260910",
         "kospi": {
             "state": "BOX",
             "close": 6995.39,
@@ -52,12 +52,12 @@
         "MA20 완전 회복 전 구간이므로 실제 매수 후보/history에는 저장하지 않습니다.",
         "종가매매는 기존 BUY 후보 중 NEXT 오버레이를 통과한 익일 대응 후보만 사용합니다."
     ],
-    "scan_label": "🌙 미장 스캔",
+    "scan_label": "🏁 장 마감 스캔",
     "total_candidates": 0,
     "total_watch_candidates": 0,
     "total_pre_signal_candidates": 0,
     "total_next_candidates": 0,
     "total_screened": 0,
     "filter_log": {},
-    "base_date": "20260909"
+    "base_date": "20260910"
 }

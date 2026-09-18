@@ -4,39 +4,6 @@
     "watch_picks": [
         {
             "rank": 1,
-            "name": "Groupon, Inc.",
-            "code": "GRPN",
-            "company_summary": "Groupon, Inc. operates a marketplace that connects consumers to merchants by offering goods and serv...",
-            "cur_price": 0.0,
-            "score_raw": 73,
-            "score_100": 73,
-            "squeeze_level": "⚡ HIGH",
-            "score_detail": {
-                "공매도강도": 40,
-                "거래량급증": 7,
-                "유통주희소": 16,
-                "커버소요일": 10
-            },
-            "meta": {
-                "float_m": 18.4,
-                "short_pct": 47.3,
-                "vol_spike": 1.4,
-                "rsi": 36.8,
-                "short_ratio": 8.6,
-                "short_str": "47.3%",
-                "float_str": "18.4M",
-                "setup_pass": true,
-                "price_confirm": false,
-                "buy_candidate": false,
-                "above_ma20": false,
-                "above_ma50": false,
-                "ma20_up": false,
-                "breakout20": false,
-                "dist_ma20": 0.0
-            }
-        },
-        {
-            "rank": 2,
             "name": "Avis Budget Group, Inc.",
             "code": "CAR",
             "company_summary": "Avis Budget Group, Inc., together with its subsidiaries, provides car and truck rentals, car sharing...",
@@ -53,8 +20,8 @@
             "meta": {
                 "float_m": 14.9,
                 "short_pct": 49.5,
-                "vol_spike": 1.09,
-                "rsi": 27.2,
+                "vol_spike": 1.05,
+                "rsi": 26.0,
                 "short_ratio": 13.7,
                 "short_str": "49.5%",
                 "float_str": "14.9M",
@@ -69,7 +36,73 @@
             }
         },
         {
+            "rank": 2,
+            "name": "Groupon, Inc.",
+            "code": "GRPN",
+            "company_summary": "Groupon, Inc. operates a marketplace that connects consumers to merchants by offering goods and serv...",
+            "cur_price": 0.0,
+            "score_raw": 66,
+            "score_100": 66,
+            "squeeze_level": "⚡ HIGH",
+            "score_detail": {
+                "공매도강도": 40,
+                "거래량급증": 0,
+                "유통주희소": 16,
+                "커버소요일": 10
+            },
+            "meta": {
+                "float_m": 18.4,
+                "short_pct": 47.3,
+                "vol_spike": 0.92,
+                "rsi": 43.0,
+                "short_ratio": 8.6,
+                "short_str": "47.3%",
+                "float_str": "18.4M",
+                "setup_pass": false,
+                "price_confirm": false,
+                "buy_candidate": false,
+                "above_ma20": false,
+                "above_ma50": false,
+                "ma20_up": false,
+                "breakout20": false,
+                "dist_ma20": 0.0
+            }
+        },
+        {
             "rank": 3,
+            "name": "Novavax, Inc.",
+            "code": "NVAX",
+            "company_summary": "Novavax, Inc., a biotechnology company, engages in the discovery, development, and commercialization...",
+            "cur_price": 0.0,
+            "score_raw": 50,
+            "score_100": 50,
+            "squeeze_level": "📈 MEDIUM",
+            "score_detail": {
+                "공매도강도": 28,
+                "거래량급증": 7,
+                "유통주희소": 5,
+                "커버소요일": 10
+            },
+            "meta": {
+                "float_m": 142.5,
+                "short_pct": 29.8,
+                "vol_spike": 1.53,
+                "rsi": 52.4,
+                "short_ratio": 10.7,
+                "short_str": "29.8%",
+                "float_str": "142.5M",
+                "setup_pass": true,
+                "price_confirm": false,
+                "buy_candidate": false,
+                "above_ma20": false,
+                "above_ma50": false,
+                "ma20_up": false,
+                "breakout20": false,
+                "dist_ma20": 0.0
+            }
+        },
+        {
+            "rank": 4,
             "name": "Hertz Global Holdings, Inc",
             "code": "HTZ",
             "company_summary": "Hertz Global Holdings, Inc. operates as a vehicle rental company. It operates through two segments: ...",
@@ -86,45 +119,12 @@
             "meta": {
                 "float_m": 170.0,
                 "short_pct": 66.3,
-                "vol_spike": 0.74,
-                "rsi": 40.7,
+                "vol_spike": 0.84,
+                "rsi": 38.9,
                 "short_ratio": 2.2,
                 "short_str": "66.3%",
                 "float_str": "170.0M",
                 "setup_pass": false,
-                "price_confirm": false,
-                "buy_candidate": false,
-                "above_ma20": false,
-                "above_ma50": false,
-                "ma20_up": false,
-                "breakout20": false,
-                "dist_ma20": 0.0
-            }
-        },
-        {
-            "rank": 4,
-            "name": "Ocugen, Inc.",
-            "code": "OCGN",
-            "company_summary": "Ocugen, Inc., a biopharmaceutical company, focuses on discovering, developing, and commercializing n...",
-            "cur_price": 0.0,
-            "score_raw": 48,
-            "score_100": 48,
-            "squeeze_level": "📈 MEDIUM",
-            "score_detail": {
-                "공매도강도": 27,
-                "거래량급증": 6,
-                "유통주희소": 5,
-                "커버소요일": 10
-            },
-            "meta": {
-                "float_m": 333.8,
-                "short_pct": 29.1,
-                "vol_spike": 1.31,
-                "rsi": 28.5,
-                "short_ratio": 25.3,
-                "short_str": "29.1%",
-                "float_str": "333.8M",
-                "setup_pass": true,
                 "price_confirm": false,
                 "buy_candidate": false,
                 "above_ma20": false,
@@ -140,20 +140,20 @@
             "code": "MVIS",
             "company_summary": "MicroVision, Inc. develops and commercializes lidar sensors and perception solutions in the United S...",
             "cur_price": 0.0,
-            "score_raw": 46,
-            "score_100": 46,
+            "score_raw": 48,
+            "score_100": 48,
             "squeeze_level": "📈 MEDIUM",
             "score_detail": {
                 "공매도강도": 16,
-                "거래량급증": 10,
+                "거래량급증": 12,
                 "유통주희소": 15,
                 "커버소요일": 4
             },
             "meta": {
                 "float_m": 23.4,
                 "short_pct": 20.0,
-                "vol_spike": 2.08,
-                "rsi": 30.4,
+                "vol_spike": 2.5,
+                "rsi": 34.3,
                 "short_ratio": 2.9,
                 "short_str": "20.0%",
                 "float_str": "23.4M",
@@ -168,48 +168,48 @@
             }
         }
     ],
-    "market_regime": "RISK_OFF",
-    "market_regime_label": "위험회피 OFF",
+    "market_regime": "NEUTRAL",
+    "market_regime_label": "중립/선별장",
     "regime_info": {
-        "regime": "RISK_OFF",
-        "regime_label": "위험회피 OFF",
-        "base_date": "20260917",
+        "regime": "NEUTRAL",
+        "regime_label": "중립/선별장",
+        "base_date": "20260918",
         "nasdaq": {
             "symbol": "^IXIC",
-            "state": "BEAR",
-            "close": 25978.42,
-            "ma20": 26239.98,
-            "ma50": 26054.31,
-            "ret5": -0.4,
-            "ret20": -1.34,
-            "dist_ma20": -1.0,
-            "ma20_slope": -0.38
+            "state": "BOX",
+            "close": 26418.3,
+            "ma20": 26244.34,
+            "ma50": 26065.26,
+            "ret5": 0.32,
+            "ret20": 1.35,
+            "dist_ma20": 0.66,
+            "ma20_slope": -0.27
         },
         "russell": {
             "symbol": "^RUT",
             "state": "BEAR",
-            "close": 2858.81,
-            "ma20": 2955.61,
-            "ma50": 2973.53,
-            "ret5": -1.11,
-            "ret20": -5.74,
-            "dist_ma20": -3.28,
-            "ma20_slope": -1.12
+            "close": 2874.63,
+            "ma20": 2947.7,
+            "ma50": 2971.89,
+            "ret5": -1.01,
+            "ret20": -3.94,
+            "dist_ma20": -2.48,
+            "ma20_slope": -1.14
         },
         "vix": {
             "state": "STABLE",
-            "close": 17.71,
-            "chg": 2.97
+            "close": 15.44,
+            "chg": -12.82
         }
     },
     "strategy_used": [
-        "US_DEFENSE"
+        "US_SQUEEZE_HARD_FILTER"
     ],
     "notes": [
-        "NASDAQ/Russell 약세 또는 VIX 고위험 구간 — 매수 후보 차단"
+        "공매도·커버소요일·거래량·가격확인 동시 충족 후보만 매수 후보"
     ],
     "total_candidates": 0,
     "total_watch": 5,
     "total_screened": 29,
-    "base_date": "20260917"
+    "base_date": "20260918"
 }

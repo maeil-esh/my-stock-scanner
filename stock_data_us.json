@@ -7,7 +7,7 @@
             "name": "Avis Budget Group, Inc.",
             "code": "CAR",
             "company_summary": "Avis Budget Group, Inc., together with its subsidiaries, provides car and truck rentals, car sharing...",
-            "cur_price": 108.29,
+            "cur_price": 104.93,
             "score_raw": 67,
             "score_100": 67,
             "squeeze_level": "⚡ HIGH",
@@ -20,8 +20,8 @@
             "meta": {
                 "float_m": 14.9,
                 "short_pct": 48.4,
-                "vol_spike": 0.81,
-                "rsi": 29.3,
+                "vol_spike": 0.7,
+                "rsi": 27.2,
                 "short_ratio": 14.2,
                 "short_str": "48.4%",
                 "float_str": "14.9M",
@@ -32,7 +32,7 @@
                 "above_ma50": false,
                 "ma20_up": false,
                 "breakout20": false,
-                "dist_ma20": -12.88
+                "dist_ma20": -14.44
             }
         },
         {
@@ -40,7 +40,7 @@
             "name": "Groupon, Inc.",
             "code": "GRPN",
             "company_summary": "Groupon, Inc. operates a marketplace that connects consumers to merchants by offering goods and serv...",
-            "cur_price": 21.3,
+            "cur_price": 19.74,
             "score_raw": 66,
             "score_100": 66,
             "squeeze_level": "⚡ HIGH",
@@ -53,8 +53,8 @@
             "meta": {
                 "float_m": 18.4,
                 "short_pct": 52.5,
-                "vol_spike": 0.58,
-                "rsi": 55.6,
+                "vol_spike": 0.92,
+                "rsi": 46.9,
                 "short_ratio": 13.1,
                 "short_str": "52.5%",
                 "float_str": "18.4M",
@@ -65,7 +65,7 @@
                 "above_ma50": false,
                 "ma20_up": true,
                 "breakout20": false,
-                "dist_ma20": 9.62
+                "dist_ma20": 1.53
             }
         },
         {
@@ -73,7 +73,7 @@
             "name": "Hertz Global Holdings, Inc",
             "code": "HTZ",
             "company_summary": "Hertz Global Holdings, Inc. operates as a vehicle rental company. It operates through two segments: ...",
-            "cur_price": 1.74,
+            "cur_price": 1.69,
             "score_raw": 55,
             "score_100": 55,
             "squeeze_level": "⚡ HIGH",
@@ -86,8 +86,8 @@
             "meta": {
                 "float_m": 170.6,
                 "short_pct": 67.1,
-                "vol_spike": 0.64,
-                "rsi": 35.7,
+                "vol_spike": 0.67,
+                "rsi": 33.8,
                 "short_ratio": 6.8,
                 "short_str": "67.1%",
                 "float_str": "170.6M",
@@ -98,50 +98,17 @@
                 "above_ma50": false,
                 "ma20_up": false,
                 "breakout20": false,
-                "dist_ma20": -13.58
+                "dist_ma20": -15.12
             }
         },
         {
             "rank": 4,
-            "name": "Ocugen, Inc.",
-            "code": "OCGN",
-            "company_summary": "Ocugen, Inc., a biopharmaceutical company, focuses on discovering, developing, and commercializing n...",
-            "cur_price": 1.02,
-            "score_raw": 50,
-            "score_100": 50,
-            "squeeze_level": "📈 MEDIUM",
-            "score_detail": {
-                "공매도강도": 30,
-                "거래량급증": 5,
-                "유통주희소": 5,
-                "커버소요일": 10
-            },
-            "meta": {
-                "float_m": 333.8,
-                "short_pct": 31.4,
-                "vol_spike": 1.03,
-                "rsi": 35.4,
-                "short_ratio": 15.8,
-                "short_str": "31.4%",
-                "float_str": "333.8M",
-                "setup_pass": true,
-                "price_confirm": false,
-                "buy_candidate": false,
-                "above_ma20": false,
-                "above_ma50": false,
-                "ma20_up": false,
-                "breakout20": false,
-                "dist_ma20": -10.06
-            }
-        },
-        {
-            "rank": 5,
             "name": "Upstart Holdings, Inc.",
             "code": "UPST",
             "company_summary": "Upstart Holdings, Inc., together with its subsidiaries, operates a cloud-based artificial intelligen...",
-            "cur_price": 23.81,
-            "score_raw": 49,
-            "score_100": 49,
+            "cur_price": 23.03,
+            "score_raw": 50,
+            "score_100": 50,
             "squeeze_level": "📈 MEDIUM",
             "score_detail": {
                 "공매도강도": 31,
@@ -152,8 +119,8 @@
             "meta": {
                 "float_m": 83.7,
                 "short_pct": 32.5,
-                "vol_spike": 1.06,
-                "rsi": 33.7,
+                "vol_spike": 1.14,
+                "rsi": 30.8,
                 "short_ratio": 6.6,
                 "short_str": "32.5%",
                 "float_str": "83.7M",
@@ -164,7 +131,40 @@
                 "above_ma50": false,
                 "ma20_up": false,
                 "breakout20": false,
-                "dist_ma20": -9.1
+                "dist_ma20": -11.06
+            }
+        },
+        {
+            "rank": 5,
+            "name": "Pacific Biosciences of Californ",
+            "code": "PACB",
+            "company_summary": "Pacific Biosciences of California, Inc. designs, develops, and manufactures sequencing solutions to ...",
+            "cur_price": 1.71,
+            "score_raw": 47,
+            "score_100": 47,
+            "squeeze_level": "📈 MEDIUM",
+            "score_detail": {
+                "공매도강도": 14,
+                "거래량급증": 18,
+                "유통주희소": 5,
+                "커버소요일": 10
+            },
+            "meta": {
+                "float_m": 304.0,
+                "short_pct": 18.1,
+                "vol_spike": 3.66,
+                "rsi": 70.1,
+                "short_ratio": 8.0,
+                "short_str": "18.1%",
+                "float_str": "304.0M",
+                "setup_pass": false,
+                "price_confirm": true,
+                "buy_candidate": false,
+                "above_ma20": true,
+                "above_ma50": true,
+                "ma20_up": true,
+                "breakout20": true,
+                "dist_ma20": 23.38
             }
         }
     ],
@@ -173,33 +173,33 @@
     "regime_info": {
         "regime": "NEUTRAL",
         "regime_label": "중립/선별장",
-        "base_date": "20260928",
+        "base_date": "20260929",
         "nasdaq": {
             "symbol": "^IXIC",
             "state": "BULL",
-            "close": 27068.72,
-            "ma20": 26483.46,
-            "ma50": 26169.53,
-            "ret5": -0.2,
-            "ret20": 2.52,
-            "dist_ma20": 2.21,
-            "ma20_slope": 0.64
+            "close": 26820.38,
+            "ma20": 26504.36,
+            "ma50": 26195.53,
+            "ret5": -1.56,
+            "ret20": 1.7,
+            "dist_ma20": 1.19,
+            "ma20_slope": 0.48
         },
         "russell": {
             "symbol": "^RUT",
             "state": "BEAR",
-            "close": 2837.55,
-            "ma20": 2902.79,
-            "ma50": 2957.86,
-            "ret5": -1.31,
-            "ret20": -4.54,
-            "dist_ma20": -2.25,
-            "ma20_slope": -1.06
+            "close": 2817.91,
+            "ma20": 2895.07,
+            "ma50": 2954.97,
+            "ret5": -2.49,
+            "ret20": -4.69,
+            "dist_ma20": -2.67,
+            "ma20_slope": -1.15
         },
         "vix": {
             "state": "STABLE",
-            "close": 14.87,
-            "chg": -5.11
+            "close": 16.07,
+            "chg": 8.07
         }
     },
     "strategy_used": [
@@ -211,5 +211,5 @@
     "total_candidates": 0,
     "total_watch": 5,
     "total_screened": 29,
-    "base_date": "20260928"
+    "base_date": "20260929"
 }

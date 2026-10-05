@@ -505,7 +505,7 @@
     "regime_info": {
         "regime": "PRE_BULL",
         "regime_label": "상승 전환 조기감지",
-        "base_date": "20261002",
+        "base_date": "20261005",
         "kospi": {
             "state": "BOX",
             "close": 6724.34,
@@ -551,5 +551,5 @@
     "total_next_candidates": 0,
     "total_screened": 0,
     "filter_log": {},
-    "base_date": "20261002"
+    "base_date": "20261005"
 }

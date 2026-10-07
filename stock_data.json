@@ -37,7 +37,7 @@
                 "high20_gap": 1.8,
                 "high60_gap": 41.9,
                 "pre_signal_origin": true,
-                "mktcap": 5401,
+                "mktcap": 5291,
                 "trade": {
                     "entry": 19040,
                     "stop_loss": 17515,
@@ -86,7 +86,7 @@
                 "high20_gap": 4.7,
                 "high60_gap": 30.2,
                 "pre_signal_origin": true,
-                "mktcap": 12878,
+                "mktcap": 12777,
                 "trade": {
                     "entry": 6330,
                     "stop_loss": 6007,
@@ -135,7 +135,7 @@
                 "high20_gap": 4.4,
                 "high60_gap": 26.2,
                 "pre_signal_origin": true,
-                "mktcap": 80548,
+                "mktcap": 79834,
                 "trade": {
                     "entry": 88900,
                     "stop_loss": 85150,
@@ -184,7 +184,7 @@
                 "high20_gap": 4.3,
                 "high60_gap": 30.0,
                 "pre_signal_origin": true,
-                "mktcap": 13733,
+                "mktcap": 13697,
                 "trade": {
                     "entry": 38700,
                     "stop_loss": 37510,
@@ -233,7 +233,7 @@
                 "high20_gap": 8.9,
                 "high60_gap": 27.0,
                 "pre_signal_origin": true,
-                "mktcap": 2226,
+                "mktcap": 2273,
                 "trade": {
                     "entry": 6560,
                     "stop_loss": 5701,
@@ -284,7 +284,7 @@
                 "high20_gap": 1.8,
                 "high60_gap": 41.9,
                 "pre_signal_origin": true,
-                "mktcap": 5401,
+                "mktcap": 5291,
                 "trade": {
                     "entry": 19040,
                     "stop_loss": 17515,
@@ -333,7 +333,7 @@
                 "high20_gap": 4.7,
                 "high60_gap": 30.2,
                 "pre_signal_origin": true,
-                "mktcap": 12878,
+                "mktcap": 12777,
                 "trade": {
                     "entry": 6330,
                     "stop_loss": 6007,
@@ -382,7 +382,7 @@
                 "high20_gap": 4.4,
                 "high60_gap": 26.2,
                 "pre_signal_origin": true,
-                "mktcap": 80548,
+                "mktcap": 79834,
                 "trade": {
                     "entry": 88900,
                     "stop_loss": 85150,
@@ -431,7 +431,7 @@
                 "high20_gap": 4.3,
                 "high60_gap": 30.0,
                 "pre_signal_origin": true,
-                "mktcap": 13733,
+                "mktcap": 13697,
                 "trade": {
                     "entry": 38700,
                     "stop_loss": 37510,
@@ -480,7 +480,7 @@
                 "high20_gap": 8.9,
                 "high60_gap": 27.0,
                 "pre_signal_origin": true,
-                "mktcap": 2226,
+                "mktcap": 2273,
                 "trade": {
                     "entry": 6560,
                     "stop_loss": 5701,

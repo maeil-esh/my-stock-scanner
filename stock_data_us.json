@@ -5,21 +5,21 @@
             "name": "Novavax, Inc.",
             "code": "NVAX",
             "company_summary": "Novavax, Inc., a biotechnology company, engages in the discovery, development, and commercialization...",
-            "cur_price": 11.32,
-            "score_raw": 59,
-            "score_100": 59,
-            "squeeze_level": "⚡ HIGH",
+            "cur_price": 11.22,
+            "score_raw": 49,
+            "score_100": 49,
+            "squeeze_level": "📈 MEDIUM",
             "score_detail": {
                 "공매도강도": 28,
-                "거래량급증": 15,
+                "거래량급증": 5,
                 "유통주희소": 5,
                 "커버소요일": 10
             },
             "meta": {
                 "float_m": 142.6,
                 "short_pct": 30.4,
-                "vol_spike": 3.06,
-                "rsi": 60.1,
+                "vol_spike": 1.18,
+                "rsi": 58.9,
                 "short_ratio": 8.9,
                 "short_str": "30.4%",
                 "float_str": "142.6M",
@@ -30,7 +30,7 @@
                 "above_ma50": true,
                 "ma20_up": true,
                 "breakout20": false,
-                "dist_ma20": 9.25
+                "dist_ma20": 7.57
             }
         }
     ],
@@ -40,21 +40,21 @@
             "name": "Novavax, Inc.",
             "code": "NVAX",
             "company_summary": "Novavax, Inc., a biotechnology company, engages in the discovery, development, and commercialization...",
-            "cur_price": 11.32,
-            "score_raw": 59,
-            "score_100": 59,
-            "squeeze_level": "⚡ HIGH",
+            "cur_price": 11.22,
+            "score_raw": 49,
+            "score_100": 49,
+            "squeeze_level": "📈 MEDIUM",
             "score_detail": {
                 "공매도강도": 28,
-                "거래량급증": 15,
+                "거래량급증": 5,
                 "유통주희소": 5,
                 "커버소요일": 10
             },
             "meta": {
                 "float_m": 142.6,
                 "short_pct": 30.4,
-                "vol_spike": 3.06,
-                "rsi": 60.1,
+                "vol_spike": 1.18,
+                "rsi": 58.9,
                 "short_ratio": 8.9,
                 "short_str": "30.4%",
                 "float_str": "142.6M",
@@ -65,7 +65,7 @@
                 "above_ma50": true,
                 "ma20_up": true,
                 "breakout20": false,
-                "dist_ma20": 9.25
+                "dist_ma20": 7.57
             }
         }
     ],
@@ -75,21 +75,21 @@
             "name": "Hertz Global Holdings, Inc",
             "code": "HTZ",
             "company_summary": "Hertz Global Holdings, Inc. operates as a vehicle rental company. It operates through two segments: ...",
-            "cur_price": 2.06,
-            "score_raw": 71,
-            "score_100": 71,
+            "cur_price": 2.07,
+            "score_raw": 73,
+            "score_100": 73,
             "squeeze_level": "⚡ HIGH",
             "score_detail": {
                 "공매도강도": 40,
-                "거래량급증": 16,
+                "거래량급증": 18,
                 "유통주희소": 5,
                 "커버소요일": 10
             },
             "meta": {
                 "float_m": 170.6,
                 "short_pct": 67.1,
-                "vol_spike": 3.39,
-                "rsi": 59.4,
+                "vol_spike": 3.77,
+                "rsi": 60.0,
                 "short_ratio": 6.8,
                 "short_str": "67.1%",
                 "float_str": "170.6M",
@@ -100,7 +100,7 @@
                 "above_ma50": true,
                 "ma20_up": false,
                 "breakout20": false,
-                "dist_ma20": 11.55
+                "dist_ma20": 12.09
             }
         },
         {
@@ -108,7 +108,7 @@
             "name": "Avis Budget Group, Inc.",
             "code": "CAR",
             "company_summary": "Avis Budget Group, Inc., together with its subsidiaries, provides car and truck rentals, car sharing...",
-            "cur_price": 112.65,
+            "cur_price": 110.22,
             "score_raw": 67,
             "score_100": 67,
             "squeeze_level": "⚡ HIGH",
@@ -122,7 +122,7 @@
                 "float_m": 14.9,
                 "short_pct": 48.4,
                 "vol_spike": 0.97,
-                "rsi": 42.7,
+                "rsi": 40.2,
                 "short_ratio": 14.2,
                 "short_str": "48.4%",
                 "float_str": "14.9M",
@@ -133,7 +133,7 @@
                 "above_ma50": false,
                 "ma20_up": false,
                 "breakout20": false,
-                "dist_ma20": -0.62
+                "dist_ma20": -1.79
             }
         },
         {
@@ -141,7 +141,7 @@
             "name": "Groupon, Inc.",
             "code": "GRPN",
             "company_summary": "Groupon, Inc. operates a marketplace that connects consumers to merchants by offering goods and serv...",
-            "cur_price": 18.84,
+            "cur_price": 18.43,
             "score_raw": 66,
             "score_100": 66,
             "squeeze_level": "⚡ HIGH",
@@ -154,8 +154,8 @@
             "meta": {
                 "float_m": 18.4,
                 "short_pct": 52.5,
-                "vol_spike": 0.85,
-                "rsi": 42.3,
+                "vol_spike": 0.8,
+                "rsi": 40.2,
                 "short_ratio": 13.1,
                 "short_str": "52.5%",
                 "float_str": "18.4M",
@@ -166,40 +166,40 @@
                 "above_ma50": false,
                 "ma20_up": true,
                 "breakout20": false,
-                "dist_ma20": -4.08
+                "dist_ma20": -6.2
             }
         },
         {
             "rank": 4,
-            "name": "Pacific Biosciences of Californ",
-            "code": "PACB",
-            "company_summary": "Pacific Biosciences of California, Inc. designs, develops, and manufactures sequencing solutions to ...",
-            "cur_price": 2.7,
-            "score_raw": 45,
-            "score_100": 45,
+            "name": "Microvision, Inc.",
+            "code": "MVIS",
+            "company_summary": "MicroVision, Inc. develops and commercializes lidar sensors and perception solutions in the United S...",
+            "cur_price": 1.52,
+            "score_raw": 49,
+            "score_100": 49,
             "squeeze_level": "📈 MEDIUM",
             "score_detail": {
-                "공매도강도": 14,
-                "거래량급증": 16,
-                "유통주희소": 5,
-                "커버소요일": 10
+                "공매도강도": 15,
+                "거래량급증": 14,
+                "유통주희소": 15,
+                "커버소요일": 5
             },
             "meta": {
-                "float_m": 304.0,
-                "short_pct": 18.1,
-                "vol_spike": 3.22,
-                "rsi": 80.0,
-                "short_ratio": 8.0,
-                "short_str": "18.1%",
-                "float_str": "304.0M",
+                "float_m": 23.4,
+                "short_pct": 18.7,
+                "vol_spike": 2.82,
+                "rsi": 36.6,
+                "short_ratio": 3.5,
+                "short_str": "18.7%",
+                "float_str": "23.4M",
                 "setup_pass": false,
-                "price_confirm": true,
+                "price_confirm": false,
                 "buy_candidate": false,
-                "above_ma20": true,
-                "above_ma50": true,
-                "ma20_up": true,
+                "above_ma20": false,
+                "above_ma50": false,
+                "ma20_up": false,
                 "breakout20": false,
-                "dist_ma20": 56.02
+                "dist_ma20": -3.4
             }
         },
         {
@@ -207,7 +207,7 @@
             "name": "Upstart Holdings, Inc.",
             "code": "UPST",
             "company_summary": "Upstart Holdings, Inc., together with its subsidiaries, operates a cloud-based artificial intelligen...",
-            "cur_price": 23.86,
+            "cur_price": 24.02,
             "score_raw": 44,
             "score_100": 44,
             "squeeze_level": "📈 MEDIUM",
@@ -220,8 +220,8 @@
             "meta": {
                 "float_m": 83.7,
                 "short_pct": 32.5,
-                "vol_spike": 0.96,
-                "rsi": 40.6,
+                "vol_spike": 0.7,
+                "rsi": 41.8,
                 "short_ratio": 6.6,
                 "short_str": "32.5%",
                 "float_str": "83.7M",
@@ -232,7 +232,7 @@
                 "above_ma50": false,
                 "ma20_up": false,
                 "breakout20": false,
-                "dist_ma20": -2.64
+                "dist_ma20": -1.62
             }
         }
     ],
@@ -241,33 +241,33 @@
     "regime_info": {
         "regime": "NEUTRAL",
         "regime_label": "중립/선별장",
-        "base_date": "20261007",
+        "base_date": "20261008",
         "nasdaq": {
             "symbol": "^IXIC",
             "state": "BULL",
-            "close": 27599.89,
-            "ma20": 26734.22,
-            "ma50": 26409.86,
-            "ret5": 2.75,
-            "ret20": 5.13,
-            "dist_ma20": 3.24,
-            "ma20_slope": 0.64
+            "close": 27538.69,
+            "ma20": 26798.49,
+            "ma50": 26463.09,
+            "ret5": 2.48,
+            "ret20": 5.59,
+            "dist_ma20": 2.76,
+            "ma20_slope": 0.76
         },
         "russell": {
             "symbol": "^RUT",
             "state": "BEAR",
-            "close": 2830.3,
-            "ma20": 2854.46,
-            "ma50": 2939.25,
-            "ret5": 1.2,
-            "ret20": -3.11,
-            "dist_ma20": -0.85,
-            "ma20_slope": -0.94
+            "close": 2793.2,
+            "ma20": 2848.06,
+            "ma50": 2936.04,
+            "ret5": -0.48,
+            "ret20": -3.38,
+            "dist_ma20": -1.93,
+            "ma20_slope": -0.91
         },
         "vix": {
             "state": "STABLE",
-            "close": 15.01,
-            "chg": -3.29
+            "close": 15.08,
+            "chg": 0.47
         }
     },
     "strategy_used": [
@@ -279,5 +279,5 @@
     "total_candidates": 1,
     "total_watch": 5,
     "total_screened": 29,
-    "base_date": "20261007"
+    "base_date": "20261008"
 }

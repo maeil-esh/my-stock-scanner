@@ -37,7 +37,7 @@
                 "high20_gap": 9.1,
                 "high60_gap": 39.0,
                 "pre_signal_origin": true,
-                "mktcap": 5195,
+                "mktcap": 5080,
                 "trade": {
                     "entry": 18630,
                     "stop_loss": 17062,
@@ -86,7 +86,7 @@
                 "high20_gap": 4.6,
                 "high60_gap": 28.9,
                 "pre_signal_origin": true,
-                "mktcap": 8444,
+                "mktcap": 8569,
                 "trade": {
                     "entry": 8600,
                     "stop_loss": 8079,
@@ -135,7 +135,7 @@
                 "high20_gap": 4.2,
                 "high60_gap": 25.3,
                 "pre_signal_origin": true,
-                "mktcap": 9096,
+                "mktcap": 9077,
                 "trade": {
                     "entry": 9800,
                     "stop_loss": 9403,
@@ -184,7 +184,7 @@
                 "high20_gap": 3.8,
                 "high60_gap": 25.9,
                 "pre_signal_origin": true,
-                "mktcap": 13573,
+                "mktcap": 14053,
                 "trade": {
                     "entry": 38900,
                     "stop_loss": 37576,
@@ -233,7 +233,7 @@
                 "high20_gap": 3.3,
                 "high60_gap": 41.1,
                 "pre_signal_origin": true,
-                "mktcap": 1918,
+                "mktcap": 1914,
                 "trade": {
                     "entry": 10370,
                     "stop_loss": 9959,
@@ -284,7 +284,7 @@
                 "high20_gap": 9.1,
                 "high60_gap": 39.0,
                 "pre_signal_origin": true,
-                "mktcap": 5195,
+                "mktcap": 5080,
                 "trade": {
                     "entry": 18630,
                     "stop_loss": 17062,
@@ -333,7 +333,7 @@
                 "high20_gap": 4.6,
                 "high60_gap": 28.9,
                 "pre_signal_origin": true,
-                "mktcap": 8444,
+                "mktcap": 8569,
                 "trade": {
                     "entry": 8600,
                     "stop_loss": 8079,
@@ -382,7 +382,7 @@
                 "high20_gap": 4.2,
                 "high60_gap": 25.3,
                 "pre_signal_origin": true,
-                "mktcap": 9096,
+                "mktcap": 9077,
                 "trade": {
                     "entry": 9800,
                     "stop_loss": 9403,
@@ -431,7 +431,7 @@
                 "high20_gap": 3.8,
                 "high60_gap": 25.9,
                 "pre_signal_origin": true,
-                "mktcap": 13573,
+                "mktcap": 14053,
                 "trade": {
                     "entry": 38900,
                     "stop_loss": 37576,
@@ -480,7 +480,7 @@
                 "high20_gap": 3.3,
                 "high60_gap": 41.1,
                 "pre_signal_origin": true,
-                "mktcap": 1918,
+                "mktcap": 1914,
                 "trade": {
                     "entry": 10370,
                     "stop_loss": 9959,
@@ -544,12 +544,12 @@
         "MA20 완전 회복 전 구간이므로 실제 매수 후보/history에는 저장하지 않습니다.",
         "종가매매는 기존 BUY 후보 중 NEXT 오버레이를 통과한 익일 대응 후보만 사용합니다."
     ],
-    "scan_label": "🌙 미장 스캔",
+    "scan_label": "🔔 장 시작 스캔",
     "total_candidates": 0,
     "total_watch_candidates": 5,
     "total_pre_signal_candidates": 5,
     "total_next_candidates": 0,
     "total_screened": 0,
     "filter_log": {},
-    "base_date": "20261008"
+    "base_date": "20261009"
 }

@@ -1,13 +1,114 @@
 {
-    "today_picks": [],
-    "buy_picks": [],
+    "today_picks": [
+        {
+            "rank": 1,
+            "name": "C3.ai, Inc.",
+            "code": "AI",
+            "company_summary": "C3.ai, Inc. operates as an enterprise artificial intelligence application software company in North ...",
+            "cur_price": 11.32,
+            "score_raw": 50,
+            "score_100": 50,
+            "squeeze_level": "📈 MEDIUM",
+            "score_detail": {
+                "공매도강도": 26,
+                "거래량급증": 9,
+                "유통주희소": 5,
+                "커버소요일": 10
+            },
+            "meta": {
+                "float_m": 144.2,
+                "short_pct": 28.1,
+                "vol_spike": 1.92,
+                "rsi": 53.2,
+                "short_ratio": 7.9,
+                "short_str": "28.1%",
+                "float_str": "144.2M",
+                "setup_pass": true,
+                "price_confirm": true,
+                "buy_candidate": true,
+                "above_ma20": true,
+                "above_ma50": true,
+                "ma20_up": true,
+                "breakout20": false,
+                "dist_ma20": 1.52
+            }
+        }
+    ],
+    "buy_picks": [
+        {
+            "rank": 1,
+            "name": "C3.ai, Inc.",
+            "code": "AI",
+            "company_summary": "C3.ai, Inc. operates as an enterprise artificial intelligence application software company in North ...",
+            "cur_price": 11.32,
+            "score_raw": 50,
+            "score_100": 50,
+            "squeeze_level": "📈 MEDIUM",
+            "score_detail": {
+                "공매도강도": 26,
+                "거래량급증": 9,
+                "유통주희소": 5,
+                "커버소요일": 10
+            },
+            "meta": {
+                "float_m": 144.2,
+                "short_pct": 28.1,
+                "vol_spike": 1.92,
+                "rsi": 53.2,
+                "short_ratio": 7.9,
+                "short_str": "28.1%",
+                "float_str": "144.2M",
+                "setup_pass": true,
+                "price_confirm": true,
+                "buy_candidate": true,
+                "above_ma20": true,
+                "above_ma50": true,
+                "ma20_up": true,
+                "breakout20": false,
+                "dist_ma20": 1.52
+            }
+        }
+    ],
     "watch_picks": [
         {
             "rank": 1,
+            "name": "Groupon, Inc.",
+            "code": "GRPN",
+            "company_summary": "Groupon, Inc. operates a marketplace that connects consumers to merchants by offering goods and serv...",
+            "cur_price": 16.57,
+            "score_raw": 72,
+            "score_100": 72,
+            "squeeze_level": "⚡ HIGH",
+            "score_detail": {
+                "공매도강도": 40,
+                "거래량급증": 6,
+                "유통주희소": 16,
+                "커버소요일": 10
+            },
+            "meta": {
+                "float_m": 18.4,
+                "short_pct": 48.2,
+                "vol_spike": 1.21,
+                "rsi": 33.9,
+                "short_ratio": 10.2,
+                "short_str": "48.2%",
+                "float_str": "18.4M",
+                "setup_pass": true,
+                "price_confirm": false,
+                "buy_candidate": false,
+                "above_ma20": false,
+                "above_ma50": false,
+                "ma20_up": false,
+                "breakout20": false,
+                "dist_ma20": -14.66
+            }
+        },
+        {
+            "rank": 2,
             "name": "Avis Budget Group, Inc.",
             "code": "CAR",
             "company_summary": "Avis Budget Group, Inc., together with its subsidiaries, provides car and truck rentals, car sharing...",
-            "cur_price": 109.77,
+            "cur_price": 102.83,
             "score_raw": 67,
             "score_100": 67,
             "squeeze_level": "⚡ HIGH",
@@ -20,44 +121,11 @@
             "meta": {
                 "float_m": 14.9,
                 "short_pct": 54.1,
-                "vol_spike": 0.85,
-                "rsi": 43.6,
+                "vol_spike": 0.78,
+                "rsi": 36.1,
                 "short_ratio": 12.1,
                 "short_str": "54.1%",
                 "float_str": "14.9M",
-                "setup_pass": false,
-                "price_confirm": false,
-                "buy_candidate": false,
-                "above_ma20": true,
-                "above_ma50": false,
-                "ma20_up": false,
-                "breakout20": false,
-                "dist_ma20": 1.08
-            }
-        },
-        {
-            "rank": 2,
-            "name": "Groupon, Inc.",
-            "code": "GRPN",
-            "company_summary": "Groupon, Inc. operates a marketplace that connects consumers to merchants by offering goods and serv...",
-            "cur_price": 18.43,
-            "score_raw": 66,
-            "score_100": 66,
-            "squeeze_level": "⚡ HIGH",
-            "score_detail": {
-                "공매도강도": 40,
-                "거래량급증": 0,
-                "유통주희소": 16,
-                "커버소요일": 10
-            },
-            "meta": {
-                "float_m": 18.4,
-                "short_pct": 48.2,
-                "vol_spike": 0.92,
-                "rsi": 42.9,
-                "short_ratio": 10.2,
-                "short_str": "48.2%",
-                "float_str": "18.4M",
                 "setup_pass": false,
                 "price_confirm": false,
                 "buy_candidate": false,
@@ -65,7 +133,7 @@
                 "above_ma50": false,
                 "ma20_up": false,
                 "breakout20": false,
-                "dist_ma20": -5.69
+                "dist_ma20": -4.66
             }
         },
         {
@@ -73,7 +141,7 @@
             "name": "Hertz Global Holdings, Inc",
             "code": "HTZ",
             "company_summary": "Hertz Global Holdings, Inc. operates as a vehicle rental company. It operates through two segments: ...",
-            "cur_price": 0.0,
+            "cur_price": 1.73,
             "score_raw": 55,
             "score_100": 55,
             "squeeze_level": "⚡ HIGH",
@@ -86,8 +154,8 @@
             "meta": {
                 "float_m": 170.6,
                 "short_pct": 71.3,
-                "vol_spike": 0.89,
-                "rsi": 46.9,
+                "vol_spike": 0.73,
+                "rsi": 40.8,
                 "short_ratio": 9.4,
                 "short_str": "71.3%",
                 "float_str": "170.6M",
@@ -98,65 +166,32 @@
                 "above_ma50": false,
                 "ma20_up": false,
                 "breakout20": false,
-                "dist_ma20": 0.0
+                "dist_ma20": -5.06
             }
         },
         {
             "rank": 4,
-            "name": "Upstart Holdings, Inc.",
-            "code": "UPST",
-            "company_summary": "Upstart Holdings, Inc., together with its subsidiaries, operates a cloud-based artificial intelligen...",
-            "cur_price": 0.0,
-            "score_raw": 52,
-            "score_100": 52,
-            "squeeze_level": "📈 MEDIUM",
-            "score_detail": {
-                "공매도강도": 32,
-                "거래량급증": 7,
-                "유통주희소": 3,
-                "커버소요일": 9
-            },
-            "meta": {
-                "float_m": 83.7,
-                "short_pct": 33.6,
-                "vol_spike": 1.4,
-                "rsi": 34.9,
-                "short_ratio": 6.5,
-                "short_str": "33.6%",
-                "float_str": "83.7M",
-                "setup_pass": true,
-                "price_confirm": false,
-                "buy_candidate": false,
-                "above_ma20": false,
-                "above_ma50": false,
-                "ma20_up": false,
-                "breakout20": false,
-                "dist_ma20": 0.0
-            }
-        },
-        {
-            "rank": 5,
             "name": "Opendoor Technologies Inc",
             "code": "OPEN",
             "company_summary": "Opendoor Technologies Inc. operates a digital platform for residential real estate transactions in t...",
-            "cur_price": 0.0,
-            "score_raw": 50,
-            "score_100": 50,
+            "cur_price": 2.12,
+            "score_raw": 49,
+            "score_100": 49,
             "squeeze_level": "📈 MEDIUM",
             "score_detail": {
                 "공매도강도": 24,
-                "거래량급증": 10,
+                "거래량급증": 9,
                 "유통주희소": 5,
                 "커버소요일": 10
             },
             "meta": {
-                "float_m": 953.5,
+                "float_m": 952.4,
                 "short_pct": 26.6,
-                "vol_spike": 2.16,
-                "rsi": 21.4,
+                "vol_spike": 1.96,
+                "rsi": 35.8,
                 "short_ratio": 7.5,
                 "short_str": "26.6%",
-                "float_str": "953.5M",
+                "float_str": "952.4M",
                 "setup_pass": true,
                 "price_confirm": false,
                 "buy_candidate": false,
@@ -164,7 +199,40 @@
                 "above_ma50": false,
                 "ma20_up": false,
                 "breakout20": false,
-                "dist_ma20": 0.0
+                "dist_ma20": -10.01
+            }
+        },
+        {
+            "rank": 5,
+            "name": "Novavax, Inc.",
+            "code": "NVAX",
+            "company_summary": "Novavax, Inc., a biotechnology company, engages in the discovery, development, and commercialization...",
+            "cur_price": 11.26,
+            "score_raw": 46,
+            "score_100": 46,
+            "squeeze_level": "📈 MEDIUM",
+            "score_detail": {
+                "공매도강도": 26,
+                "거래량급증": 5,
+                "유통주희소": 5,
+                "커버소요일": 10
+            },
+            "meta": {
+                "float_m": 146.2,
+                "short_pct": 28.1,
+                "vol_spike": 1.14,
+                "rsi": 51.1,
+                "short_ratio": 8.1,
+                "short_str": "28.1%",
+                "float_str": "146.2M",
+                "setup_pass": true,
+                "price_confirm": false,
+                "buy_candidate": false,
+                "above_ma20": false,
+                "above_ma50": true,
+                "ma20_up": true,
+                "breakout20": false,
+                "dist_ma20": -1.04
             }
         }
     ],
@@ -173,33 +241,33 @@
     "regime_info": {
         "regime": "NEUTRAL",
         "regime_label": "중립/선별장",
-        "base_date": "20261016",
+        "base_date": "20261019",
         "nasdaq": {
             "symbol": "^IXIC",
             "state": "BOX",
-            "close": 26713.03,
-            "ma20": 27070.3,
-            "ma50": 26635.38,
-            "ret5": -2.39,
-            "ret20": 0.72,
-            "dist_ma20": -1.32,
-            "ma20_slope": 0.61
+            "close": 26140.03,
+            "ma20": 27051.17,
+            "ma50": 26631.21,
+            "ret5": -4.06,
+            "ret20": -3.62,
+            "dist_ma20": -3.37,
+            "ma20_slope": 0.34
         },
         "russell": {
             "symbol": "^RUT",
             "state": "BEAR",
-            "close": 2767.27,
-            "ma20": 2817.3,
-            "ma50": 2913.11,
-            "ret5": -1.41,
-            "ret20": -3.26,
-            "dist_ma20": -1.78,
-            "ma20_slope": -0.74
+            "close": 2721.37,
+            "ma20": 2810.35,
+            "ma50": 2907.51,
+            "ret5": -2.62,
+            "ret20": -5.36,
+            "dist_ma20": -3.17,
+            "ma20_slope": -0.82
         },
         "vix": {
             "state": "STABLE",
-            "close": 16.46,
-            "chg": -2.43
+            "close": 19.99,
+            "chg": 21.45
         }
     },
     "strategy_used": [
@@ -208,8 +276,8 @@
     "notes": [
         "공매도·커버소요일·거래량·가격확인 동시 충족 후보만 매수 후보"
     ],
-    "total_candidates": 0,
+    "total_candidates": 1,
     "total_watch": 5,
     "total_screened": 29,
-    "base_date": "20261016"
+    "base_date": "20261019"
 }

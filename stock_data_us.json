@@ -8,24 +8,24 @@
             "code": "CAR",
             "company_summary": "Avis Budget Group, Inc., together with its subsidiaries, provides car and truck rentals, car sharing...",
             "cur_price": 0.0,
-            "score_raw": 74,
-            "score_100": 74,
+            "score_raw": 67,
+            "score_100": 67,
             "squeeze_level": "⚡ HIGH",
             "score_detail": {
                 "공매도강도": 40,
-                "거래량급증": 7,
+                "거래량급증": 0,
                 "유통주희소": 17,
                 "커버소요일": 10
             },
             "meta": {
                 "float_m": 14.9,
                 "short_pct": 54.1,
-                "vol_spike": 1.58,
-                "rsi": 35.6,
+                "vol_spike": 0.65,
+                "rsi": 35.7,
                 "short_ratio": 12.1,
                 "short_str": "54.1%",
                 "float_str": "14.9M",
-                "setup_pass": true,
+                "setup_pass": false,
                 "price_confirm": false,
                 "buy_candidate": false,
                 "above_ma20": false,
@@ -37,39 +37,6 @@
         },
         {
             "rank": 2,
-            "name": "Hertz Global Holdings, Inc",
-            "code": "HTZ",
-            "company_summary": "Hertz Global Holdings, Inc. operates as a vehicle rental company. It operates through two segments: ...",
-            "cur_price": 0.0,
-            "score_raw": 69,
-            "score_100": 69,
-            "squeeze_level": "⚡ HIGH",
-            "score_detail": {
-                "공매도강도": 40,
-                "거래량급증": 14,
-                "유통주희소": 5,
-                "커버소요일": 10
-            },
-            "meta": {
-                "float_m": 170.6,
-                "short_pct": 71.3,
-                "vol_spike": 2.84,
-                "rsi": 47.6,
-                "short_ratio": 9.4,
-                "short_str": "71.3%",
-                "float_str": "170.6M",
-                "setup_pass": true,
-                "price_confirm": false,
-                "buy_candidate": false,
-                "above_ma20": false,
-                "above_ma50": false,
-                "ma20_up": false,
-                "breakout20": false,
-                "dist_ma20": 0.0
-            }
-        },
-        {
-            "rank": 3,
             "name": "Groupon, Inc.",
             "code": "GRPN",
             "company_summary": "Groupon, Inc. operates a marketplace that connects consumers to merchants by offering goods and serv...",
@@ -86,12 +53,45 @@
             "meta": {
                 "float_m": 18.4,
                 "short_pct": 48.2,
-                "vol_spike": 0.73,
-                "rsi": 36.1,
+                "vol_spike": 0.63,
+                "rsi": 35.7,
                 "short_ratio": 10.2,
                 "short_str": "48.2%",
                 "float_str": "18.4M",
                 "setup_pass": false,
+                "price_confirm": false,
+                "buy_candidate": false,
+                "above_ma20": false,
+                "above_ma50": false,
+                "ma20_up": false,
+                "breakout20": false,
+                "dist_ma20": 0.0
+            }
+        },
+        {
+            "rank": 3,
+            "name": "Hertz Global Holdings, Inc",
+            "code": "HTZ",
+            "company_summary": "Hertz Global Holdings, Inc. operates as a vehicle rental company. It operates through two segments: ...",
+            "cur_price": 0.0,
+            "score_raw": 60,
+            "score_100": 60,
+            "squeeze_level": "⚡ HIGH",
+            "score_detail": {
+                "공매도강도": 40,
+                "거래량급증": 5,
+                "유통주희소": 5,
+                "커버소요일": 10
+            },
+            "meta": {
+                "float_m": 170.6,
+                "short_pct": 71.3,
+                "vol_spike": 1.14,
+                "rsi": 51.9,
+                "short_ratio": 9.4,
+                "short_str": "71.3%",
+                "float_str": "170.6M",
+                "setup_pass": true,
                 "price_confirm": false,
                 "buy_candidate": false,
                 "above_ma20": false,
@@ -119,8 +119,8 @@
             "meta": {
                 "float_m": 83.7,
                 "short_pct": 33.6,
-                "vol_spike": 0.81,
-                "rsi": 42.1,
+                "vol_spike": 0.6,
+                "rsi": 44.9,
                 "short_ratio": 6.5,
                 "short_str": "33.6%",
                 "float_str": "83.7M",
@@ -152,8 +152,8 @@
             "meta": {
                 "float_m": 334.3,
                 "short_pct": 30.1,
-                "vol_spike": 0.96,
-                "rsi": 24.0,
+                "vol_spike": 0.62,
+                "rsi": 28.8,
                 "short_ratio": 11.8,
                 "short_str": "30.1%",
                 "float_str": "334.3M",
@@ -173,33 +173,33 @@
     "regime_info": {
         "regime": "RISK_OFF",
         "regime_label": "위험회피 OFF",
-        "base_date": "20261021",
+        "base_date": "20261022",
         "nasdaq": {
             "symbol": "^IXIC",
             "state": "BEAR",
-            "close": 26424.82,
-            "ma20": 26975.64,
-            "ma50": 26622.41,
-            "ret5": -1.0,
-            "ret20": -1.9,
-            "dist_ma20": -2.04,
-            "ma20_slope": -0.3
+            "close": 26702.86,
+            "ma20": 26963.98,
+            "ma50": 26627.56,
+            "ret5": -0.04,
+            "ret20": -0.88,
+            "dist_ma20": -0.97,
+            "ma20_slope": -0.39
         },
         "russell": {
             "symbol": "^RUT",
             "state": "BEAR",
-            "close": 2773.42,
-            "ma20": 2797.17,
-            "ma50": 2896.51,
-            "ret5": 1.61,
-            "ret20": -2.3,
-            "dist_ma20": -0.85,
-            "ma20_slope": -0.9
+            "close": 2781.02,
+            "ma20": 2794.29,
+            "ma50": 2891.59,
+            "ret5": 0.5,
+            "ret20": -1.92,
+            "dist_ma20": -0.47,
+            "ma20_slope": -0.82
         },
         "vix": {
             "state": "STABLE",
-            "close": 17.31,
-            "chg": -6.13
+            "close": 16.68,
+            "chg": -3.64
         }
     },
     "strategy_used": [
@@ -211,5 +211,5 @@
     "total_candidates": 0,
     "total_watch": 5,
     "total_screened": 29,
-    "base_date": "20261021"
+    "base_date": "20261022"
 }

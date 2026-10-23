@@ -13,34 +13,34 @@
     "regime_info": {
         "regime": "BEAR",
         "regime_label": "하락장",
-        "base_date": "20261022",
+        "base_date": "20261023",
         "kospi": {
             "state": "BEAR",
-            "close": 5533.77,
-            "ma20": 6414.61,
-            "ma60": 6558.76,
-            "ret5": -2.37,
-            "ret20": -21.03,
-            "ma20_slope": -3.29,
-            "ma20_slope_prev": -3.62,
-            "slope_delta": 0.33,
-            "dist_ma20": -13.73,
-            "dist_ma60": -15.63,
+            "close": 5550.3,
+            "ma20": 6341.74,
+            "ma60": 6539.75,
+            "ret5": -3.77,
+            "ret20": -20.91,
+            "ma20_slope": -3.77,
+            "ma20_slope_prev": -3.85,
+            "slope_delta": 0.08,
+            "dist_ma20": -12.48,
+            "dist_ma60": -15.13,
             "pre_bull_score": 15
         },
         "kosdaq": {
             "state": "BEAR",
-            "close": 764.1,
-            "ma20": 838.95,
-            "ma60": 815.92,
-            "ret5": -3.86,
-            "ret20": -8.63,
-            "ma20_slope": -0.77,
-            "ma20_slope_prev": -0.24,
-            "slope_delta": -0.53,
-            "dist_ma20": -8.92,
-            "dist_ma60": -6.35,
-            "pre_bull_score": 20
+            "close": 751.69,
+            "ma20": 834.72,
+            "ma60": 815.98,
+            "ret5": -7.07,
+            "ret20": -9.91,
+            "ma20_slope": -1.25,
+            "ma20_slope_prev": -0.48,
+            "slope_delta": -0.77,
+            "dist_ma20": -9.95,
+            "dist_ma60": -7.88,
+            "pre_bull_score": 0
         }
     },
     "strategy_used": [
@@ -51,12 +51,12 @@
         "하락장: 자동 매수 후보 전송을 중단합니다.",
         "종가매매는 기존 BUY 후보 중 NEXT 오버레이를 통과한 익일 대응 후보만 사용합니다."
     ],
-    "scan_label": "🌙 미장 스캔",
+    "scan_label": "🏁 장 마감 스캔",
     "total_candidates": 0,
     "total_watch_candidates": 0,
     "total_pre_signal_candidates": 0,
     "total_next_candidates": 0,
     "total_screened": 0,
     "filter_log": {},
-    "base_date": "20261022"
+    "base_date": "20261023"
 }

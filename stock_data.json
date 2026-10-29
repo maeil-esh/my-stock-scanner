@@ -22,9 +22,9 @@
                 "과열제어": 10
             },
             "meta": {
-                "rs": 15.4,
-                "rs63": 5.6,
-                "rs_improve": 9.8,
+                "rs": 14.6,
+                "rs63": 4.7,
+                "rs_improve": 9.9,
                 "disp20": 1.3,
                 "disp60": 0.2,
                 "ma20_slope": 0.4,
@@ -37,7 +37,7 @@
                 "high20_gap": 1.9,
                 "high60_gap": 4.3,
                 "pre_signal_origin": true,
-                "mktcap": 29988,
+                "mktcap": 30302,
                 "trade": {
                     "entry": 43050,
                     "stop_loss": 41110,
@@ -71,9 +71,9 @@
                 "과열제어": 10
             },
             "meta": {
-                "rs": 17.3,
-                "rs63": 8.6,
-                "rs_improve": 8.7,
+                "rs": 16.5,
+                "rs63": 7.7,
+                "rs_improve": 8.8,
                 "disp20": 1.4,
                 "disp60": 1.9,
                 "ma20_slope": 0.34,
@@ -86,7 +86,7 @@
                 "high20_gap": 1.7,
                 "high60_gap": 2.1,
                 "pre_signal_origin": true,
-                "mktcap": 1895,
+                "mktcap": 1949,
                 "trade": {
                     "entry": 10380,
                     "stop_loss": 9962,
@@ -102,6 +102,55 @@
         },
         {
             "rank": 3,
+            "name": "고스트스튜디오",
+            "code": "950190",
+            "company_summary": "[KOSDAQ]",
+            "supply": "PRE-SIGNAL",
+            "cur_price": 9720,
+            "score_100": 100,
+            "score": "★★★★★ 100점",
+            "tags": "RS개선 / MA20근접 / 고점접근",
+            "expected_return": "",
+            "score_detail": {
+                "MA20근접": 20,
+                "RS개선": 25,
+                "고점접근": 20,
+                "거래량회복": 15,
+                "기울기둔화": 10,
+                "과열제어": 10
+            },
+            "meta": {
+                "rs": 12.4,
+                "rs63": -11.0,
+                "rs_improve": 23.4,
+                "disp20": 0.1,
+                "disp60": 2.1,
+                "ma20_slope": 0.02,
+                "ma20_slope_prev": -1.72,
+                "slope_delta": 1.73,
+                "ret5": -0.5,
+                "vol_ratio": 1.45,
+                "vol5_ratio": 0.88,
+                "rsi": 50.6,
+                "high20_gap": 2.1,
+                "high60_gap": 22.0,
+                "pre_signal_origin": true,
+                "mktcap": 1265,
+                "trade": {
+                    "entry": 9720,
+                    "stop_loss": 9266,
+                    "target_1": 10626,
+                    "target_2": 11230,
+                    "risk_pct": 4.7,
+                    "reward_pct": 9.3,
+                    "rr_ratio": 2.0,
+                    "atr": 302.1
+                },
+                "rt_price_used": true
+            }
+        },
+        {
+            "rank": 4,
             "name": "방림",
             "code": "003610",
             "company_summary": "[KOSPI]",
@@ -120,9 +169,9 @@
                 "과열제어": 10
             },
             "meta": {
-                "rs": 16.0,
-                "rs63": 7.5,
-                "rs_improve": 8.5,
+                "rs": 15.2,
+                "rs63": 6.5,
+                "rs_improve": 8.7,
                 "disp20": 1.4,
                 "disp60": 0.3,
                 "ma20_slope": -0.56,
@@ -135,7 +184,7 @@
                 "high20_gap": 1.8,
                 "high60_gap": 8.6,
                 "pre_signal_origin": true,
-                "mktcap": 1769,
+                "mktcap": 1775,
                 "trade": {
                     "entry": 5550,
                     "stop_loss": 5301,
@@ -150,7 +199,7 @@
             }
         },
         {
-            "rank": 4,
+            "rank": 5,
             "name": "신라교역",
             "code": "004970",
             "company_summary": "[KOSPI]",
@@ -169,9 +218,9 @@
                 "과열제어": 10
             },
             "meta": {
-                "rs": 14.0,
-                "rs63": -0.9,
-                "rs_improve": 14.9,
+                "rs": 13.2,
+                "rs63": -1.8,
+                "rs_improve": 15.0,
                 "disp20": 0.4,
                 "disp60": -1.6,
                 "ma20_slope": -0.13,
@@ -184,7 +233,7 @@
                 "high20_gap": 2.6,
                 "high60_gap": 5.7,
                 "pre_signal_origin": true,
-                "mktcap": 1424,
+                "mktcap": 1432,
                 "trade": {
                     "entry": 9000,
                     "stop_loss": 8464,
@@ -196,253 +245,6 @@
                     "atr": 357.1
                 },
                 "rt_price_used": true
-            }
-        },
-        {
-            "rank": 5,
-            "name": "고스트스튜디오",
-            "code": "950190",
-            "company_summary": "[KOSDAQ]",
-            "supply": "PRE-SIGNAL",
-            "cur_price": 9720,
-            "score_100": 98,
-            "score": "★★★★☆ 98점",
-            "tags": "RS개선 / MA20근접 / 고점접근",
-            "expected_return": "",
-            "score_detail": {
-                "MA20근접": 20,
-                "RS개선": 25,
-                "고점접근": 20,
-                "거래량회복": 15,
-                "기울기둔화": 8,
-                "과열제어": 10
-            },
-            "meta": {
-                "rs": 12.2,
-                "rs63": -11.2,
-                "rs_improve": 23.4,
-                "disp20": -0.5,
-                "disp60": 1.5,
-                "ma20_slope": -0.02,
-                "ma20_slope_prev": -1.72,
-                "slope_delta": 1.7,
-                "ret5": -1.1,
-                "vol_ratio": 1.45,
-                "vol5_ratio": 0.88,
-                "rsi": 48.7,
-                "high20_gap": 2.7,
-                "high60_gap": 22.5,
-                "pre_signal_origin": true,
-                "mktcap": 1266,
-                "trade": {
-                    "entry": 9720,
-                    "stop_loss": 9266,
-                    "target_1": 10626,
-                    "target_2": 11230,
-                    "risk_pct": 4.7,
-                    "reward_pct": 9.3,
-                    "rr_ratio": 2.0,
-                    "atr": 302.1
-                },
-                "rt_price_used": true
-            }
-        },
-        {
-            "rank": 6,
-            "name": "도화엔지니어링",
-            "code": "002150",
-            "company_summary": "[KOSPI]",
-            "supply": "정보없음",
-            "cur_price": 5120,
-            "score_100": 75,
-            "score": "★★★☆☆ 75점",
-            "tags": "OBV60일매집 / 거래량살아있음 / 매매신호",
-            "expected_return": "16.2%",
-            "score_detail": {
-                "OBV60일매집": 30,
-                "매집일수": 15,
-                "거래량살아있음": 25,
-                "횡보기간": 15,
-                "고점괴리": 10,
-                "매매신호": 25,
-                "거래량스파이크": 25,
-                "수급강도": 0,
-                "영업이익률증가": 20
-            },
-            "meta": {
-                "rsi": 46.4,
-                "rebound_pct": 14.7,
-                "vol_ratio": 0.38,
-                "inst_streak": 0,
-                "for_streak": 0,
-                "mktcap": 1733,
-                "green_days": 50,
-                "signal": 34.7,
-                "max_spike": 17.3,
-                "rs": 6.8,
-                "trade": {
-                    "entry": 5120,
-                    "stop_loss": 4455,
-                    "target_1": 6449,
-                    "target_2": 7336,
-                    "risk_pct": 13.0,
-                    "reward_pct": 26.0,
-                    "rr_ratio": 2.0,
-                    "atr": 443.2
-                },
-                "rt_price_used": true,
-                "spike_count": 10,
-                "disp20": -2.4,
-                "disp60": -1.6,
-                "last_spikes": [
-                    "2026-08-18",
-                    "2026-08-26",
-                    "2026-10-14"
-                ],
-                "spike_news": [],
-                "sideways_days": 90,
-                "high52_gap": 33.1,
-                "vol_alive_ratio": 3.43,
-                "obv_60_change": 217.4,
-                "op_margin_info": {
-                    "q_latest": "20262Q",
-                    "m_latest": 2.65,
-                    "q_prev": "20261Q",
-                    "m_prev": -1.53,
-                    "change_pct": 100.0,
-                    "annual_year": 2025,
-                    "annual_margin": 4.31
-                }
-            }
-        },
-        {
-            "rank": 7,
-            "name": "일신방직",
-            "code": "003200",
-            "company_summary": "[KOSPI]",
-            "supply": "정보없음",
-            "cur_price": 10400,
-            "score_100": 70,
-            "score": "★★★☆☆ 70점",
-            "tags": "OBV60일매집 / 거래량스파이크 / 거래량살아있음",
-            "expected_return": "15.5%",
-            "score_detail": {
-                "OBV60일매집": 30,
-                "매집일수": 15,
-                "거래량살아있음": 20,
-                "횡보기간": 20,
-                "고점괴리": 15,
-                "매매신호": 8,
-                "거래량스파이크": 25,
-                "수급강도": 0,
-                "영업이익률증가": 20
-            },
-            "meta": {
-                "rsi": 43.0,
-                "rebound_pct": 11.8,
-                "vol_ratio": 0.72,
-                "inst_streak": 0,
-                "for_streak": 0,
-                "mktcap": 2390,
-                "green_days": 50,
-                "signal": 23.2,
-                "max_spike": 12.8,
-                "rs": 6.7,
-                "trade": {
-                    "entry": 10400,
-                    "stop_loss": 9584,
-                    "target_1": 12030,
-                    "target_2": 13117,
-                    "risk_pct": 7.8,
-                    "reward_pct": 15.7,
-                    "rr_ratio": 2.0,
-                    "atr": 543.6
-                },
-                "rt_price_used": true,
-                "spike_count": 6,
-                "disp20": -5.4,
-                "disp60": -4.4,
-                "last_spikes": [
-                    "2026-08-14",
-                    "2026-09-18",
-                    "2026-10-13"
-                ],
-                "spike_news": [],
-                "sideways_days": 120,
-                "high52_gap": 41.6,
-                "vol_alive_ratio": 1.49,
-                "obv_60_change": 84.93,
-                "op_margin_info": {
-                    "q_latest": "20262Q",
-                    "m_latest": 9.02,
-                    "q_prev": "20261Q",
-                    "m_prev": 2.13,
-                    "change_pct": 323.5,
-                    "annual_year": 2025,
-                    "annual_margin": 2.4
-                }
-            }
-        },
-        {
-            "rank": 8,
-            "name": "넷마블",
-            "code": "251270",
-            "company_summary": "[KOSPI]",
-            "supply": "정보없음",
-            "cur_price": 33850,
-            "score_100": 68,
-            "score": "★★★☆☆ 68점",
-            "tags": "OBV60일매집 / 거래량살아있음 / 매매신호",
-            "expected_return": "15.2%",
-            "score_detail": {
-                "OBV60일매집": 30,
-                "매집일수": 15,
-                "거래량살아있음": 25,
-                "횡보기간": 15,
-                "고점괴리": 15,
-                "매매신호": 25,
-                "거래량스파이크": 25,
-                "수급강도": 0,
-                "영업이익률증가": 0
-            },
-            "meta": {
-                "rsi": 42.0,
-                "rebound_pct": 2.7,
-                "vol_ratio": 0.94,
-                "inst_streak": 0,
-                "for_streak": 0,
-                "mktcap": 28065,
-                "green_days": 51,
-                "signal": 34.8,
-                "max_spike": 16.5,
-                "rs": -6.5,
-                "trade": {
-                    "entry": 33850,
-                    "stop_loss": 32162,
-                    "target_1": 37225,
-                    "target_2": 39475,
-                    "risk_pct": 5.0,
-                    "reward_pct": 10.0,
-                    "rr_ratio": 2.0,
-                    "atr": 1125.0
-                },
-                "rt_price_used": true,
-                "spike_count": 3,
-                "disp20": -1.0,
-                "disp60": -6.1,
-                "last_spikes": [
-                    "2026-03-06",
-                    "2026-05-08",
-                    "2026-09-17"
-                ],
-                "spike_news": [],
-                "sideways_days": 90,
-                "high52_gap": 42.5,
-                "vol_alive_ratio": 2.47,
-                "obv_60_change": 1700.98,
-                "op_margin_info": {
-                    "reason": "전년도 연간 데이터 없음"
-                }
             }
         }
     ],
@@ -467,9 +269,9 @@
                 "과열제어": 10
             },
             "meta": {
-                "rs": 15.4,
-                "rs63": 5.6,
-                "rs_improve": 9.8,
+                "rs": 14.6,
+                "rs63": 4.7,
+                "rs_improve": 9.9,
                 "disp20": 1.3,
                 "disp60": 0.2,
                 "ma20_slope": 0.4,
@@ -482,7 +284,7 @@
                 "high20_gap": 1.9,
                 "high60_gap": 4.3,
                 "pre_signal_origin": true,
-                "mktcap": 29988,
+                "mktcap": 30302,
                 "trade": {
                     "entry": 43050,
                     "stop_loss": 41110,
@@ -516,9 +318,9 @@
                 "과열제어": 10
             },
             "meta": {
-                "rs": 17.3,
-                "rs63": 8.6,
-                "rs_improve": 8.7,
+                "rs": 16.5,
+                "rs63": 7.7,
+                "rs_improve": 8.8,
                 "disp20": 1.4,
                 "disp60": 1.9,
                 "ma20_slope": 0.34,
@@ -531,7 +333,7 @@
                 "high20_gap": 1.7,
                 "high60_gap": 2.1,
                 "pre_signal_origin": true,
-                "mktcap": 1895,
+                "mktcap": 1949,
                 "trade": {
                     "entry": 10380,
                     "stop_loss": 9962,
@@ -547,6 +349,55 @@
         },
         {
             "rank": 3,
+            "name": "고스트스튜디오",
+            "code": "950190",
+            "company_summary": "[KOSDAQ]",
+            "supply": "PRE-SIGNAL",
+            "cur_price": 9720,
+            "score_100": 100,
+            "score": "★★★★★ 100점",
+            "tags": "RS개선 / MA20근접 / 고점접근",
+            "expected_return": "",
+            "score_detail": {
+                "MA20근접": 20,
+                "RS개선": 25,
+                "고점접근": 20,
+                "거래량회복": 15,
+                "기울기둔화": 10,
+                "과열제어": 10
+            },
+            "meta": {
+                "rs": 12.4,
+                "rs63": -11.0,
+                "rs_improve": 23.4,
+                "disp20": 0.1,
+                "disp60": 2.1,
+                "ma20_slope": 0.02,
+                "ma20_slope_prev": -1.72,
+                "slope_delta": 1.73,
+                "ret5": -0.5,
+                "vol_ratio": 1.45,
+                "vol5_ratio": 0.88,
+                "rsi": 50.6,
+                "high20_gap": 2.1,
+                "high60_gap": 22.0,
+                "pre_signal_origin": true,
+                "mktcap": 1265,
+                "trade": {
+                    "entry": 9720,
+                    "stop_loss": 9266,
+                    "target_1": 10626,
+                    "target_2": 11230,
+                    "risk_pct": 4.7,
+                    "reward_pct": 9.3,
+                    "rr_ratio": 2.0,
+                    "atr": 302.1
+                },
+                "rt_price_used": true
+            }
+        },
+        {
+            "rank": 4,
             "name": "방림",
             "code": "003610",
             "company_summary": "[KOSPI]",
@@ -565,9 +416,9 @@
                 "과열제어": 10
             },
             "meta": {
-                "rs": 16.0,
-                "rs63": 7.5,
-                "rs_improve": 8.5,
+                "rs": 15.2,
+                "rs63": 6.5,
+                "rs_improve": 8.7,
                 "disp20": 1.4,
                 "disp60": 0.3,
                 "ma20_slope": -0.56,
@@ -580,7 +431,7 @@
                 "high20_gap": 1.8,
                 "high60_gap": 8.6,
                 "pre_signal_origin": true,
-                "mktcap": 1769,
+                "mktcap": 1775,
                 "trade": {
                     "entry": 5550,
                     "stop_loss": 5301,
@@ -595,7 +446,7 @@
             }
         },
         {
-            "rank": 4,
+            "rank": 5,
             "name": "신라교역",
             "code": "004970",
             "company_summary": "[KOSPI]",
@@ -614,9 +465,9 @@
                 "과열제어": 10
             },
             "meta": {
-                "rs": 14.0,
-                "rs63": -0.9,
-                "rs_improve": 14.9,
+                "rs": 13.2,
+                "rs63": -1.8,
+                "rs_improve": 15.0,
                 "disp20": 0.4,
                 "disp60": -1.6,
                 "ma20_slope": -0.13,
@@ -629,7 +480,7 @@
                 "high20_gap": 2.6,
                 "high60_gap": 5.7,
                 "pre_signal_origin": true,
-                "mktcap": 1424,
+                "mktcap": 1432,
                 "trade": {
                     "entry": 9000,
                     "stop_loss": 8464,
@@ -642,55 +493,6 @@
                 },
                 "rt_price_used": true
             }
-        },
-        {
-            "rank": 5,
-            "name": "고스트스튜디오",
-            "code": "950190",
-            "company_summary": "[KOSDAQ]",
-            "supply": "PRE-SIGNAL",
-            "cur_price": 9720,
-            "score_100": 98,
-            "score": "★★★★☆ 98점",
-            "tags": "RS개선 / MA20근접 / 고점접근",
-            "expected_return": "",
-            "score_detail": {
-                "MA20근접": 20,
-                "RS개선": 25,
-                "고점접근": 20,
-                "거래량회복": 15,
-                "기울기둔화": 8,
-                "과열제어": 10
-            },
-            "meta": {
-                "rs": 12.2,
-                "rs63": -11.2,
-                "rs_improve": 23.4,
-                "disp20": -0.5,
-                "disp60": 1.5,
-                "ma20_slope": -0.02,
-                "ma20_slope_prev": -1.72,
-                "slope_delta": 1.7,
-                "ret5": -1.1,
-                "vol_ratio": 1.45,
-                "vol5_ratio": 0.88,
-                "rsi": 48.7,
-                "high20_gap": 2.7,
-                "high60_gap": 22.5,
-                "pre_signal_origin": true,
-                "mktcap": 1266,
-                "trade": {
-                    "entry": 9720,
-                    "stop_loss": 9266,
-                    "target_1": 10626,
-                    "target_2": 11230,
-                    "risk_pct": 4.7,
-                    "reward_pct": 9.3,
-                    "rr_ratio": 2.0,
-                    "atr": 302.1
-                },
-                "rt_price_used": true
-            }
         }
     ],
     "next_picks": [],
@@ -698,55 +500,53 @@
     "next_rejected": [],
     "trend_picks": [],
     "value_picks": [],
-    "market_regime": "BOX",
-    "market_regime_label": "횡보/중립장",
+    "market_regime": "PRE_BULL",
+    "market_regime_label": "상승 전환 조기감지",
     "regime_info": {
-        "regime": "BOX",
-        "regime_label": "횡보/중립장",
+        "regime": "PRE_BULL",
+        "regime_label": "상승 전환 조기감지",
         "base_date": "20261029",
         "kospi": {
-            "state": "BOX",
-            "close": 5882.24,
-            "ma20": 6098.9,
-            "ma60": 6522.52,
-            "ret5": 5.98,
-            "ret20": -13.98,
-            "ma20_slope": -3.83,
+            "state": "PRE_BULL",
+            "close": 5937.66,
+            "ma20": 6101.67,
+            "ma60": 6523.45,
+            "ret5": 6.98,
+            "ret20": -13.17,
+            "ma20_slope": -3.79,
             "ma20_slope_prev": -4.39,
-            "slope_delta": 0.56,
-            "dist_ma20": -3.55,
-            "dist_ma60": -9.82,
-            "pre_bull_score": 40
+            "slope_delta": 0.6,
+            "dist_ma20": -2.69,
+            "dist_ma60": -8.98,
+            "pre_bull_score": 70
         },
         "kosdaq": {
             "state": "BOX",
-            "close": 750.12,
-            "ma20": 815.58,
-            "ma60": 819.55,
-            "ret5": -0.21,
-            "ret20": -12.36,
-            "ma20_slope": -2.29,
+            "close": 753.23,
+            "ma20": 815.74,
+            "ma60": 819.6,
+            "ret5": 0.2,
+            "ret20": -12.0,
+            "ma20_slope": -2.27,
             "ma20_slope_prev": -1.27,
-            "slope_delta": -1.02,
-            "dist_ma20": -8.03,
-            "dist_ma60": -8.47,
-            "pre_bull_score": 0
+            "slope_delta": -1.01,
+            "dist_ma20": -7.66,
+            "dist_ma60": -8.1,
+            "pre_bull_score": 25
         }
     },
     "strategy_used": [
-        "VALUE",
         "PRE_SIGNAL",
-        "BASIC_FILTERED",
         "CLOSE_NEXT_OVERLAY"
     ],
     "notes": [
-        "횡보/중립장: 실적개선 VALUE를 우선하되, PRE-SIGNAL로 돌파 전 관심후보를 먼저 잡습니다.",
-        "BASIC은 RS·MA20 필터를 통과한 종목만 BUY 후보로 허용합니다.",
+        "상승 전환 조기감지: BUY는 보류하고 PRE-SIGNAL 관심후보만 전송합니다.",
+        "MA20 완전 회복 전 구간이므로 실제 매수 후보/history에는 저장하지 않습니다.",
         "종가매매는 기존 BUY 후보 중 NEXT 오버레이를 통과한 익일 대응 후보만 사용합니다."
     ],
     "scan_label": "🌙 미장 스캔",
     "total_candidates": 0,
-    "total_watch_candidates": 8,
+    "total_watch_candidates": 5,
     "total_pre_signal_candidates": 5,
     "total_next_candidates": 0,
     "total_screened": 0,

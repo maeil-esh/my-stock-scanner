@@ -4,59 +4,26 @@
     "watch_picks": [
         {
             "rank": 1,
-            "name": "Avis Budget Group, Inc.",
-            "code": "CAR",
-            "company_summary": "Avis Budget Group, Inc., together with its subsidiaries, provides car and truck rentals, car sharing...",
-            "cur_price": 129.38,
-            "score_raw": 72,
-            "score_100": 72,
-            "squeeze_level": "🔥 EXTREME",
-            "score_detail": {
-                "공매도강도": 40,
-                "거래량급증": 5,
-                "유통주희소": 17,
-                "커버소요일": 10
-            },
-            "meta": {
-                "float_m": 14.2,
-                "short_pct": 45.5,
-                "vol_spike": 1.01,
-                "rsi": 65.4,
-                "short_ratio": 10.9,
-                "short_str": "45.5%",
-                "float_str": "14.2M",
-                "setup_pass": true,
-                "price_confirm": true,
-                "buy_candidate": true,
-                "above_ma20": true,
-                "above_ma50": true,
-                "ma20_up": true,
-                "breakout20": false,
-                "dist_ma20": 7.82
-            }
-        },
-        {
-            "rank": 2,
             "name": "Groupon, Inc.",
             "code": "GRPN",
             "company_summary": "Groupon, Inc. operates a marketplace that connects consumers to merchants by offering goods and serv...",
-            "cur_price": 9.57,
-            "score_raw": 72,
-            "score_100": 72,
+            "cur_price": 10.39,
+            "score_raw": 75,
+            "score_100": 75,
             "squeeze_level": "⚡ HIGH",
             "score_detail": {
                 "공매도강도": 40,
-                "거래량급증": 5,
+                "거래량급증": 8,
                 "유통주희소": 16,
                 "커버소요일": 10
             },
             "meta": {
                 "float_m": 17.8,
-                "short_pct": 49.2,
-                "vol_spike": 1.18,
-                "rsi": 24.0,
-                "short_ratio": 14.4,
-                "short_str": "49.2%",
+                "short_pct": 53.8,
+                "vol_spike": 1.75,
+                "rsi": 31.1,
+                "short_ratio": 10.1,
+                "short_str": "53.8%",
                 "float_str": "17.8M",
                 "setup_pass": true,
                 "price_confirm": false,
@@ -65,7 +32,40 @@
                 "above_ma50": false,
                 "ma20_up": false,
                 "breakout20": false,
-                "dist_ma20": -28.87
+                "dist_ma20": -21.01
+            }
+        },
+        {
+            "rank": 2,
+            "name": "Avis Budget Group, Inc.",
+            "code": "CAR",
+            "company_summary": "Avis Budget Group, Inc., together with its subsidiaries, provides car and truck rentals, car sharing...",
+            "cur_price": 141.82,
+            "score_raw": 73,
+            "score_100": 73,
+            "squeeze_level": "🔥 EXTREME",
+            "score_detail": {
+                "공매도강도": 40,
+                "거래량급증": 6,
+                "유통주희소": 17,
+                "커버소요일": 10
+            },
+            "meta": {
+                "float_m": 14.2,
+                "short_pct": 44.4,
+                "vol_spike": 1.29,
+                "rsi": 74.9,
+                "short_ratio": 9.3,
+                "short_str": "44.4%",
+                "float_str": "14.2M",
+                "setup_pass": true,
+                "price_confirm": true,
+                "buy_candidate": true,
+                "above_ma20": true,
+                "above_ma50": true,
+                "ma20_up": true,
+                "breakout20": true,
+                "dist_ma20": 16.25
             }
         },
         {
@@ -73,23 +73,23 @@
             "name": "Hertz Global Holdings, Inc",
             "code": "HTZ",
             "company_summary": "Hertz Global Holdings, Inc. operates as a vehicle rental company. It operates through two segments: ...",
-            "cur_price": 1.03,
-            "score_raw": 53,
-            "score_100": 53,
+            "cur_price": 1.05,
+            "score_raw": 52,
+            "score_100": 52,
             "squeeze_level": "📈 MEDIUM",
             "score_detail": {
                 "공매도강도": 40,
                 "거래량급증": 0,
                 "유통주희소": 5,
-                "커버소요일": 8
+                "커버소요일": 7
             },
             "meta": {
                 "float_m": 171.6,
-                "short_pct": 72.4,
-                "vol_spike": 0.83,
-                "rsi": 26.8,
-                "short_ratio": 5.8,
-                "short_str": "72.4%",
+                "short_pct": 68.3,
+                "vol_spike": 0.63,
+                "rsi": 28.1,
+                "short_ratio": 5.1,
+                "short_str": "68.3%",
                 "float_str": "171.6M",
                 "setup_pass": false,
                 "price_confirm": false,
@@ -98,7 +98,7 @@
                 "above_ma50": false,
                 "ma20_up": false,
                 "breakout20": false,
-                "dist_ma20": -35.26
+                "dist_ma20": -32.19
             }
         },
         {
@@ -106,65 +106,65 @@
             "name": "Ocugen, Inc.",
             "code": "OCGN",
             "company_summary": "Ocugen, Inc., a biopharmaceutical company, focuses on discovering, developing, and commercializing n...",
-            "cur_price": 0.88,
-            "score_raw": 51,
-            "score_100": 51,
+            "cur_price": 0.84,
+            "score_raw": 46,
+            "score_100": 46,
             "squeeze_level": "📈 MEDIUM",
             "score_detail": {
-                "공매도강도": 30,
-                "거래량급증": 6,
+                "공매도강도": 31,
+                "거래량급증": 0,
                 "유통주희소": 5,
                 "커버소요일": 10
             },
             "meta": {
                 "float_m": 334.5,
-                "short_pct": 31.7,
-                "vol_spike": 1.24,
-                "rsi": 53.6,
-                "short_ratio": 15.9,
-                "short_str": "31.7%",
+                "short_pct": 33.1,
+                "vol_spike": 0.54,
+                "rsi": 50.2,
+                "short_ratio": 15.5,
+                "short_str": "33.1%",
                 "float_str": "334.5M",
-                "setup_pass": true,
+                "setup_pass": false,
                 "price_confirm": true,
-                "buy_candidate": true,
+                "buy_candidate": false,
                 "above_ma20": true,
                 "above_ma50": false,
                 "ma20_up": true,
                 "breakout20": false,
-                "dist_ma20": 7.44
+                "dist_ma20": 2.13
             }
         },
         {
             "rank": 5,
-            "name": "Opendoor Technologies Inc",
-            "code": "OPEN",
-            "company_summary": "Opendoor Technologies Inc. operates a digital platform for residential real estate transactions in t...",
-            "cur_price": 1.18,
-            "score_raw": 45,
-            "score_100": 45,
+            "name": "Microvision, Inc.",
+            "code": "MVIS",
+            "company_summary": "MicroVision, Inc. develops and commercializes lidar sensors and perception solutions in the United S...",
+            "cur_price": 0.87,
+            "score_raw": 46,
+            "score_100": 46,
             "squeeze_level": "📈 MEDIUM",
             "score_detail": {
-                "공매도강도": 25,
-                "거래량급증": 5,
-                "유통주희소": 5,
+                "공매도강도": 15,
+                "거래량급증": 7,
+                "유통주희소": 13,
                 "커버소요일": 9
             },
             "meta": {
-                "float_m": 911.4,
-                "short_pct": 27.7,
-                "vol_spike": 1.02,
-                "rsi": 33.4,
-                "short_ratio": 6.6,
-                "short_str": "27.7%",
-                "float_str": "911.4M",
-                "setup_pass": true,
+                "float_m": 31.3,
+                "short_pct": 18.6,
+                "vol_spike": 1.55,
+                "rsi": 33.7,
+                "short_ratio": 6.4,
+                "short_str": "18.6%",
+                "float_str": "31.3M",
+                "setup_pass": false,
                 "price_confirm": false,
                 "buy_candidate": false,
                 "above_ma20": false,
                 "above_ma50": false,
                 "ma20_up": false,
                 "breakout20": false,
-                "dist_ma20": -20.34
+                "dist_ma20": -20.04
             }
         }
     ],
@@ -173,33 +173,33 @@
     "regime_info": {
         "regime": "RISK_OFF",
         "regime_label": "위험회피 OFF",
-        "base_date": "20261125",
+        "base_date": "20261126",
         "nasdaq": {
             "symbol": "^IXIC",
             "state": "BEAR",
-            "close": 23733.54,
-            "ma20": 24860.72,
-            "ma50": 26026.54,
-            "ret5": -2.85,
-            "ret20": -10.61,
-            "dist_ma20": -4.53,
-            "ma20_slope": -2.03
+            "close": 23585.8,
+            "ma20": 24712.52,
+            "ma50": 25978.69,
+            "ret5": -1.23,
+            "ret20": -9.93,
+            "dist_ma20": -4.56,
+            "ma20_slope": -2.2
         },
         "russell": {
             "symbol": "^RUT",
             "state": "BEAR",
-            "close": 2684.94,
-            "ma20": 2765.47,
-            "ma50": 2791.17,
-            "ret5": -1.08,
-            "ret20": -5.14,
-            "dist_ma20": -2.91,
-            "ma20_slope": -1.03
+            "close": 2704.06,
+            "ma20": 2759.15,
+            "ma50": 2788.07,
+            "ret5": 1.84,
+            "ret20": -5.43,
+            "dist_ma20": -2.0,
+            "ma20_slope": -1.02
         },
         "vix": {
             "state": "HIGH",
-            "close": 26.36,
-            "chg": -0.98
+            "close": 28.29,
+            "chg": 7.32
         }
     },
     "strategy_used": [
@@ -211,5 +211,5 @@
     "total_candidates": 0,
     "total_watch": 5,
     "total_screened": 29,
-    "base_date": "20261125"
+    "base_date": "20261126"
 }
